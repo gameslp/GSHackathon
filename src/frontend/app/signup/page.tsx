@@ -1,46 +1,58 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Button from '@/lib/components/Button';
 import Header from '@/lib/components/Header';
 import Image from 'next/image';
+import { 
+  useRegisterStart, 
+  useRegisterConfirm, 
+  generateTotpQrCodeUrl,
+  isValidUsername,
+  isValidTotpCode 
+} from '@/lib/hooks/useAuthMutations';
 
 export default function SignUpPage() {
-  const router = useRouter();
   const [step, setStep] = useState<'username' | 'qrcode' | 'verify'>('username');
   const [username, setUsername] = useState('');
   const [totpToken, setTotpToken] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+
+  const registerStartMutation = useRegisterStart();
+  const registerConfirmMutation = useRegisterConfirm();
 
   const handleUsernameSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    
     if (!username.trim()) {
       setError('Please enter a username');
       return;
     }
-    setLoading(true);
     
-    // Simulate API call to get TOTP registration token
-    setTimeout(() => {
-      // Mock TOTP secret - in production this comes from your backend
-      const mockSecret = 'JBSWY3DPEHPK3PXP';
-      const issuer = 'HackathonHub';
-      const totpUri = `otpauth://totp/${issuer}:${username}?secret=${mockSecret}&issuer=${issuer}`;
-      
-      // Generate QR code URL using a QR code API
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(totpUri)}`;
-      
-      setTotpToken(mockSecret);
-      setQrCodeUrl(qrUrl);
-      setLoading(false);
-      setStep('qrcode');
-    }, 800);
+    if (!isValidUsername(username)) {
+      setError('Username must be at least 3 characters and contain only letters, numbers, hyphens, and underscores');
+      return;
+    }
+
+    registerStartMutation.mutate(
+      username,
+      {
+        onSuccess: (data) => {
+          if (data && data.totpSecret) {
+            setTotpToken(data.totpSecret);
+            setQrCodeUrl(generateTotpQrCodeUrl(username, data.totpSecret));
+            setStep('qrcode');
+          }
+        },
+        onError: (error: any) => {
+          setError(error?.message || 'Failed to start registration');
+        },
+      }
+    );
   };
 
   const handleContinueToVerify = () => {
@@ -50,30 +62,20 @@ export default function SignUpPage() {
   const handleCodeSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    if (code.length !== 6) {
-      setError('Please enter a 6-digit code');
-      return;
-    }
-    if (!/^\d{6}$/.test(code)) {
-      setError('Code must contain only digits');
-      return;
-    }
-    setLoading(true);
     
-    // Simulate API call to verify TOTP code
-    setTimeout(() => {
-      setLoading(false);
-      // In production, verify the code against the backend
-      // For demo, accept any valid 6-digit code
-      if (/^\d{6}$/.test(code)) {
-        localStorage.setItem('username', username);
-        localStorage.setItem('authToken', 'demo-token-' + Date.now());
-        window.dispatchEvent(new Event('auth-change'));
-        router.push('/dashboard');
-      } else {
-        setError('Invalid code format');
+    if (!isValidTotpCode(code)) {
+      setError('Please enter a valid 6-digit code');
+      return;
+    }
+
+    registerConfirmMutation.mutate(
+      { username, token: code },
+      {
+        onError: (error: any) => {
+          setError(error?.message || 'Invalid verification code');
+        },
       }
-    }, 1000);
+    );
   };
 
   const handleBackToUsername = () => {
@@ -138,9 +140,9 @@ export default function SignUpPage() {
                     variant="primary"
                     size="lg"
                     className="w-full"
-                    disabled={loading}
+                    disabled={registerStartMutation.isPending}
                   >
-                    {loading ? 'Generating QR Code...' : 'Continue'}
+                    {registerStartMutation.isPending ? 'Generating QR Code...' : 'Continue'}
                   </Button>
                 </div>
               </div>
@@ -259,9 +261,9 @@ export default function SignUpPage() {
                     variant="primary"
                     size="lg"
                     className="w-full"
-                    disabled={loading || code.length !== 6}
+                    disabled={registerConfirmMutation.isPending || code.length !== 6}
                   >
-                    {loading ? 'Verifying...' : 'Complete Registration'}
+                    {registerConfirmMutation.isPending ? 'Verifying...' : 'Complete Registration'}
                   </Button>
                 </div>
 

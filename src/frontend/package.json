@@ -3,12 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "generate-api": "curl -o openapi.json http://localhost:3000/api-docs.json && openapi-ts -i openapi.json -o ./lib/api/generated -c @hey-api/client-fetch"
   },
   "dependencies": {
+    "@hey-api/client-fetch": "^0.13.1",
+    "@hey-api/openapi-ts": "^0.87.5",
+    "@tanstack/react-query": "^5.90.9",
+    "@tanstack/react-query-devtools": "^5.90.2",
     "next": "16.0.3",
     "react": "19.2.0",
     "react-dom": "19.2.0"
