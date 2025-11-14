@@ -4,3 +4,4 @@ export { default as Button } from './Button';
 export { default as ChallengeCard } from './ChallengeCard';
 export { default as CategoryCard } from './CategoryCard';
 export { default as StatsCard } from './StatsCard';
+export { default as DatasetDownloadModal } from './DatasetDownloadModal';

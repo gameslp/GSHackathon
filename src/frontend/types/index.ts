@@ -80,6 +80,40 @@ export interface StatisticCard {
   trend?: number;
 }
 
+export type SurveyQuestionType = 'text' | 'textarea';
+
+export interface SurveyQuestion {
+  id: string;
+  type: SurveyQuestionType;
+  question: string;
+  description?: string;
+  required: boolean;
+  placeholder?: string;
+  validation?: {
+    minLength?: number;
+    maxLength?: number;
+  };
+}
+
+export interface Survey {
+  id: number;
+  hackathonId: number;
+  title: string;
+  description: string;
+  questions: SurveyQuestion[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SurveyResponse {
+  id: number;
+  surveyId: number;
+  applicationId: number;
+  userId: number;
+  answers: Record<string, string>;
+  submittedAt: string;
+}
+
 // Temporary compatibility type alias
 export type Challenge = Hackathon & {
   category?: 'Classification' | 'Regression' | 'NLP' | 'Computer Vision' | 'Time Series' | 'Other';

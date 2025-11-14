@@ -83,10 +83,10 @@ const Header = () => {
             {isAuthenticated ? (
               <>
                 <Link
-                  href="/dashboard"
-                  className="hidden sm:flex items-center space-x-2 px-4 py-2 text-black hover:text-[#7297c5] font-medium transition-colors"
+                  href="/profile"
+                  className="hidden sm:flex items-center space-x-2 px-4 py-2 text-black hover:text-primary font-medium transition-colors"
                 >
-                  <div className="w-8 h-8 bg-[#7297c5] rounded-full flex items-center justify-center text-white text-sm font-bold">
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-bold">
                     {username.charAt(0).toUpperCase()}
                   </div>
                   <span>{username}</span>

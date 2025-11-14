@@ -24,7 +24,13 @@ export const getFeaturedChallenges = (): Challenge[] => {
       daysRemaining: Math.ceil((new Date('2025-12-07').getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
       imageUrl: '/images/challenge-1.jpg',
       status: 'active',
-      organizerName: 'DataCorp Analytics',
+      organizerName: 'DataCorp Inc.',
+      resources: [
+        { id: 1, hackathonId: 1, title: 'train.csv', url: '/datasets/churn/train.csv', createdAt: '2025-09-01', updatedAt: '2025-09-01' },
+        { id: 2, hackathonId: 1, title: 'test.csv', url: '/datasets/churn/test.csv', createdAt: '2025-09-01', updatedAt: '2025-09-01' },
+        { id: 3, hackathonId: 1, title: 'sample_submission.csv', url: '/datasets/churn/sample_submission.csv', createdAt: '2025-09-01', updatedAt: '2025-09-01' },
+        { id: 4, hackathonId: 1, title: 'data_description.txt', url: '/datasets/churn/data_description.txt', createdAt: '2025-09-01', updatedAt: '2025-09-01' },
+      ],
     },
     {
       id: 2,
@@ -46,7 +52,14 @@ export const getFeaturedChallenges = (): Challenge[] => {
       daysRemaining: Math.ceil((new Date('2025-12-29').getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
       imageUrl: '/images/challenge-2.jpg',
       status: 'active',
-      organizerName: 'MediTech Research',
+      organizerName: 'MediAI Foundation',
+      resources: [
+        { id: 5, hackathonId: 2, title: 'train_images.zip', url: '/datasets/xray/train_images.zip', createdAt: '2025-08-15', updatedAt: '2025-08-15' },
+        { id: 6, hackathonId: 2, title: 'test_images.zip', url: '/datasets/xray/test_images.zip', createdAt: '2025-08-15', updatedAt: '2025-08-15' },
+        { id: 7, hackathonId: 2, title: 'train_labels.csv', url: '/datasets/xray/train_labels.csv', createdAt: '2025-08-15', updatedAt: '2025-08-15' },
+        { id: 8, hackathonId: 2, title: 'sample_submission.csv', url: '/datasets/xray/sample_submission.csv', createdAt: '2025-08-15', updatedAt: '2025-08-15' },
+        { id: 9, hackathonId: 2, title: 'dataset_info.pdf', url: '/datasets/xray/dataset_info.pdf', createdAt: '2025-08-15', updatedAt: '2025-08-15' },
+      ],
     },
     {
       id: 3,
@@ -69,6 +82,11 @@ export const getFeaturedChallenges = (): Challenge[] => {
       imageUrl: '/images/challenge-3.jpg',
       status: 'active',
       organizerName: 'FinanceAI Labs',
+      resources: [
+        { id: 10, hackathonId: 3, title: 'train.parquet', url: '/datasets/fraud/train.parquet', createdAt: '2025-07-10', updatedAt: '2025-07-10' },
+        { id: 11, hackathonId: 3, title: 'test.parquet', url: '/datasets/fraud/test.parquet', createdAt: '2025-07-10', updatedAt: '2025-07-10' },
+        { id: 12, hackathonId: 3, title: 'sample_submission.csv', url: '/datasets/fraud/sample_submission.csv', createdAt: '2025-07-10', updatedAt: '2025-07-10' },
+      ],
     },
     {
       id: 4,
@@ -90,7 +108,13 @@ export const getFeaturedChallenges = (): Challenge[] => {
       daysRemaining: Math.ceil((new Date('2025-12-18').getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
       imageUrl: '/images/challenge-4.jpg',
       status: 'active',
-      organizerName: 'SocialMetrics Inc',
+      organizerName: 'SocialSense Analytics',
+      resources: [
+        { id: 13, hackathonId: 4, title: 'train.json', url: '/datasets/sentiment/train.json', createdAt: '2025-06-20', updatedAt: '2025-06-20' },
+        { id: 14, hackathonId: 4, title: 'test.json', url: '/datasets/sentiment/test.json', createdAt: '2025-06-20', updatedAt: '2025-06-20' },
+        { id: 15, hackathonId: 4, title: 'sample_submission.csv', url: '/datasets/sentiment/sample_submission.csv', createdAt: '2025-06-20', updatedAt: '2025-06-20' },
+        { id: 16, hackathonId: 4, title: 'emoji_mapping.json', url: '/datasets/sentiment/emoji_mapping.json', createdAt: '2025-06-20', updatedAt: '2025-06-20' },
+      ],
     },
     {
       id: 5,
@@ -113,6 +137,11 @@ export const getFeaturedChallenges = (): Challenge[] => {
       imageUrl: '/images/challenge-5.jpg',
       status: 'active',
       organizerName: 'RealEstate Analytics',
+      resources: [
+        { id: 17, hackathonId: 5, title: 'train.csv', url: '/datasets/housing/train.csv', createdAt: '2025-09-20', updatedAt: '2025-09-20' },
+        { id: 18, hackathonId: 5, title: 'test.csv', url: '/datasets/housing/test.csv', createdAt: '2025-09-20', updatedAt: '2025-09-20' },
+        { id: 19, hackathonId: 5, title: 'sample_submission.csv', url: '/datasets/housing/sample_submission.csv', createdAt: '2025-09-20', updatedAt: '2025-09-20' },
+      ],
     },
     {
       id: 6,
@@ -135,6 +164,13 @@ export const getFeaturedChallenges = (): Challenge[] => {
       imageUrl: '/images/challenge-6.jpg',
       status: 'upcoming',
       organizerName: 'AutoDrive Technologies',
+      resources: [
+        { id: 20, hackathonId: 6, title: 'train_video.zip', url: '/datasets/autonomous/train_video.zip', createdAt: '2025-10-01', updatedAt: '2025-10-01' },
+        { id: 21, hackathonId: 6, title: 'test_video.zip', url: '/datasets/autonomous/test_video.zip', createdAt: '2025-10-01', updatedAt: '2025-10-01' },
+        { id: 22, hackathonId: 6, title: 'annotations.json', url: '/datasets/autonomous/annotations.json', createdAt: '2025-10-01', updatedAt: '2025-10-01' },
+        { id: 23, hackathonId: 6, title: 'sample_submission.csv', url: '/datasets/autonomous/sample_submission.csv', createdAt: '2025-10-01', updatedAt: '2025-10-01' },
+        { id: 24, hackathonId: 6, title: 'model_weights.h5', url: '/datasets/autonomous/model_weights.h5', createdAt: '2025-10-01', updatedAt: '2025-10-01' },
+      ],
     },
   ];
 };
@@ -221,4 +257,167 @@ export const getActiveChallenges = (): Challenge[] => {
 
 export const getUpcomingChallenges = (): Challenge[] => {
   return getFeaturedChallenges().filter(c => c.status === 'upcoming');
+};
+
+// Mock API for Surveys
+export const getSurveyByHackathonId = (hackathonId: number) => {
+  const surveys: Record<number, any> = {
+    1: {
+      id: 1,
+      hackathonId: 1,
+      title: 'Ankieta rejestracyjna - Customer Churn Prediction',
+      description: 'Wypełnij poniższą ankietę, aby dokończyć proces rejestracji',
+      questions: [
+        {
+          id: 'q1',
+          type: 'text',
+          question: 'Jakie jest Twoje doświadczenie w machine learning?',
+          description: 'np. Początkujący, Średnio zaawansowany, Zaawansowany, Expert',
+          required: true,
+          placeholder: 'Opisz swoje doświadczenie...',
+        },
+        {
+          id: 'q2',
+          type: 'textarea',
+          question: 'Dlaczego chcesz wziąć udział w tym wyzwaniu?',
+          description: 'Opisz swoją motywację i cele',
+          required: true,
+          placeholder: 'Opisz swoją motywację...',
+          validation: { minLength: 50, maxLength: 500 },
+        },
+        {
+          id: 'q3',
+          type: 'textarea',
+          question: 'Które technologie i narzędzia znasz?',
+          description: 'Wymień technologie, które potrafisz używać',
+          required: true,
+          placeholder: 'np. Python, TensorFlow, PyTorch, scikit-learn...',
+          validation: { minLength: 20 },
+        },
+        {
+          id: 'q4',
+          type: 'text',
+          question: 'Ile godzin tygodniowo możesz poświęcić na wyzwanie?',
+          required: true,
+          placeholder: 'np. 10-15 godzin',
+        },
+        {
+          id: 'q5',
+          type: 'text',
+          question: 'Link do Twojego profilu GitHub (opcjonalnie)',
+          required: false,
+          placeholder: 'https://github.com/username',
+        },
+        {
+          id: 'q6',
+          type: 'textarea',
+          question: 'Opisz swoje doświadczenie z problemami klasyfikacji',
+          required: true,
+          placeholder: 'Opisz projekty, kursy, konkursy...',
+          validation: { minLength: 30 },
+        },
+      ],
+      createdAt: '2025-10-01',
+      updatedAt: '2025-10-01',
+    },
+    2: {
+      id: 2,
+      hackathonId: 2,
+      title: 'Ankieta rejestracyjna - Medical Image Segmentation',
+      description: 'Wypełnij poniższą ankietę, aby dokończyć proces rejestracji',
+      questions: [
+        {
+          id: 'q1',
+          type: 'text',
+          question: 'Jakie jest Twoje doświadczenie w computer vision?',
+          description: 'np. Początkujący, Średnio zaawansowany, Zaawansowany, Expert',
+          required: true,
+          placeholder: 'Opisz swoje doświadczenie...',
+        },
+        {
+          id: 'q2',
+          type: 'text',
+          question: 'Czy masz doświadczenie w medycznym przetwarzaniu obrazów?',
+          required: true,
+          placeholder: 'np. Tak - 2 lata w szpitalu, Nie - dopiero zaczynam...',
+        },
+        {
+          id: 'q3',
+          type: 'textarea',
+          question: 'Które frameworki do deep learning znasz?',
+          required: true,
+          placeholder: 'Wymień frameworki, które znasz...',
+          validation: { minLength: 10 },
+        },
+        {
+          id: 'q4',
+          type: 'textarea',
+          question: 'Opisz swoje doświadczenie z segmentacją obrazów',
+          required: true,
+          placeholder: 'Projekty, publikacje, konkursy...',
+          validation: { minLength: 50 },
+        },
+        {
+          id: 'q5',
+          type: 'text',
+          question: 'Ile godzin tygodniowo możesz poświęcić?',
+          required: true,
+          placeholder: 'np. 15-20 godzin',
+        },
+      ],
+      createdAt: '2025-09-01',
+      updatedAt: '2025-09-01',
+    },
+  };
+
+  return surveys[hackathonId] || {
+    id: hackathonId,
+    hackathonId: hackathonId,
+    title: 'Ankieta rejestracyjna',
+    description: 'Wypełnij poniższą ankietę, aby dokończyć proces rejestracji',
+    questions: [
+      {
+        id: 'q1',
+        type: 'text',
+        question: 'Jakie jest Twoje doświadczenie w data science?',
+        description: 'np. Początkujący, Średnio zaawansowany, Zaawansowany, Expert',
+        required: true,
+        placeholder: 'Opisz swoje doświadczenie...',
+      },
+      {
+        id: 'q2',
+        type: 'textarea',
+        question: 'Dlaczego chcesz wziąć udział w tym wyzwaniu?',
+        required: true,
+        placeholder: 'Opisz swoją motywację...',
+        validation: { minLength: 30 },
+      },
+      {
+        id: 'q3',
+        type: 'text',
+        question: 'Ile godzin tygodniowo możesz poświęcić?',
+        required: true,
+        placeholder: 'np. 10-15 godzin',
+      },
+    ],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+};
+
+export const submitSurveyResponse = (surveyId: number, applicationId: number, answers: Record<string, any>) => {
+  // Mock API call
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const response = {
+        id: Date.now(),
+        surveyId,
+        applicationId,
+        userId: 1,
+        answers,
+        submittedAt: new Date().toISOString(),
+      };
+      resolve(response);
+    }, 1000);
+  });
 };
