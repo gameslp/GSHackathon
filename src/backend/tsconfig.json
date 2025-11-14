@@ -21,6 +21,7 @@
     "resolveJsonModule": true,
     "paths": {
       "@prisma": ["./src/lib/prisma.ts"],
+      "@prisma/client": ["./src/generated/prisma/client"]
     }
   },
   "include": ["src"],
