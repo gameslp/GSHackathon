@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma';
 export interface CreateHackathonData {
   title: string;
   description: string;
+  rules: string;
   organizerId: number;
   teamMax: number;
   teamMin: number;
