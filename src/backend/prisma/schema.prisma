@@ -25,9 +25,14 @@ model User {
   username  String   @unique
   totpSecret String // base32
   role      Role     @default(PARTICIPANT)
+
+  teams     Team[]   
+  invitations TeamInvitation[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
 model Hackathon {
   id          Int      @id @default(autoincrement())
   title       String
@@ -51,7 +56,7 @@ model Team {
   hackathon   Hackathon @relation(fields: [hackathonId], references: [id])
   hackathonId Int
 
-  members     Participant[]
+  members     User[]
   invitations TeamInvitation[]
 
   createdAt   DateTime @default(now())
@@ -64,14 +69,8 @@ model TeamInvitation {
   participantId    Int
 
   team      Team     @relation(fields: [teamId], references: [id])
-  participant Participant @relation(fields: [participantId], references: [id])
+  participant User @relation(fields: [participantId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-model Participant {
-  id        Int      @id @default(autoincrement())
-  teams     Team[]   
-  invitations TeamInvitation[]
 }
