@@ -5,6 +5,7 @@ import {
   login,
   logout,
   me,
+  updateProfile,
 } from '../controllers/auth.controller';
 import { auth } from '../middleware/auth';
 
@@ -180,7 +181,7 @@ authRouter.post('/auth/logout', auth, logout);
  *     tags:
  *       - Authentication
  *     summary: Get current user
- *     description: Returns the currently authenticated user's information
+ *     description: Returns the currently authenticated user's information including profile fill percentage
  *     security:
  *       - cookieAuth: []
  *     responses:
@@ -189,7 +190,7 @@ authRouter.post('/auth/logout', auth, logout);
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/UserProfile'
  *       401:
  *         description: Not authenticated or invalid token
  *         content:
@@ -204,5 +205,81 @@ authRouter.post('/auth/logout', auth, logout);
  *               $ref: '#/components/schemas/Error'
  */
 authRouter.get('/auth/me', auth, me);
+
+/**
+ * @openapi
+ * /auth/profile:
+ *   patch:
+ *     tags:
+ *       - Authentication
+ *     summary: Update user profile
+ *     description: Update the authenticated user's profile information (name, surname, email)
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 1
+ *                 maxLength: 100
+ *                 description: User's first name
+ *                 example: John
+ *               surname:
+ *                 type: string
+ *                 minLength: 1
+ *                 maxLength: 100
+ *                 description: User's last name
+ *                 example: Doe
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: User's email address
+ *                 example: john.doe@example.com
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/UserProfile'
+ *       400:
+ *         description: Validation failed or email already in use
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - $ref: '#/components/schemas/Error'
+ *                 - type: object
+ *                   properties:
+ *                     error:
+ *                       type: string
+ *                     details:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+authRouter.patch('/auth/profile', auth, updateProfile);
 
 export default authRouter;
