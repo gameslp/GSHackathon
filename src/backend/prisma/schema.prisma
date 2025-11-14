@@ -56,6 +56,7 @@ model Hackathon {
   rules       String   @db.Text
   organizerId Int
   type        HackathonType
+  prize       Int
 
   teams          Team[]
   teamMax        Int
