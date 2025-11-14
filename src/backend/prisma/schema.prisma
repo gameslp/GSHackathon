@@ -21,7 +21,12 @@ enum Role {
 }
 
 enum HackathonType {
-  
+  CLASSIFICATION
+  REGRESSION
+  NLP
+  COMPUTER_VISION
+  TIME_SERIES
+  OTHER
 }
 
 model User {
@@ -44,6 +49,7 @@ model Hackathon {
   title       String
   description String
   organizerId Int
+  type        HackathonType
 
   teams       Team[]
   teamMax     Int
