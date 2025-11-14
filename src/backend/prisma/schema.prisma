@@ -10,6 +10,21 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  JUDGE
+  PARTICIPANT
+}
+
+model User {
+  id       Int      @id @default(autoincrement())
+  username  String   @unique
+  totpSecret String // base32
+  role      Role     @default(PARTICIPANT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
