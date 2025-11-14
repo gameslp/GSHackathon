@@ -1,48 +1,68 @@
-export interface Challenge {
-  id: string;
-  title: string;
-  description: string;
-  category: 'Classification' | 'Regression' | 'NLP' | 'Computer Vision' | 'Time Series' | 'Other';
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
-  prize: number;
-  participants: number;
-  daysRemaining: number;
-  imageUrl: string;
-  status: 'active' | 'upcoming' | 'completed';
-  startDate: string;
-  endDate: string;
-  organizerName: string;
-  organizerAvatar?: string;
-}
+export type Role = 'PARTICIPANT' | 'ORGANIZER' | 'ADMIN';
 
 export interface User {
-  id: string;
+  id: number;
   username: string;
-  email: string;
-  avatarUrl?: string;
-  rank?: number;
-  points: number;
-  completedChallenges: number;
-  joinedDate: string;
+  totpSecret: string;
+  totpConfirmed: boolean;
+  role: Role;
+  teams?: Team[];
+  invitations?: TeamInvitation[];
+  organizedHackathon?: Hackathon[];
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface Leaderboard {
-  rank: number;
-  userId: string;
-  username: string;
-  avatarUrl?: string;
-  score: number;
-  submissionCount: number;
-  lastSubmission: string;
+export interface Hackathon {
+  id: number;
+  title: string;
+  description: string;
+  rules: string;
+  category: 'Classification' | 'Regression' | 'NLP' | 'Computer Vision' | 'Time Series' | 'Other';
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
+  organizerId: number;
+  teams?: Team[];
+  teamMax: number;
+  teamMin: number;
+  prize: number;
+  registrationOpen: string;
+  startDate: string;
+  endDate: string;
+  createdAt: string;
+  updatedAt: string;
+  organizer?: User;
+  resources?: HackathonResource[];
 }
 
-export interface Submission {
-  id: string;
-  challengeId: string;
-  userId: string;
-  score: number;
-  submittedAt: string;
-  status: 'pending' | 'scored' | 'error';
+export interface HackathonResource {
+  id: number;
+  hackathonId: number;
+  title: string;
+  url: string;
+  hackathon?: Hackathon;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Team {
+  id: number;
+  name: string;
+  hackathonId: number;
+  members?: User[];
+  invitations?: TeamInvitation[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamInvitation {
+  id: number;
+  teamId: number;
+  userId: number;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+  team?: Team;
+  user?: User;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Category {
@@ -58,4 +78,16 @@ export interface StatisticCard {
   value: string | number;
   icon?: string;
   trend?: number;
+}
+
+// Temporary compatibility type alias
+export type Challenge = Hackathon & {
+  category?: 'Classification' | 'Regression' | 'NLP' | 'Computer Vision' | 'Time Series' | 'Other';
+  difficulty?: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
+  participants?: number;
+  daysRemaining?: number;
+  imageUrl?: string;
+  status?: 'active' | 'upcoming' | 'completed';
+  organizerName?: string;
+  organizerAvatar?: string;
 }
