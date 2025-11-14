@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { prisma } from '@prisma';
 import { HackathonModel } from '../models/hackathon';
+import { ProvidedFileModel } from '../models/providedFile';
+import { TeamModel } from '../models/team';
 import { AuthRequest } from '../middleware/auth';
 import { z } from 'zod';
 import { HackathonType } from '../generated/prisma/enums';
@@ -34,6 +36,18 @@ const createHackathonSchema = z.object({
 }, {
   message: 'End date must be after start date',
   path: ['endDate'],
+});
+
+const createProvidedFileSchema = z.object({
+  title: z.string().min(1).max(200),
+  fileUrl: z.string().url(),
+  public: z.boolean().optional().default(false),
+});
+
+const updateProvidedFileSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  fileUrl: z.string().url().optional(),
+  public: z.boolean().optional(),
 });
 
 const updateHackathonSchema = z.object({
@@ -581,6 +595,266 @@ export const getHackathonsByOrganizer = async (req: Request, res: Response) => {
     return res.status(200).json(hackathons);
   } catch (error) {
     console.error('Get hackathons by organizer error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// ===== Provided Files Endpoints =====
+
+// Get provided files for a hackathon
+export const getProvidedFiles = async (req: AuthRequest, res: Response) => {
+  try {
+    const hackathonId = parseInt(req.params.hackathonId);
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    // Check if hackathon exists
+    const hackathon = await HackathonModel.findById(hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    // Check if user is organizer, admin, or participant in the hackathon
+    const isOrganizer = req.user.userId === hackathon.organizerId;
+    const isAdmin = req.user.role === 'ADMIN';
+    const isParticipant = await TeamModel.isUserInHackathon(req.user.userId, hackathonId);
+
+    // Show all files if user is organizer, admin, or participant
+    // Otherwise, show only public files
+    let files;
+    if (isOrganizer || isAdmin || isParticipant) {
+      files = await ProvidedFileModel.findByHackathon(hackathonId);
+    } else {
+      files = await ProvidedFileModel.findPublicByHackathon(hackathonId);
+    }
+
+    return res.status(200).json(files);
+  } catch (error) {
+    console.error('Get provided files error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Create/publish a provided file
+export const createProvidedFile = async (req: AuthRequest, res: Response) => {
+  try {
+    const hackathonId = parseInt(req.params.hackathonId);
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    // Validate request body
+    const validationResult = createProvidedFileSchema.safeParse(req.body);
+
+    if (!validationResult.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: validationResult.error.issues,
+      });
+    }
+
+    // Check if hackathon exists
+    const hackathon = await HackathonModel.findById(hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    // Check if user is the organizer or admin
+    if (hackathon.organizerId !== req.user.userId && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized to add files to this hackathon' });
+    }
+
+    const data = validationResult.data;
+
+    const providedFile = await ProvidedFileModel.create({
+      hackathonId,
+      title: data.title,
+      fileUrl: data.fileUrl,
+      public: data.public,
+    });
+
+    return res.status(201).json({
+      message: 'Provided file created successfully',
+      file: providedFile,
+    });
+  } catch (error) {
+    console.error('Create provided file error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Update a provided file
+export const updateProvidedFile = async (req: AuthRequest, res: Response) => {
+  try {
+    const fileId = parseInt(req.params.fileId);
+
+    if (!fileId || isNaN(fileId)) {
+      return res.status(400).json({ error: 'Invalid file ID' });
+    }
+
+    // Validate request body
+    const validationResult = updateProvidedFileSchema.safeParse(req.body);
+
+    if (!validationResult.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: validationResult.error.issues,
+      });
+    }
+
+    // Check if file exists
+    const existingFile = await ProvidedFileModel.findById(fileId);
+
+    if (!existingFile) {
+      return res.status(404).json({ error: 'Provided file not found' });
+    }
+
+    // Get hackathon to check authorization
+    const hackathon = await HackathonModel.findById(existingFile.hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    // Check if user is the organizer or admin
+    if (hackathon.organizerId !== req.user.userId && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized to update this file' });
+    }
+
+    const data = validationResult.data;
+
+    const updatedFile = await ProvidedFileModel.update(fileId, data);
+
+    return res.status(200).json({
+      message: 'Provided file updated successfully',
+      file: updatedFile,
+    });
+  } catch (error) {
+    console.error('Update provided file error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Delete a provided file
+export const deleteProvidedFile = async (req: AuthRequest, res: Response) => {
+  try {
+    const fileId = parseInt(req.params.fileId);
+
+    if (!fileId || isNaN(fileId)) {
+      return res.status(400).json({ error: 'Invalid file ID' });
+    }
+
+    // Check if file exists
+    const existingFile = await ProvidedFileModel.findById(fileId);
+
+    if (!existingFile) {
+      return res.status(404).json({ error: 'Provided file not found' });
+    }
+
+    // Get hackathon to check authorization
+    const hackathon = await HackathonModel.findById(existingFile.hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    // Check if user is the organizer or admin
+    if (hackathon.organizerId !== req.user.userId && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized to delete this file' });
+    }
+
+    await ProvidedFileModel.delete(fileId);
+
+    return res.status(200).json({
+      message: 'Provided file deleted successfully',
+      deletedFileId: fileId,
+    });
+  } catch (error) {
+    console.error('Delete provided file error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Toggle file visibility (public/private)
+export const toggleProvidedFileVisibility = async (req: AuthRequest, res: Response) => {
+  try {
+    const fileId = parseInt(req.params.fileId);
+
+    if (!fileId || isNaN(fileId)) {
+      return res.status(400).json({ error: 'Invalid file ID' });
+    }
+
+    // Check if file exists
+    const existingFile = await ProvidedFileModel.findById(fileId);
+
+    if (!existingFile) {
+      return res.status(404).json({ error: 'Provided file not found' });
+    }
+
+    // Get hackathon to check authorization
+    const hackathon = await HackathonModel.findById(existingFile.hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    // Check if user is the organizer or admin
+    if (hackathon.organizerId !== req.user.userId && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized to modify this file' });
+    }
+
+    const updatedFile = await ProvidedFileModel.togglePublic(fileId);
+
+    return res.status(200).json({
+      message: 'File visibility toggled successfully',
+      file: updatedFile,
+    });
+  } catch (error) {
+    console.error('Toggle file visibility error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get current user's team in a hackathon
+export const getMyTeamInHackathon = async (req: AuthRequest, res: Response) => {
+  try {
+    const hackathonId = parseInt(req.params.hackathonId);
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    // Check if hackathon exists
+    const hackathon = await HackathonModel.findById(hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    // Check if user is in a team for this hackathon
+    const isInHackathon = await TeamModel.isUserInHackathon(req.user.userId, hackathonId);
+
+    if (!isInHackathon) {
+      return res.status(404).json({
+        error: 'You are not part of any team in this hackathon',
+        inHackathon: false,
+      });
+    }
+
+    // Get user's team
+    const team = await TeamModel.getUserTeamInHackathon(req.user.userId, hackathonId);
+
+    return res.status(200).json({
+      inHackathon: true,
+      team,
+    });
+  } catch (error) {
+    console.error('Get my team error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };

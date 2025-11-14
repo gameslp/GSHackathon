@@ -61,7 +61,11 @@ model Hackathon {
   teams          Team[]
   teamMax        Int
   teamMin        Int
+
+  submissions    Submission[]
   surveyQuestions SurveyQuestion[]
+  submissionFiles SubmissionFile[]
+  providedFiles  ProvidedFile[]
 
   registrationOpen  DateTime
   startDate         DateTime
@@ -97,6 +101,7 @@ model Team {
 
   members        User[]
   surveyResponses SurveyResponse[]
+  submissions    Submission[]
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -130,4 +135,47 @@ model SurveyResponse {
   updatedAt  DateTime @updatedAt
 
   @@unique([questionId, teamId, userId])
+}
+
+model ProvidedFile {
+  id          Int      @id @default(autoincrement())
+  hackathonId Int
+
+  title       String
+  fileUrl     String
+  public      Boolean  @default(false)
+
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SubmissionFile {
+  id          Int      @id @default(autoincrement())
+  hackathonId Int
+
+  description String   @db.Text
+  extension   String
+  maxSizeKB   Int
+
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Submission {
+  id          Int      @id @default(autoincrement())
+  teamId      Int
+  hackathonId Int
+  url         String
+  score       Float?
+  scoreComment String?   @db.Text
+
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

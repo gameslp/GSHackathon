@@ -1,22 +1,16 @@
+import { TeamCreateArgs, TeamUncheckedCreateInput } from 'src/generated/prisma/models';
 import { prisma } from '../lib/prisma';
-
-export interface CreateTeamData {
-  name: string;
-  hackathonId: number;
-}
 
 export interface UpdateTeamData {
   name?: string;
 }
 
 export class TeamModel {
-  static async create(data: CreateTeamData) {
+  static async create(data: TeamUncheckedCreateInput) {
     return await prisma.team.create({
       data,
       include: {
         hackathon: true,
-        members: true,
-        invitations: true,
       },
     });
   }
@@ -27,11 +21,6 @@ export class TeamModel {
       include: {
         hackathon: true,
         members: true,
-        invitations: {
-          include: {
-            user: true,
-          },
-        },
       },
     });
   }
@@ -41,7 +30,6 @@ export class TeamModel {
       include: {
         hackathon: true,
         members: true,
-        invitations: true,
       },
     });
   }
@@ -51,7 +39,6 @@ export class TeamModel {
       where: { hackathonId },
       include: {
         members: true,
-        invitations: true,
       },
     });
   }
@@ -63,7 +50,6 @@ export class TeamModel {
       include: {
         hackathon: true,
         members: true,
-        invitations: true,
       },
     });
   }
@@ -128,5 +114,39 @@ export class TeamModel {
 
   static async canAddMember(teamId: number) {
     return !(await this.isTeamFull(teamId));
+  }
+
+  static async isUserInHackathon(userId: number, hackathonId: number) {
+    const team = await prisma.team.findFirst({
+      where: {
+        hackathonId,
+        isAccepted: true,
+        members: {
+          some: {
+            id: userId,
+          },
+        },
+      },
+    });
+
+    return team !== null;
+  }
+
+  static async getUserTeamInHackathon(userId: number, hackathonId: number) {
+    return await prisma.team.findFirst({
+      where: {
+        hackathonId,
+        isAccepted: true,
+        members: {
+          some: {
+            id: userId,
+          },
+        },
+      },
+      include: {
+        hackathon: true,
+        members: true,
+      },
+    });
   }
 }
