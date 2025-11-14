@@ -51,6 +51,7 @@ model Hackathon {
   rules       String
   organizerId Int
   type        HackathonType
+  prize       Int
 
   teams       Team[]
   teamMax     Int

@@ -10,13 +10,17 @@ if (!SECRET) {
   throw new Error('Auth token is not set');
 }
 
-interface JwtPayload {
+export interface JwtPayload {
   userId: number;
   username: string;
-  role: string;
+  role: "ADMIN" | "JUDGE" | "PARTICIPANT";
 }
 
-export const auth = (req: Request, res: Response, next: NextFunction) => {
+export interface AuthRequest extends Request {
+  user?: JwtPayload;
+}
+
+export const auth = (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     // Get token from cookie
     const token = req.cookies.auth_token;
@@ -29,7 +33,7 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
     const decoded = jwt.verify(token, SECRET) as JwtPayload;
 
     // Attach user info to request
-    (req as any).user = decoded;
+    req.user = decoded;
 
     next();
   } catch (error) {
