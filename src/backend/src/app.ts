@@ -1,19 +1,28 @@
 import express from 'express';
 import * as http from 'node:http';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import { setupRoutes } from './router';
-import { run } from 'node:test';
-
 
 dotenv.config();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || 'localhost';
 
-export const runServer = async () => {
+export const createApp = () => {
       const app = express();
+
+      // Middleware
+      app.use(express.json());
+      app.use(express.urlencoded({ extended: true }));
+      app.use(cookieParser());
 
       setupRoutes(app);
 
+      return app;
+};
+
+export const runServer = async () => {
+      const app = createApp();
       const server = http.createServer(app);
 
       server.listen(PORT, () => {
@@ -21,4 +30,7 @@ export const runServer = async () => {
       });
 };
 
-void runServer();
+// Only run server if this is the main module
+if (require.main === module) {
+      void runServer();
+}
