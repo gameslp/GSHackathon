@@ -13,3 +13,51 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Hackathon {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+
+  teams       Team[]
+  teamMax     Int
+  teamMin     Int
+
+  registrationOpen  DateTime
+  startDate         DateTime
+  endDate           DateTime
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Team {
+  id          Int      @id @default(autoincrement())
+  name        String
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id])
+  hackathonId Int
+
+  members     Participant[]
+  invitations TeamInvitation[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TeamInvitation {
+  id               Int      @id @default(autoincrement())
+  teamId           Int
+  participantId    Int
+
+  team      Team     @relation(fields: [teamId], references: [id])
+  participant Participant @relation(fields: [participantId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Participant {
+  id        Int      @id @default(autoincrement())
+  teams     Team[]   
+  invitations TeamInvitation[]
+}
