@@ -1,20 +1,24 @@
 import { prisma } from '../lib/prisma';
 
-export interface CreateSubmissionFileData {
+export interface CreateSubmissionFileFormatData {
+  name: string;
   hackathonId: number;
   description: string;
   extension: string;
   maxSizeKB: number;
+  obligatory?: boolean;
 }
 
-export interface UpdateSubmissionFileData {
+export interface UpdateSubmissionFileFormatData {
+  name?: string;
   description?: string;
   extension?: string;
   maxSizeKB?: number;
+  obligatory?: boolean;
 }
 
-export class SubmissionFileModel {
-  static async create(data: CreateSubmissionFileData) {
+export class SubmissionFileFormatModel {
+  static async create(data: CreateSubmissionFileFormatData) {
     return await prisma.submissionFile.create({
       data,
       include: {
@@ -67,7 +71,7 @@ export class SubmissionFileModel {
     });
   }
 
-  static async update(id: number, data: UpdateSubmissionFileData) {
+  static async update(id: number, data: UpdateSubmissionFileFormatData) {
     return await prisma.submissionFile.update({
       where: { id },
       data,
@@ -89,35 +93,30 @@ export class SubmissionFileModel {
   }
 
   static async validateFileSubmission(
-    hackathonId: number,
+    formatId: number,
     fileName: string,
     fileSizeKB: number
   ): Promise<{ valid: boolean; errors: string[] }> {
-    const requirements = await this.findByHackathon(hackathonId);
+    const format = await this.findById(formatId);
     const errors: string[] = [];
 
-    if (requirements.length === 0) {
-      return { valid: true, errors: [] };
+    if (!format) {
+      return { valid: false, errors: ['Format not found'] };
     }
 
     // Get file extension
     const fileExtension = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
 
-    // Check if any requirement matches
-    const matchingRequirement = requirements.find(req =>
-      req.extension.toLowerCase() === fileExtension
-    );
+    // Check if extension matches
+    if (format.extension.toLowerCase() !== fileExtension) {
+      errors.push(`File extension ${fileExtension} does not match required extension ${format.extension}`);
+    }
 
-    if (!matchingRequirement) {
-      const allowedExtensions = requirements.map(r => r.extension).join(', ');
-      errors.push(`File extension ${fileExtension} not allowed. Allowed extensions: ${allowedExtensions}`);
-    } else {
-      // Check file size
-      if (fileSizeKB > matchingRequirement.maxSizeKB) {
-        errors.push(
-          `File size ${fileSizeKB}KB exceeds maximum allowed size of ${matchingRequirement.maxSizeKB}KB for ${fileExtension} files`
-        );
-      }
+    // Check file size
+    if (fileSizeKB > format.maxSizeKB) {
+      errors.push(
+        `File size ${fileSizeKB}KB exceeds maximum allowed size of ${format.maxSizeKB}KB`
+      );
     }
 
     return {
