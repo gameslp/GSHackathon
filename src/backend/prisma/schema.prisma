@@ -48,6 +48,7 @@ model Hackathon {
   id          Int      @id @default(autoincrement())
   title       String
   description String
+  rules       String
   organizerId Int
   type        HackathonType
 

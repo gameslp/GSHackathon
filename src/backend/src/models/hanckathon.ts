@@ -1,4 +1,0 @@
-class Hackathon {
-  public Hanckathon(){
-  }  
-};
