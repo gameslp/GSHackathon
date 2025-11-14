@@ -26,6 +26,69 @@ model User {
   totpSecret    String   // base32
   totpConfirmed Boolean  @default(false)
   role          Role     @default(PARTICIPANT)
+
+  teams     Team[]   
+  invitations TeamInvitation[]
+  organizedHackathon Hackathon[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Hackathon {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  organizerId Int
+
+  teams       Team[]
+  teamMax     Int
+  teamMin     Int
+
+  registrationOpen  DateTime
+  startDate         DateTime
+  endDate           DateTime
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizer   User     @relation(fields: [organizerId], references: [id])
+  resources   HackathonResource[]
+}
+
+model HackathonResource {
+  id          Int      @id @default(autoincrement())
+  hackathonId Int
+  title       String
+  url         String
+
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Team {
+  id          Int      @id @default(autoincrement())
+  name        String
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id])
+  hackathonId Int
+
+  members     User[]
+  invitations TeamInvitation[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TeamInvitation {
+  id               Int      @id @default(autoincrement())
+  teamId           Int
+  participantId    Int
+
+  team      Team     @relation(fields: [teamId], references: [id])
+  user User @relation(fields: [participantId], references: [id])
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
