@@ -19,6 +19,10 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "resolveJsonModule": true,
+  "paths": {
+    "schemaPath": ["./prisma/schema.prisma"],
+    "@prisma": ["./src/generated/prisma"]
+  }
   },
   "include": ["src"],
   "exclude": ["node_modules"]

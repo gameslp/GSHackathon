@@ -28,6 +28,7 @@ model User {
 
   teams     Team[]   
   invitations TeamInvitation[]
+  organizedHackathon Hackathon[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -37,6 +38,7 @@ model Hackathon {
   id          Int      @id @default(autoincrement())
   title       String
   description String
+  organizerId Int
 
   teams       Team[]
   teamMax     Int
@@ -45,6 +47,21 @@ model Hackathon {
   registrationOpen  DateTime
   startDate         DateTime
   endDate           DateTime
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizer   User     @relation(fields: [organizerId], references: [id])
+  resources   HackathonResource[]
+}
+
+model HackathonResource {
+  id          Int      @id @default(autoincrement())
+  hackathonId Int
+  title       String
+  url         String
+
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id])
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -69,7 +86,7 @@ model TeamInvitation {
   participantId    Int
 
   team      Team     @relation(fields: [teamId], references: [id])
-  participant User @relation(fields: [participantId], references: [id])
+  user User @relation(fields: [participantId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
