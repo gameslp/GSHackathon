@@ -8,7 +8,23 @@
 
 @font-face {
   font-family: 'Alliance';
-  src: url('/fonts/Alliance No.2 Regular.otf') format('opentype');
+  src: url('/fonts/Alliance-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alliance';
+  src: url('/fonts/Alliance-Light-Italic.otf') format('opentype');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alliance';
+  src: url('/fonts/Alliance-Regular.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -16,7 +32,7 @@
 
 @font-face {
   font-family: 'Alliance';
-  src: url('/fonts/Alliance No.2 Medium.otf') format('opentype');
+  src: url('/fonts/Alliance-Medium.otf') format('opentype');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -24,7 +40,15 @@
 
 @font-face {
   font-family: 'Alliance';
-  src: url('/fonts/Alliance No.2 SemiBold.otf') format('opentype');
+  src: url('/fonts/Alliance-Medium-Italic.otf') format('opentype');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alliance';
+  src: url('/fonts/Alliance-SemiBold.otf') format('opentype');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -32,7 +56,15 @@
 
 @font-face {
   font-family: 'Alliance';
-  src: url('/fonts/Alliance No.2 Bold.otf') format('opentype');
+  src: url('/fonts/Alliance-SemiBold-Italic.otf') format('opentype');
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alliance';
+  src: url('/fonts/Alliance-Bold.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -40,7 +72,15 @@
 
 @font-face {
   font-family: 'Alliance';
-  src: url('/fonts/Alliance No.2 ExtraBold.otf') format('opentype');
+  src: url('/fonts/Alliance-Bold-Italic.otf') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alliance';
+  src: url('/fonts/Alliance-ExtraBold.otf') format('opentype');
   font-weight: 800;
   font-style: normal;
   font-display: swap;
@@ -48,7 +88,15 @@
 
 @font-face {
   font-family: 'Alliance';
-  src: url('/fonts/Alliance No.2 Black.otf') format('opentype');
+  src: url('/fonts/Alliance-ExtraBold-Italic.otf') format('opentype');
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alliance';
+  src: url('/fonts/Alliance-Black.otf') format('opentype');
   font-weight: 900;
   font-style: normal;
   font-display: swap;
