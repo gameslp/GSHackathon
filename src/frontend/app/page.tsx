@@ -24,7 +24,7 @@ export default function Home() {
                 Compete. Learn. Showcase Your Data Science Skills.
               </h1>
               <p className="text-xl md:text-2xl mb-8 text-white/90">
-                Join the world's largest community of data scientists and machine learning engineers. 
+                Join the world&rsquo;s largest community of data scientists and machine learning engineers. 
                 Solve real-world problems, win prizes, and advance your career.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -173,7 +173,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button variant="primary" size="lg" href="/signup">
-                Join Now - It's Free
+                Join Now - It&rsquo;s Free
               </Button>
               <Button variant="outline" size="lg" href="/learn" className="border-white text-white hover:bg-white hover:text-black">
                 Learn More

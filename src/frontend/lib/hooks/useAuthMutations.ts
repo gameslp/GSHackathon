@@ -7,11 +7,11 @@ import {
   getAuthMe,
   postAuthLogout,
   patchAuthProfile,
-  type RegisterStartRequest,
   type RegisterConfirmRequest,
   type LoginRequest,
   type UserProfile,
 } from '@/lib/api/client';
+import { unwrapResponse } from '@/lib/api/utils';
 
 // Query keys
 export const authKeys = {
@@ -26,8 +26,18 @@ export function useCurrentUser() {
   return useQuery({
     queryKey: authKeys.me(),
     queryFn: async () => {
-      const response = await getAuthMe();
-      return response.data as UserProfile;
+      try {
+        const response = await getAuthMe();
+        return unwrapResponse<UserProfile>(response);
+      } catch (err: unknown) {
+        if (typeof err === 'object' && err !== null && 'status' in err) {
+          const status = (err as { status?: number }).status;
+          if (status === 401) {
+            return null;
+          }
+        }
+        throw err;
+      }
     },
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -46,7 +56,7 @@ export function useRegisterStart() {
       const response = await postAuthRegisterStart({
         body: { username },
       });
-      return response.data;
+      return unwrapResponse(response);
     },
   });
 }
@@ -65,7 +75,7 @@ export function useRegisterConfirm() {
       const response = await postAuthRegisterConfirm({
         body: data,
       });
-      return response.data;
+      return unwrapResponse(response);
     },
     onSuccess: () => {
       router.push('/login?registered=true');
@@ -88,13 +98,12 @@ export function useLogin() {
       const response = await postAuthLogin({
         body: credentials,
       });
-      return response.data;
+      return unwrapResponse(response);
     },
     onSuccess: (data) => {
       // Update user query cache
       if (data && data.user) {
         queryClient.setQueryData(authKeys.me(), data.user);
-        localStorage.setItem('user', JSON.stringify(data.user));
       }
       window.dispatchEvent(new Event('auth-change'));
       router.push('/dashboard');
@@ -114,12 +123,11 @@ export function useLogout() {
   return useMutation({
     mutationFn: async () => {
       const response = await postAuthLogout();
-      return response.data;
+      return unwrapResponse(response);
     },
     onSuccess: () => {
       // Clear all queries
       queryClient.clear();
-      localStorage.removeItem('user');
       window.dispatchEvent(new Event('auth-change'));
       router.push('/');
     },
@@ -138,13 +146,12 @@ export function useUpdateProfile() {
       const response = await patchAuthProfile({
         body: data,
       });
-      return response.data;
+      return unwrapResponse(response);
     },
     onSuccess: (data) => {
       // Update user query cache
       if (data && data.user) {
         queryClient.setQueryData(authKeys.me(), data.user);
-        localStorage.setItem('user', JSON.stringify(data.user));
       }
       queryClient.invalidateQueries({ queryKey: authKeys.me() });
     },

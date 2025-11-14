@@ -1,4 +1,4 @@
-import { Challenge, Category, StatisticCard, Hackathon } from '@/types';
+import { Challenge, Category, StatisticCard, Hackathon, Survey } from '@/types';
 
 export const getFeaturedChallenges = (): Challenge[] => {
   const now = new Date('2025-11-14');
@@ -261,7 +261,7 @@ export const getUpcomingChallenges = (): Challenge[] => {
 
 // Mock API for Surveys
 export const getSurveyByHackathonId = (hackathonId: number) => {
-  const surveys: Record<number, any> = {
+  const surveys: Record<number, Survey> = {
     1: {
       id: 1,
       hackathonId: 1,
@@ -405,7 +405,11 @@ export const getSurveyByHackathonId = (hackathonId: number) => {
   };
 };
 
-export const submitSurveyResponse = (surveyId: number, applicationId: number, answers: Record<string, any>) => {
+export const submitSurveyResponse = (
+  surveyId: number,
+  applicationId: number,
+  answers: Record<string, string>
+) => {
   // Mock API call
   return new Promise((resolve) => {
     setTimeout(() => {

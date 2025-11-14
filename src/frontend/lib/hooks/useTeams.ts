@@ -6,7 +6,11 @@ import {
   getTeamsHackathonByHackathonIdSurvey,
   type PostTeamsCreateData,
   type PostTeamsJoinData,
+  type TeamDetails,
+  type PostTeamsCreateResponses,
+  type PostTeamsJoinResponses,
 } from '@/lib/api/client';
+import { unwrapResponse } from '@/lib/api/utils';
 
 // Query keys
 export const teamKeys = {
@@ -18,16 +22,36 @@ export const teamKeys = {
 /**
  * Hook to get user's team for a specific hackathon
  */
-export function useMyTeam(hackathonId: number) {
+export function useMyTeam(
+  hackathonId?: number,
+  options?: {
+    enabled?: boolean;
+  }
+) {
   return useQuery({
-    queryKey: teamKeys.myTeam(hackathonId),
+    queryKey: teamKeys.myTeam(hackathonId || -1),
     queryFn: async () => {
-      const response = await getTeamsHackathonByHackathonId({
-        path: { hackathonId },
-      });
-      return response.data;
+      if (!hackathonId) {
+        return null;
+      }
+
+      try {
+        const response = await getTeamsHackathonByHackathonId({
+          path: { hackathonId },
+        });
+        const data = unwrapResponse<{ team?: TeamDetails }>(response);
+        return data?.team ?? null;
+      } catch (err: unknown) {
+        if (typeof err === 'object' && err !== null && 'status' in err) {
+          const status = (err as { status?: number }).status;
+          if (status === 404) {
+            return null;
+          }
+        }
+        throw err;
+      }
     },
-    enabled: !!hackathonId,
+    enabled: !!hackathonId && (options?.enabled ?? true),
   });
 }
 
@@ -41,11 +65,18 @@ export function useHackathonSurvey(hackathonId: number) {
       const response = await getTeamsHackathonByHackathonIdSurvey({
         path: { hackathonId },
       });
-      return response.data;
+      return unwrapResponse(response);
     },
     enabled: !!hackathonId,
   });
 }
+
+const invalidateMyTeam = (team: TeamDetails | undefined, queryClient: ReturnType<typeof useQueryClient>) => {
+  const hackathonId = team?.hackathon?.id;
+  if (hackathonId) {
+    queryClient.invalidateQueries({ queryKey: teamKeys.myTeam(hackathonId) });
+  }
+};
 
 /**
  * Hook to create a new team
@@ -56,15 +87,11 @@ export function useCreateTeam() {
   return useMutation({
     mutationFn: async (data: PostTeamsCreateData) => {
       const response = await postTeamsCreate(data);
-      return response.data;
+      return unwrapResponse<PostTeamsCreateResponses['201']>(response);
     },
     onSuccess: (data) => {
-      // Invalidate the my team query for this hackathon
-      if (data && data.team && 'hackathon' in data.team) {
-        const hackathonId = (data.team as any).hackathon?.id;
-        if (hackathonId) {
-          queryClient.invalidateQueries({ queryKey: teamKeys.myTeam(hackathonId) });
-        }
+      if (data?.team) {
+        invalidateMyTeam(data.team, queryClient);
       }
     },
   });
@@ -79,15 +106,11 @@ export function useJoinTeam() {
   return useMutation({
     mutationFn: async (data: PostTeamsJoinData) => {
       const response = await postTeamsJoin(data);
-      return response.data;
+      return unwrapResponse<PostTeamsJoinResponses['200']>(response);
     },
     onSuccess: (data) => {
-      // Invalidate the my team query for this hackathon
-      if (data && data.team && 'hackathon' in data.team) {
-        const hackathonId = (data.team as any).hackathon?.id;
-        if (hackathonId) {
-          queryClient.invalidateQueries({ queryKey: teamKeys.myTeam(hackathonId) });
-        }
+      if (data?.team) {
+        invalidateMyTeam(data.team, queryClient);
       }
     },
   });

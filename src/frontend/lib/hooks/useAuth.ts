@@ -13,6 +13,7 @@ export function useAuth() {
     loading,
     error: error?.message || null,
     logout,
+    isLoggingOut: logoutMutation.isPending,
     refetch,
   };
 }
