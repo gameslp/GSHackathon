@@ -51,6 +51,60 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        UserProfile: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'integer',
+              description: 'User ID',
+            },
+            username: {
+              type: 'string',
+              description: 'Username',
+            },
+            role: {
+              type: 'string',
+              enum: ['ADMIN', 'JUDGE', 'PARTICIPANT'],
+              description: 'User role',
+            },
+            name: {
+              type: 'string',
+              nullable: true,
+              description: 'User first name',
+            },
+            surname: {
+              type: 'string',
+              nullable: true,
+              description: 'User last name',
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+              nullable: true,
+              description: 'User email address',
+            },
+            totpConfirmed: {
+              type: 'boolean',
+              description: 'Whether user has confirmed TOTP setup',
+            },
+            profileFillPercentage: {
+              type: 'integer',
+              minimum: 0,
+              maximum: 100,
+              description: 'Percentage of profile fields filled (name, surname, email)',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'User creation timestamp',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'User last update timestamp',
+            },
+          },
+        },
         UserWithDetails: {
           type: 'object',
           properties: {
@@ -174,6 +228,192 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        TeamDetails: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'integer',
+              description: 'Team ID',
+            },
+            name: {
+              type: 'string',
+              description: 'Team name',
+            },
+            invitationCode: {
+              type: 'string',
+              pattern: '^[0-9]{6}$',
+              description: '6-digit invitation code',
+            },
+            captainId: {
+              type: 'integer',
+              description: 'Team captain user ID',
+            },
+            hackathon: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'integer',
+                },
+                title: {
+                  type: 'string',
+                },
+                teamMax: {
+                  type: 'integer',
+                },
+                teamMin: {
+                  type: 'integer',
+                },
+              },
+            },
+            members: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'integer',
+                  },
+                  username: {
+                    type: 'string',
+                  },
+                  name: {
+                    type: 'string',
+                    nullable: true,
+                  },
+                  surname: {
+                    type: 'string',
+                    nullable: true,
+                  },
+                },
+              },
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+            },
+          },
+        },
+        TeamSummary: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'integer',
+            },
+            name: {
+              type: 'string',
+            },
+            invitationCode: {
+              type: 'string',
+            },
+            captainId: {
+              type: 'integer',
+            },
+            isAccepted: {
+              type: 'boolean',
+              description: 'Whether team is accepted by admin',
+            },
+            memberCount: {
+              type: 'integer',
+              description: 'Number of members in team',
+            },
+            members: {
+              type: 'array',
+              items: {
+                type: 'object',
+              },
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+            },
+          },
+        },
+        TeamWithSurvey: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'integer',
+            },
+            name: {
+              type: 'string',
+            },
+            invitationCode: {
+              type: 'string',
+            },
+            captainId: {
+              type: 'integer',
+            },
+            isAccepted: {
+              type: 'boolean',
+            },
+            hackathon: {
+              type: 'object',
+            },
+            memberResponses: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  member: {
+                    type: 'object',
+                    properties: {
+                      id: {
+                        type: 'integer',
+                      },
+                      username: {
+                        type: 'string',
+                      },
+                      name: {
+                        type: 'string',
+                        nullable: true,
+                      },
+                      surname: {
+                        type: 'string',
+                        nullable: true,
+                      },
+                      email: {
+                        type: 'string',
+                        nullable: true,
+                      },
+                    },
+                  },
+                  surveyResponses: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        questionId: {
+                          type: 'integer',
+                        },
+                        question: {
+                          type: 'string',
+                        },
+                        answer: {
+                          type: 'string',
+                        },
+                        order: {
+                          type: 'integer',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+            },
+          },
+        },
       },
     },
     tags: [
@@ -184,6 +424,14 @@ const options: swaggerJsdoc.Options = {
       {
         name: 'Admin',
         description: 'Admin-only user management endpoints',
+      },
+      {
+        name: 'Teams',
+        description: 'Hackathon team management endpoints',
+      },
+      {
+        name: 'Hackathon Management',
+        description: 'Admin-only hackathon and team management',
       },
       {
         name: 'Health',

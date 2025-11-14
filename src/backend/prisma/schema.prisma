@@ -36,9 +36,14 @@ model User {
   totpConfirmed Boolean  @default(false)
   role          Role     @default(PARTICIPANT)
 
-  teams     Team[]   
-  invitations TeamInvitation[]
+  // Profile fields
+  name          String?
+  surname       String?
+  email         String?  @unique
+
+  teams              Team[]
   organizedHackathon Hackathon[]
+  surveyResponses    SurveyResponse[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -47,15 +52,16 @@ model User {
 model Hackathon {
   id          Int      @id @default(autoincrement())
   title       String
-  description String
-  rules       String
+  description String   @db.Text
+  rules       String   @db.Text
   organizerId Int
   type        HackathonType
   prize       Int
 
-  teams       Team[]
-  teamMax     Int
-  teamMin     Int
+  teams          Team[]
+  teamMax        Int
+  teamMin        Int
+  surveyQuestions SurveyQuestion[]
 
   registrationOpen  DateTime
   startDate         DateTime
@@ -81,26 +87,47 @@ model HackathonResource {
 }
 
 model Team {
-  id          Int      @id @default(autoincrement())
-  name        String
-  hackathon   Hackathon @relation(fields: [hackathonId], references: [id])
-  hackathonId Int
+  id             Int      @id @default(autoincrement())
+  name           String
+  invitationCode String   @unique // 6-digit code
+  captainId      Int      // Team captain/creator
+  isAccepted     Boolean  @default(false) // Admin acceptance
+  hackathon      Hackathon @relation(fields: [hackathonId], references: [id])
+  hackathonId    Int
 
-  members     User[]
-  invitations TeamInvitation[]
+  members        User[]
+  surveyResponses SurveyResponse[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model SurveyQuestion {
+  id          Int      @id @default(autoincrement())
+  hackathonId Int
+  question    String   @db.Text
+  order       Int      // Display order
+
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  responses   SurveyResponse[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
-model TeamInvitation {
-  id               Int      @id @default(autoincrement())
-  teamId           Int
-  participantId    Int
+model SurveyResponse {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  teamId     Int
+  userId     Int
+  answer     String   @db.Text
 
-  team      Team     @relation(fields: [teamId], references: [id])
-  user User @relation(fields: [participantId], references: [id])
+  question   SurveyQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([questionId, teamId, userId])
 }
