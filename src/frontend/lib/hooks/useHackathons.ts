@@ -12,6 +12,7 @@ import {
   type PutHackathonsByIdData,
   type DeleteHackathonsByIdData,
 } from '@/lib/api/client';
+import { unwrapResponse } from '@/lib/api/utils';
 
 // Query keys
 export const hackathonKeys = {
@@ -32,7 +33,7 @@ export function useHackathons(params?: GetHackathonsData) {
     queryKey: hackathonKeys.list(params || {}),
     queryFn: async () => {
       const response = await getHackathons(params);
-      return response.data;
+      return unwrapResponse(response);
     },
   });
 }
@@ -45,7 +46,7 @@ export function useHackathon(id: number) {
     queryKey: hackathonKeys.detail(id),
     queryFn: async () => {
       const response = await getHackathonsById({ path: { id } });
-      return response.data;
+      return unwrapResponse(response);
     },
     enabled: !!id,
   });
@@ -59,7 +60,7 @@ export function useActiveHackathons() {
     queryKey: hackathonKeys.active(),
     queryFn: async () => {
       const response = await getHackathonsActive();
-      return response.data;
+      return unwrapResponse(response);
     },
   });
 }
@@ -72,7 +73,7 @@ export function useUpcomingHackathons() {
     queryKey: hackathonKeys.upcoming(),
     queryFn: async () => {
       const response = await getHackathonsUpcoming();
-      return response.data;
+      return unwrapResponse(response);
     },
   });
 }
@@ -86,7 +87,7 @@ export function useCreateHackathon() {
   return useMutation({
     mutationFn: async (data: PostHackathonsData) => {
       const response = await postHackathons(data);
-      return response.data;
+      return unwrapResponse(response);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: hackathonKeys.lists() });
@@ -101,9 +102,18 @@ export function useUpdateHackathon() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: PutHackathonsByIdData }) => {
-      const response = await putHackathonsById({ path: { id }, ...data } as any);
-      return response.data;
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: PutHackathonsByIdData['body'];
+    }) => {
+      const response = await putHackathonsById({
+        path: { id },
+        body: data,
+      });
+      return unwrapResponse(response);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: hackathonKeys.detail(variables.id) });
@@ -121,7 +131,7 @@ export function useDeleteHackathon() {
   return useMutation({
     mutationFn: async (id: number) => {
       const response = await deleteHackathonsById({ path: { id } });
-      return response.data;
+      return unwrapResponse(response);
     },
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: hackathonKeys.detail(id) });

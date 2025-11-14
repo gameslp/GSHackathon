@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Button from '@/lib/components/Button';
@@ -13,15 +13,12 @@ export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const defaultSuccessMessage = searchParams.get('registered') === 'true'
+    ? 'Registration successful! Please log in with your credentials.'
+    : '';
+  const [successMessage, setSuccessMessage] = useState(defaultSuccessMessage);
 
   const loginMutation = useLogin();
-
-  useEffect(() => {
-    if (searchParams.get('registered') === 'true') {
-      setSuccessMessage('Registration successful! Please log in with your credentials.');
-    }
-  }, [searchParams]);
 
   const handleUsernameSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -54,8 +51,8 @@ export default function LoginPage() {
     loginMutation.mutate(
       { username, token: code },
       {
-        onError: (error: any) => {
-          setError(error?.message || 'Invalid credentials');
+        onError: (mutationError) => {
+          setError(mutationError instanceof Error ? mutationError.message : 'Invalid credentials');
         },
       }
     );

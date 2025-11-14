@@ -9,14 +9,20 @@ import {
   postHackathonsTeamsByTeamIdReject,
   type GetAdminUsersData,
   type PatchAdminUsersByIdRoleData,
+  type GetHackathonsByHackathonIdTeamsData,
+  type GetHackathonsTeamsByTeamIdData,
+  type PostHackathonsTeamsByTeamIdAcceptResponses,
+  type PostHackathonsTeamsByTeamIdRejectResponses,
 } from '@/lib/api/client';
+import { unwrapResponse } from '@/lib/api/utils';
 
 // Query keys
 export const adminKeys = {
   all: ['admin'] as const,
   users: () => [...adminKeys.all, 'users'] as const,
   usersList: (filters: GetAdminUsersData) => [...adminKeys.users(), filters] as const,
-  hackathonTeams: (hackathonId: number) => [...adminKeys.all, 'hackathon', hackathonId, 'teams'] as const,
+  hackathonTeams: (hackathonId: number, filters?: unknown) =>
+    [...adminKeys.all, 'hackathon', hackathonId, 'teams', filters] as const,
   teamDetail: (teamId: number) => [...adminKeys.all, 'team', teamId] as const,
 };
 
@@ -28,7 +34,7 @@ export function useAdminUsers(params?: GetAdminUsersData) {
     queryKey: adminKeys.usersList(params || {}),
     queryFn: async () => {
       const response = await getAdminUsers(params);
-      return response.data;
+      return unwrapResponse(response);
     },
   });
 }
@@ -40,12 +46,18 @@ export function useUpdateUserRole() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ userId, role }: { userId: number; role: 'ADMIN' | 'JUDGE' | 'PARTICIPANT' }) => {
+    mutationFn: async ({
+      userId,
+      role,
+    }: {
+      userId: number;
+      role: NonNullable<PatchAdminUsersByIdRoleData['body']>['role'];
+    }) => {
       const response = await patchAdminUsersByIdRole({
         path: { id: userId },
         body: { role },
-      } as any);
-      return response.data;
+      });
+      return unwrapResponse(response);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.users() });
@@ -62,7 +74,7 @@ export function useDeleteUser() {
   return useMutation({
     mutationFn: async (userId: number) => {
       const response = await deleteAdminUsersById({ path: { id: userId } });
-      return response.data;
+      return unwrapResponse(response);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.users() });
@@ -73,15 +85,18 @@ export function useDeleteUser() {
 /**
  * Hook to get all teams for a hackathon (Admin only)
  */
-export function useHackathonTeams(hackathonId: number, params?: any) {
+export function useHackathonTeams(
+  hackathonId: number,
+  params?: Pick<GetHackathonsByHackathonIdTeamsData, 'query'>
+) {
   return useQuery({
-    queryKey: adminKeys.hackathonTeams(hackathonId),
+    queryKey: adminKeys.hackathonTeams(hackathonId, params?.query),
     queryFn: async () => {
       const response = await getHackathonsByHackathonIdTeams({
         path: { hackathonId },
-        ...params,
-      } as any);
-      return response.data;
+        query: params?.query,
+      });
+      return unwrapResponse(response);
     },
     enabled: !!hackathonId,
   });
@@ -95,9 +110,9 @@ export function useTeamDetail(teamId: number) {
     queryKey: adminKeys.teamDetail(teamId),
     queryFn: async () => {
       const response = await getHackathonsTeamsByTeamId({
-        path: { teamId },
+        path: { teamId } satisfies GetHackathonsTeamsByTeamIdData['path'],
       });
-      return response.data;
+      return unwrapResponse(response);
     },
     enabled: !!teamId,
   });
@@ -110,16 +125,18 @@ export function useAcceptTeam() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (teamId: number) => {
+    mutationFn: async ({ teamId, hackathonId }: { teamId: number; hackathonId?: number }) => {
       const response = await postHackathonsTeamsByTeamIdAccept({
         path: { teamId },
       });
-      return response.data;
+      const data = unwrapResponse<PostHackathonsTeamsByTeamIdAcceptResponses['200']>(response);
+      return { data, hackathonId };
     },
-    onSuccess: (_, teamId) => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.teamDetail(teamId) });
-      // Also invalidate the hackathon teams list
-      queryClient.invalidateQueries({ queryKey: [...adminKeys.all, 'hackathon'] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.teamDetail(variables.teamId) });
+      if (variables.hackathonId) {
+        queryClient.invalidateQueries({ queryKey: adminKeys.hackathonTeams(variables.hackathonId) });
+      }
     },
   });
 }
@@ -131,16 +148,18 @@ export function useRejectTeam() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (teamId: number) => {
+    mutationFn: async ({ teamId, hackathonId }: { teamId: number; hackathonId?: number }) => {
       const response = await postHackathonsTeamsByTeamIdReject({
         path: { teamId },
       });
-      return response.data;
+      const data = unwrapResponse<PostHackathonsTeamsByTeamIdRejectResponses['200']>(response);
+      return { data, hackathonId };
     },
-    onSuccess: (_, teamId) => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.teamDetail(teamId) });
-      // Also invalidate the hackathon teams list
-      queryClient.invalidateQueries({ queryKey: [...adminKeys.all, 'hackathon'] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.teamDetail(variables.teamId) });
+      if (variables.hackathonId) {
+        queryClient.invalidateQueries({ queryKey: adminKeys.hackathonTeams(variables.hackathonId) });
+      }
     },
   });
 }

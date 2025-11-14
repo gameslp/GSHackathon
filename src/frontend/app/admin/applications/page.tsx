@@ -1,257 +1,362 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useMemo, useState } from 'react';
 import Header from '@/lib/components/Header';
 import Footer from '@/lib/components/Footer';
+import Button from '@/lib/components/Button';
+import { useAuth } from '@/lib/hooks/useAuth';
+import { useHackathons } from '@/lib/hooks/useHackathons';
+import {
+  useHackathonTeams,
+  useTeamDetail,
+  useAcceptTeam,
+  useRejectTeam,
+} from '@/lib/hooks/useAdmin';
+
+const LIMIT = 10;
 
 export default function AdminApplicationsPage() {
-  const router = useRouter();
-  const [applications, setApplications] = useState<any[]>([]);
-  const [filter, setFilter] = useState<string>('all');
-  const [selectedApp, setSelectedApp] = useState<any>(null);
-  const [adminComment, setAdminComment] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user, loading, error } = useAuth();
+  const [selectedHackathonId, setSelectedHackathonId] = useState<number | null>(null);
+  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'accepted' | 'pending'>('all');
 
-  useEffect(() => {
-    const user = localStorage.getItem('username');
-    const authToken = localStorage.getItem('authToken');
-    
-    if (!user || !authToken) {
-      router.push('/login');
-      return;
+  const hackathonQueryParams = useMemo(() => ({ query: { limit: 50 } }), []);
+  const { data: hackathonResponse, isLoading: hackathonLoading } = useHackathons(hackathonQueryParams);
+  const hackathons = useMemo(() => hackathonResponse?.hackathons ?? [], [hackathonResponse]);
+  const activeHackathonId = useMemo(() => {
+    if (selectedHackathonId && hackathons.some((hackathon) => hackathon.id === selectedHackathonId)) {
+      return selectedHackathonId;
     }
+    return hackathons[0]?.id ?? null;
+  }, [hackathons, selectedHackathonId]);
 
-    // In production, check if user has admin role
-    setIsAuthenticated(true);
+  const teamQueryParams = useMemo(() => ({ query: { page, limit: LIMIT } }), [page]);
+  const { data: teamsResponse, isLoading: teamsLoading } = useHackathonTeams(
+    activeHackathonId ?? 0,
+    teamQueryParams
+  );
+  const teams = useMemo(() => teamsResponse?.teams ?? [], [teamsResponse]);
+  const pagination = teamsResponse?.pagination;
 
-    // Load all applications
-    const apps = JSON.parse(localStorage.getItem('applications') || '{}');
-    const allApps = Object.values(apps);
-    setApplications(allApps);
-  }, [router]);
-
-  const filteredApplications = applications.filter(app => {
-    if (filter === 'all') return true;
-    return app.status === filter;
-  });
-
-  const handleApprove = (appId: number) => {
-    const apps = JSON.parse(localStorage.getItem('applications') || '{}');
-    
-    if (apps[appId]) {
-      apps[appId] = {
-        ...apps[appId],
-        status: 'approved',
-        adminDecision: 'approved',
-        adminDecisionAt: new Date().toISOString(),
-        adminComment: adminComment || null,
-      };
-
-      localStorage.setItem('applications', JSON.stringify(apps));
-      setApplications(Object.values(apps));
-      setSelectedApp(null);
-      setAdminComment('');
+  const filteredTeams = useMemo(() => {
+    if (statusFilter === 'all') {
+      return teams;
     }
+    if (statusFilter === 'accepted') {
+      return teams.filter((team) => team.isAccepted);
+    }
+    return teams.filter((team) => !team.isAccepted);
+  }, [teams, statusFilter]);
+
+  const activeTeamId = useMemo(() => {
+    if (selectedTeamId && filteredTeams.some((team) => team.id === selectedTeamId)) {
+      return selectedTeamId;
+    }
+    return filteredTeams[0]?.id ?? null;
+  }, [filteredTeams, selectedTeamId]);
+
+  const {
+    data: teamDetailResponse,
+    isLoading: teamDetailLoading,
+  } = useTeamDetail(activeTeamId ?? 0);
+  const teamDetail = activeTeamId ? teamDetailResponse?.team : null;
+
+  const acceptTeam = useAcceptTeam();
+  const rejectTeam = useRejectTeam();
+
+  const handleDecision = (decision: 'accept' | 'reject') => {
+    if (!activeTeamId) return;
+    const mutation = decision === 'accept' ? acceptTeam : rejectTeam;
+    mutation.mutate({
+      teamId: activeTeamId,
+      hackathonId: activeHackathonId ?? undefined,
+    });
   };
 
-  const handleReject = (appId: number) => {
-    if (!adminComment.trim()) {
-      alert('Proszę podać powód odrzucenia');
-      return;
-    }
-
-    const apps = JSON.parse(localStorage.getItem('applications') || '{}');
-    
-    if (apps[appId]) {
-      apps[appId] = {
-        ...apps[appId],
-        status: 'rejected',
-        adminDecision: 'rejected',
-        adminDecisionAt: new Date().toISOString(),
-        adminComment: adminComment,
-      };
-
-      localStorage.setItem('applications', JSON.stringify(apps));
-      setApplications(Object.values(apps));
-      setSelectedApp(null);
-      setAdminComment('');
-    }
-  };
-
-  if (!isAuthenticated) {
-    return null;
+  if (loading || hackathonLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="container mx-auto px-4 py-12">
+          <div className="bg-white border border-gray-200 rounded-lg p-12 text-center text-gray-600">
+            Loading admin dashboard...
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
-  const stats = {
-    total: applications.length,
-    pending: applications.filter(a => a.status === 'pending_approval').length,
-    approved: applications.filter(a => a.status === 'approved').length,
-    rejected: applications.filter(a => a.status === 'rejected').length,
-  };
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="container mx-auto px-4 py-12">
+          <div className="bg-white border border-red-200 rounded-lg p-12 text-center text-red-600">
+            {error}
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="container mx-auto px-4 py-12">
+          <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+            <p className="text-lg text-gray-700 mb-4">You must be signed in as an admin.</p>
+            <Button variant="primary" href="/login">
+              Sign In
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (user.role !== 'ADMIN') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="container mx-auto px-4 py-12">
+          <div className="bg-white border border-yellow-200 rounded-lg p-12 text-center">
+            <p className="text-lg text-gray-700">
+              You do not have access to the admin applications dashboard.
+            </p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="container mx-auto px-4 py-12">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-black mb-6">Panel Administratora - Zgłoszenia</h1>
-
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <p className="text-gray-600 mb-2">Wszystkie</p>
-              <p className="text-4xl font-bold text-black">{stats.total}</p>
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-black">Team applications</h1>
+              <p className="text-gray-600">
+                Review team submissions and manage access for each hackathon.
+              </p>
             </div>
-            <div className="bg-white border border-yellow-200 rounded-lg p-6">
-              <p className="text-gray-600 mb-2">Oczekujące</p>
-              <p className="text-4xl font-bold text-yellow-600">{stats.pending}</p>
-            </div>
-            <div className="bg-white border border-green-200 rounded-lg p-6">
-              <p className="text-gray-600 mb-2">Zaakceptowane</p>
-              <p className="text-4xl font-bold text-green-600">{stats.approved}</p>
-            </div>
-            <div className="bg-white border border-red-200 rounded-lg p-6">
-              <p className="text-gray-600 mb-2">Odrzucone</p>
-              <p className="text-4xl font-bold text-red-600">{stats.rejected}</p>
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
-            <div className="flex gap-2">
-              {['all', 'pending_approval', 'approved', 'rejected'].map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    filter === f
-                      ? 'bg-primary text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {f === 'all' && 'Wszystkie'}
-                  {f === 'pending_approval' && 'Oczekujące'}
-                  {f === 'approved' && 'Zaakceptowane'}
-                  {f === 'rejected' && 'Odrzucone'}
-                </button>
-              ))}
+            <div className="flex gap-3">
+              <select
+                value={activeHackathonId ?? ''}
+                onChange={(event) => {
+                  setSelectedHackathonId(Number(event.target.value));
+                  setSelectedTeamId(null);
+                  setPage(1);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm"
+              >
+                {hackathons.map((hackathon) => (
+                  <option key={hackathon.id} value={hackathon.id}>
+                    {hackathon.title}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={statusFilter}
+                onChange={(event) => {
+                  setStatusFilter(event.target.value as typeof statusFilter);
+                  setSelectedTeamId(null);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm"
+              >
+                <option value="all">All teams</option>
+                <option value="pending">Pending review</option>
+                <option value="accepted">Accepted</option>
+              </select>
             </div>
           </div>
 
-          {/* Applications List */}
-          <div className="space-y-4">
-            {filteredApplications.length === 0 ? (
-              <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-                <p className="text-gray-600">Brak zgłoszeń do wyświetlenia</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white border border-gray-200 rounded-lg">
+              <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-black">Teams</h2>
+                <span className="text-sm text-gray-500">
+                  {filteredTeams.length} of {teams.length} ({pagination?.total ?? 0} total)
+                </span>
               </div>
-            ) : (
-              filteredApplications.map((app) => (
-                <div
-                  key={app.id}
-                  className="bg-white border border-gray-200 rounded-lg p-6"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-black mb-2">
-                        {app.challengeTitle}
-                      </h3>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                        <span>👤 {app.username}</span>
-                        <span>📅 {new Date(app.createdAt).toLocaleDateString('pl-PL')}</span>
-                        {app.participationType === 'team' && (
-                          <span>👥 Zespół: {app.teamName} (kod: {app.teamCode})</span>
-                        )}
+              <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
+                {teamsLoading ? (
+                  <div className="p-6 text-center text-gray-500">Loading teams...</div>
+                ) : filteredTeams.length === 0 ? (
+                  <div className="p-6 text-center text-gray-500">No teams to review.</div>
+                ) : (
+                  filteredTeams.map((team) => (
+                    <button
+                      key={team.id}
+                      className={`w-full text-left px-6 py-4 hover:bg-gray-50 transition-colors ${
+                        activeTeamId === team.id ? 'bg-blue-50' : ''
+                      }`}
+                      onClick={() => setSelectedTeamId(team.id!)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-lg font-semibold text-black">{team.name}</p>
+                          <p className="text-sm text-gray-600">
+                            Invitation code: <span className="font-mono">{team.invitationCode}</span>
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Created on {new Date(team.createdAt!).toLocaleString()}
+                          </p>
+                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            team.isAccepted
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
+                          {team.isAccepted ? 'Accepted' : 'Pending'}
+                        </span>
                       </div>
+                      <p className="text-sm text-gray-500 mt-2">
+                        Members: <strong>{team.memberCount ?? team.members?.length ?? 0}</strong>
+                      </p>
+                    </button>
+                  ))
+                )}
+              </div>
+              {pagination && (
+                <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between text-sm text-gray-600">
+                  <button
+                    className="text-primary disabled:text-gray-400"
+                    disabled={page <= 1}
+                    onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                  >
+                    Previous
+                  </button>
+                  <span>
+                    Page {page} of {pagination.totalPages ?? 1}
+                  </span>
+                  <button
+                    className="text-primary disabled:text-gray-400"
+                    disabled={pagination.totalPages ? page >= pagination.totalPages : true}
+                    onClick={() => setPage((prev) => prev + 1)}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              {!activeTeamId ? (
+                <div className="text-gray-500 text-center py-20">
+                  Select a team to view details.
+                </div>
+              ) : teamDetailLoading ? (
+                <div className="text-gray-500 text-center py-20">Loading team details...</div>
+              ) : !teamDetail ? (
+                <div className="text-gray-500 text-center py-20">
+                  Unable to load team information.
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold text-black">{teamDetail.name}</h2>
+                      <p className="text-sm text-gray-600">
+                        Invitation code:{' '}
+                        <span className="font-mono text-black">{teamDetail.invitationCode}</span>
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Members: {teamDetail.members?.length ?? 0} /{' '}
+                        {teamDetail.hackathon?.teamMax ?? '-'}
+                      </p>
                     </div>
                     <span
-                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        app.status === 'pending_approval'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : app.status === 'approved'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        teamDetail.isAccepted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                       }`}
                     >
-                      {app.status === 'pending_approval' && 'Oczekuje'}
-                      {app.status === 'approved' && 'Zaakceptowane'}
-                      {app.status === 'rejected' && 'Odrzucone'}
+                      {teamDetail.isAccepted ? 'Accepted' : 'Pending review'}
                     </span>
                   </div>
 
-                  {app.surveyData && (
-                    <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                      <h4 className="font-semibold text-black mb-3">Odpowiedzi z ankiety:</h4>
-                      <div className="space-y-2 text-sm">
-                        <div>
-                          <span className="font-medium text-gray-700">Doświadczenie:</span>{' '}
-                          <span className="text-gray-900">{app.surveyData.experience}</span>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700">Dostępność:</span>{' '}
-                          <span className="text-gray-900">{app.surveyData.availability} godzin/tydzień</span>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700">Motywacja:</span>{' '}
-                          <p className="text-gray-900 mt-1">{app.surveyData.motivation}</p>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700">Umiejętności:</span>{' '}
-                          <p className="text-gray-900 mt-1">{app.surveyData.skills}</p>
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-black">Members</h3>
+                    {teamDetail.members?.map((member) => (
+                      <div key={member.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-black">{member.username}</p>
+                            <p className="text-sm text-gray-500">
+                              {member.name ? `${member.name} ${member.surname ?? ''}` : 'Profile incomplete'}
+                            </p>
+                          </div>
+                          {member.id === teamDetail.captainId && (
+                            <span className="text-xs font-semibold px-2 py-1 bg-blue-50 text-blue-700 rounded-full">
+                              Captain
+                            </span>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  )}
+                    ))}
+                  </div>
 
-                  {app.status === 'pending_approval' && (
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => setSelectedApp(app.id === selectedApp ? null : app.id)}
-                        className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-medium transition-colors"
-                      >
-                        {selectedApp === app.id ? 'Anuluj' : 'Podejmij decyzję'}
-                      </button>
-                    </div>
-                  )}
-
-                  {selectedApp === app.id && (
-                    <div className="mt-4 p-4 border-2 border-primary rounded-lg">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Komentarz (wymagany dla odrzucenia)
-                      </label>
-                      <textarea
-                        value={adminComment}
-                        onChange={(e) => setAdminComment(e.target.value)}
-                        rows={3}
-                        placeholder="Wpisz komentarz..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent mb-3"
-                      />
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => handleApprove(app.id)}
-                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
+                  {teamDetail.memberResponses && teamDetail.memberResponses.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-black">Survey responses</h3>
+                      {teamDetail.memberResponses.map((response) => (
+                        <div
+                          key={response.member?.id}
+                          className="border border-gray-200 rounded-lg p-4 space-y-3"
                         >
-                          ✓ Zaakceptuj
-                        </button>
-                        <button
-                          onClick={() => handleReject(app.id)}
-                          className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors"
-                        >
-                          ✗ Odrzuć
-                        </button>
-                      </div>
+                          <p className="font-semibold text-gray-900">
+                            {response.member?.username}{' '}
+                            <span className="text-sm text-gray-500">
+                              ({response.member?.name ?? 'Name TBD'})
+                            </span>
+                          </p>
+                          {response.surveyResponses?.map((answer) => (
+                            <div key={answer.questionId}>
+                              <p className="text-sm font-medium text-gray-700">{answer.question}</p>
+                              <p className="text-sm text-gray-600 mt-1 whitespace-pre-line">
+                                {answer.answer}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
                     </div>
                   )}
 
-                  {app.adminComment && (
-                    <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                      <p className="text-sm font-medium text-gray-700 mb-1">Komentarz administratora:</p>
-                      <p className="text-gray-900">{app.adminComment}</p>
-                    </div>
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      variant="primary"
+                      className="flex-1 min-w-[140px]"
+                      onClick={() => handleDecision('accept')}
+                      disabled={acceptTeam.isPending || teamDetail.isAccepted}
+                    >
+                      {teamDetail.isAccepted ? 'Already accepted' : 'Accept team'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 min-w-[140px]"
+                      onClick={() => handleDecision('reject')}
+                      disabled={rejectTeam.isPending}
+                    >
+                      Reject team
+                    </Button>
+                  </div>
+                  {(acceptTeam.isPending || rejectTeam.isPending) && (
+                    <p className="text-sm text-gray-500">Submitting your decision...</p>
                   )}
                 </div>
-              ))
-            )}
+              )}
+            </div>
           </div>
         </div>
       </main>

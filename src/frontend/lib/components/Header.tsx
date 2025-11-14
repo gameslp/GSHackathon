@@ -1,45 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 const Header = () => {
-  const pathname = usePathname();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [username, setUsername] = useState('');
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const user = localStorage.getItem('username');
-      const authToken = localStorage.getItem('authToken');
-      if (user && authToken) {
-        setIsAuthenticated(true);
-        setUsername(user);
-      } else {
-        setIsAuthenticated(false);
-        setUsername('');
-      }
-    };
-
-    checkAuth();
-    window.addEventListener('storage', checkAuth);
-    window.addEventListener('auth-change', checkAuth);
-    
-    return () => {
-      window.removeEventListener('storage', checkAuth);
-      window.removeEventListener('auth-change', checkAuth);
-    };
-  }, [pathname]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('username');
-    localStorage.removeItem('authToken');
-    setIsAuthenticated(false);
-    setUsername('');
-    window.dispatchEvent(new Event('auth-change'));
-    window.location.href = '/';
-  };
+  const { user, loading, logout, isLoggingOut } = useAuth();
+  const initials = useMemo(() => user?.username?.charAt(0).toUpperCase() ?? 'H', [user?.username]);
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
@@ -80,22 +47,25 @@ const Header = () => {
           </nav>
           
           <div className="flex items-center space-x-3">
-            {isAuthenticated ? (
+            {loading ? (
+              <div className="text-sm text-gray-500">Checking session...</div>
+            ) : user ? (
               <>
                 <Link
                   href="/profile"
                   className="hidden sm:flex items-center space-x-2 px-4 py-2 text-black hover:text-primary font-medium transition-colors"
                 >
                   <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-bold">
-                    {username.charAt(0).toUpperCase()}
+                    {initials}
                   </div>
-                  <span>{username}</span>
+                  <span>{user.username}</span>
                 </Link>
                 <button
-                  onClick={handleLogout}
-                  className="inline-flex items-center justify-center px-5 py-2.5 border border-gray-300 text-black font-medium rounded-lg hover:bg-gray-50 transition-all duration-200"
+                  onClick={() => logout()}
+                  className="inline-flex items-center justify-center px-5 py-2.5 border border-gray-300 text-black font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
+                  disabled={isLoggingOut}
                 >
-                  Sign Out
+                  {isLoggingOut ? 'Signing out...' : 'Sign Out'}
                 </button>
               </>
             ) : (
