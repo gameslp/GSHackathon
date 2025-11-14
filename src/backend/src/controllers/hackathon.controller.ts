@@ -2,6 +2,60 @@ import { Request, Response } from 'express';
 import { prisma } from '@prisma';
 import { HackathonModel } from '../models/hackathon';
 import { AuthRequest } from '../middleware/auth';
+import { z } from 'zod';
+import { HackathonType } from '../generated/prisma/enums';
+
+// Zod validation schemas
+const createHackathonSchema = z.object({
+  title: z.string().min(3).max(200),
+  description: z.string().min(10).max(5000),
+  rules: z.string().min(10).max(10000),
+  type: z.nativeEnum(HackathonType),
+  prize: z.number().int().min(0),
+  teamMax: z.number().int().min(1).max(50),
+  teamMin: z.number().int().min(1).max(50),
+  registrationOpen: z.string().datetime().or(z.date()),
+  startDate: z.string().datetime().or(z.date()),
+  endDate: z.string().datetime().or(z.date()),
+}).refine(data => data.teamMax >= data.teamMin, {
+  message: 'Team maximum must be greater than or equal to team minimum',
+  path: ['teamMax'],
+}).refine(data => {
+  const regOpen = new Date(data.registrationOpen);
+  const start = new Date(data.startDate);
+  return start > regOpen;
+}, {
+  message: 'Start date must be after registration open date',
+  path: ['startDate'],
+}).refine(data => {
+  const start = new Date(data.startDate);
+  const end = new Date(data.endDate);
+  return end > start;
+}, {
+  message: 'End date must be after start date',
+  path: ['endDate'],
+});
+
+const updateHackathonSchema = z.object({
+  title: z.string().min(3).max(200).optional(),
+  description: z.string().min(10).max(5000).optional(),
+  rules: z.string().min(10).max(10000).optional(),
+  type: z.nativeEnum(HackathonType).optional(),
+  prize: z.number().int().min(0).optional(),
+  teamMax: z.number().int().min(1).max(50).optional(),
+  teamMin: z.number().int().min(1).max(50).optional(),
+  registrationOpen: z.string().datetime().or(z.date()).optional(),
+  startDate: z.string().datetime().or(z.date()).optional(),
+  endDate: z.string().datetime().or(z.date()).optional(),
+}).refine(data => {
+  if (data.teamMax !== undefined && data.teamMin !== undefined) {
+    return data.teamMax >= data.teamMin;
+  }
+  return true;
+}, {
+  message: 'Team maximum must be greater than or equal to team minimum',
+  path: ['teamMax'],
+});
 
 export const getHackathonTeams = async (req: Request, res: Response) => {
   try {
@@ -354,53 +408,31 @@ export const createHackathon = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
+    // Validate request body with Zod
+    const validationResult = createHackathonSchema.safeParse(req.body);
+
+    if (!validationResult.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: validationResult.error.issues,
+      });
+    }
+
+    const data = validationResult.data;
     const currentUser = req.user;
-    const {
-      title,
-      description,
-      teamMax,
-      teamMin,
-      registrationOpen,
-      startDate,
-      endDate,
-      rules,
-    } = req.body;
-
-    // Validation
-    if (!title || !description || !teamMax || !teamMin || !registrationOpen || !startDate || !endDate || !rules) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    if (teamMin < 1) {
-      return res.status(400).json({ error: 'Team minimum must be at least 1' });
-    }
-
-    if (teamMax < teamMin) {
-      return res.status(400).json({ error: 'Team maximum must be greater than or equal to team minimum' });
-    }
-
-    const regOpenDate = new Date(registrationOpen);
-    const startDateTime = new Date(startDate);
-    const endDateTime = new Date(endDate);
-
-    if (startDateTime <= regOpenDate) {
-      return res.status(400).json({ error: 'Start date must be after registration open date' });
-    }
-
-    if (endDateTime <= startDateTime) {
-      return res.status(400).json({ error: 'End date must be after start date' });
-    }
 
     const hackathon = await HackathonModel.create({
-      title,
-      description,
+      title: data.title,
+      description: data.description,
       organizerId: currentUser.userId,
-      rules,
-      teamMax: teamMax,
-      teamMin,
-      registrationOpen: regOpenDate,
-      startDate: startDateTime,
-      endDate: endDateTime,
+      rules: data.rules,
+      type: data.type,
+      prize: data.prize,
+      teamMax: data.teamMax,
+      teamMin: data.teamMin,
+      registrationOpen: new Date(data.registrationOpen),
+      startDate: new Date(data.startDate),
+      endDate: new Date(data.endDate),
     });
 
     return res.status(201).json({
@@ -422,18 +454,19 @@ export const updateHackathon = async (req: AuthRequest, res: Response) => {
 
     const hackathonId = parseInt(req.params.id);
     const currentUser = req.user;
-    const {
-      title,
-      description,
-      teamMax,
-      teamMin,
-      registrationOpen,
-      startDate,
-      endDate,
-    } = req.body;
 
     if (!hackathonId || isNaN(hackathonId)) {
       return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    // Validate request body with Zod
+    const validationResult = updateHackathonSchema.safeParse(req.body);
+
+    if (!validationResult.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: validationResult.error.issues,
+      });
     }
 
     // Check if hackathon exists
@@ -448,24 +481,20 @@ export const updateHackathon = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Not authorized to update this hackathon' });
     }
 
-    // Validation for team sizes
-    if (teamMin !== undefined && teamMin < 1) {
-      return res.status(400).json({ error: 'Team minimum must be at least 1' });
-    }
-
-    if (teamMax !== undefined && teamMin !== undefined && teamMax < teamMin) {
-      return res.status(400).json({ error: 'Team maximum must be greater than or equal to team minimum' });
-    }
+    const data = validationResult.data;
 
     // Prepare update data
     const updateData: any = {};
-    if (title !== undefined) updateData.title = title;
-    if (description !== undefined) updateData.description = description;
-    if (teamMax !== undefined) updateData.teamMax = teamMax;
-    if (teamMin !== undefined) updateData.teamMin = teamMin;
-    if (registrationOpen !== undefined) updateData.registrationOpen = new Date(registrationOpen);
-    if (startDate !== undefined) updateData.startDate = new Date(startDate);
-    if (endDate !== undefined) updateData.endDate = new Date(endDate);
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.rules !== undefined) updateData.rules = data.rules;
+    if (data.type !== undefined) updateData.type = data.type;
+    if (data.prize !== undefined) updateData.prize = data.prize;
+    if (data.teamMax !== undefined) updateData.teamMax = data.teamMax;
+    if (data.teamMin !== undefined) updateData.teamMin = data.teamMin;
+    if (data.registrationOpen !== undefined) updateData.registrationOpen = new Date(data.registrationOpen);
+    if (data.startDate !== undefined) updateData.startDate = new Date(data.startDate);
+    if (data.endDate !== undefined) updateData.endDate = new Date(data.endDate);
 
     const hackathon = await HackathonModel.update(hackathonId, updateData);
 

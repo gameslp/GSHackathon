@@ -414,6 +414,92 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        Hackathon: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'integer',
+              description: 'Hackathon ID',
+            },
+            title: {
+              type: 'string',
+              description: 'Hackathon title',
+            },
+            description: {
+              type: 'string',
+              description: 'Hackathon description',
+            },
+            rules: {
+              type: 'string',
+              description: 'Hackathon rules',
+            },
+            type: {
+              type: 'string',
+              enum: ['CLASSIFICATION', 'REGRESSION', 'NLP', 'COMPUTER_VISION', 'TIME_SERIES', 'OTHER'],
+              description: 'Hackathon type',
+            },
+            prize: {
+              type: 'integer',
+              minimum: 0,
+              description: 'Prize amount in dollars',
+            },
+            organizerId: {
+              type: 'integer',
+              description: 'Organizer user ID',
+            },
+            teamMax: {
+              type: 'integer',
+              description: 'Maximum team size',
+            },
+            teamMin: {
+              type: 'integer',
+              description: 'Minimum team size',
+            },
+            registrationOpen: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Registration open date',
+            },
+            startDate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Hackathon start date',
+            },
+            endDate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Hackathon end date',
+            },
+            organizer: {
+              type: 'object',
+              description: 'Hackathon organizer user',
+            },
+            teams: {
+              type: 'array',
+              items: {
+                type: 'object',
+              },
+              description: 'Teams participating in hackathon',
+            },
+            resources: {
+              type: 'array',
+              items: {
+                type: 'object',
+              },
+              description: 'Hackathon resources',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Creation timestamp',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Last update timestamp',
+            },
+          },
+        },
       },
     },
     tags: [

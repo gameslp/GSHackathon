@@ -1,9 +1,12 @@
 import { prisma } from '../lib/prisma';
+import { HackathonType } from '../generated/prisma/enums';
 
 export interface CreateHackathonData {
   title: string;
   description: string;
   rules: string;
+  type: HackathonType;
+  prize: number;
   organizerId: number;
   teamMax: number;
   teamMin: number;
@@ -15,6 +18,9 @@ export interface CreateHackathonData {
 export interface UpdateHackathonData {
   title?: string;
   description?: string;
+  rules?: string;
+  type?: HackathonType;
+  prize?: number;
   teamMax?: number;
   teamMin?: number;
   registrationOpen?: Date;
@@ -25,7 +31,21 @@ export interface UpdateHackathonData {
 export class HackathonModel {
   static async create(data: CreateHackathonData) {
     return await prisma.hackathon.create({
-      data,
+      data: {
+        title: data.title,
+        description: data.description,
+        rules: data.rules,
+        type: data.type,
+        prize: data.prize,
+        teamMax: data.teamMax,
+        teamMin: data.teamMin,
+        registrationOpen: data.registrationOpen,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        organizer: {
+          connect: { id: data.organizerId },
+        },
+      },
       include: {
         organizer: true,
         teams: true,
