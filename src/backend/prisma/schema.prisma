@@ -20,6 +20,15 @@ enum Role {
   PARTICIPANT
 }
 
+enum HackathonType {
+  CLASSIFICATION
+  REGRESSION
+  NLP
+  COMPUTER_VISION
+  TIME_SERIES
+  OTHER
+}
+
 model User {
   id            Int      @id @default(autoincrement())
   username      String   @unique
@@ -41,6 +50,7 @@ model Hackathon {
   description String
   rules       String
   organizerId Int
+  type        HackathonType
 
   teams       Team[]
   teamMax     Int

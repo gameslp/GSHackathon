@@ -51,6 +51,38 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        UserWithDetails: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'integer',
+              description: 'User ID',
+            },
+            username: {
+              type: 'string',
+              description: 'Username',
+            },
+            role: {
+              type: 'string',
+              enum: ['ADMIN', 'JUDGE', 'PARTICIPANT'],
+              description: 'User role',
+            },
+            totpConfirmed: {
+              type: 'boolean',
+              description: 'Whether user has confirmed TOTP setup',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'User creation timestamp',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'User last update timestamp',
+            },
+          },
+        },
         RegisterStartRequest: {
           type: 'object',
           required: ['username'],
@@ -148,6 +180,10 @@ const options: swaggerJsdoc.Options = {
       {
         name: 'Authentication',
         description: 'TOTP-based authentication endpoints',
+      },
+      {
+        name: 'Admin',
+        description: 'Admin-only user management endpoints',
       },
       {
         name: 'Health',

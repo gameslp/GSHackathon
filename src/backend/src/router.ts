@@ -3,6 +3,7 @@ import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
 import healthRouter from "./routes/health.routes";
 import authRouter from "./routes/auth.routes";
+import adminRouter from "./routes/admin.routes";
 
 export function setupRoutes(app: Application) {
 
@@ -17,6 +18,7 @@ export function setupRoutes(app: Application) {
 
       // API routes
       app.use(authRouter);
+      app.use(adminRouter);
       app.use(healthRouter);
 
 }
