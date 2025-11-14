@@ -105,16 +105,34 @@ export default function SurveyPage() {
       const applications = JSON.parse(localStorage.getItem('applications') || '{}');
       
       if (applications[applicationId]) {
-        // Generate team code NOW after successful survey completion
-        const teamCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const app = applications[applicationId];
+        
+        // Handle team code based on join mode
+        let finalTeamCode = app.teamCode; // If joining existing team, keep the code
+        let finalTeamName = app.teamName;
+        
+        if (app.joinMode === 'create') {
+          // Generate NEW team code for team creators
+          finalTeamCode = Math.floor(100000 + Math.random() * 900000).toString();
+        } else if (app.joinMode === 'join') {
+          // For joiners, find the team name from existing team
+          const existingTeam = Object.values(applications).find(
+            (a: any) => a.teamCode === app.teamCode && a.joinMode === 'create'
+          ) as any;
+          
+          if (existingTeam) {
+            finalTeamName = existingTeam.teamName;
+          }
+        }
         
         applications[applicationId] = {
-          ...applications[applicationId],
+          ...app,
           surveyCompleted: true,
           surveyData: formData,
           surveySubmittedAt: new Date().toISOString(),
           status: 'pending_approval',
-          teamCode: teamCode, // Generate code after survey
+          teamCode: finalTeamCode,
+          teamName: finalTeamName,
         };
 
         localStorage.setItem('applications', JSON.stringify(applications));
@@ -151,12 +169,25 @@ export default function SurveyPage() {
             Wypełnij ankietę, aby dokończyć proces rejestracji do: <strong>{application.challengeTitle}</strong>
           </p>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-gray-700">
-              <strong>Zespół:</strong> {application.teamName}
-            </p>
-            <p className="text-xs text-gray-600 mt-1">
-              ⚠️ Zespół zostanie utworzony dopiero po prawidłowym wypełnieniu tej ankiety
-            </p>
+            {application.joinMode === 'create' ? (
+              <>
+                <p className="text-sm text-gray-700">
+                  <strong>Tworzysz zespół:</strong> {application.teamName}
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  ⚠️ Zespół i 6-cyfrowy kod zostaną utworzone dopiero po prawidłowym wypełnieniu ankiety i akceptacji przez administratora
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray-700">
+                  <strong>Dołączasz do zespołu</strong> (kod: {application.teamCode})
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  ⚠️ Zostaniesz dodany do zespołu dopiero po prawidłowym wypełnieniu ankiety i akceptacji przez administratora
+                </p>
+              </>
+            )}
           </div>
         </div>
 

@@ -21,6 +21,8 @@ export default function ChallengePage({ params }: PageProps) {
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [teamName, setTeamName] = useState('');
+  const [joinMode, setJoinMode] = useState<'create' | 'join'>('create');
+  const [teamCode, setTeamCode] = useState('');
 
   useEffect(() => {
     params.then(p => setId(p.id));
@@ -67,12 +69,37 @@ export default function ChallengePage({ params }: PageProps) {
   };
 
   const handleConfirmJoin = () => {
+    // Validate input based on mode
+    if (joinMode === 'create' && !teamName.trim()) {
+      alert('Podaj nazwę zespołu');
+      return;
+    }
+    
+    if (joinMode === 'join') {
+      const code = teamCode.trim();
+      if (!code || code.length !== 6 || !/^\d{6}$/.test(code)) {
+        alert('Podaj poprawny 6-cyfrowy kod zespołu');
+        return;
+      }
+      
+      // Verify team code exists
+      const applications = JSON.parse(localStorage.getItem('applications') || '{}');
+      const teamExists = Object.values(applications).some(
+        (app: any) => app.teamCode === code && app.challengeId === parseInt(id) && app.status !== 'rejected'
+      );
+      
+      if (!teamExists) {
+        alert('Nie znaleziono zespołu z tym kodem lub zespół oczekuje na akceptację');
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     setTimeout(() => {
       const username = localStorage.getItem('username') || 'User';
 
-      // Save application WITHOUT team code (will be generated after survey)
+      // Save application WITHOUT team code (will be generated/assigned after survey)
       const applications = JSON.parse(localStorage.getItem('applications') || '{}');
       const applicationId = Date.now();
       
@@ -82,8 +109,9 @@ export default function ChallengePage({ params }: PageProps) {
         challengeTitle: challenge.title,
         username: username,
         participationType: 'team',
-        teamName: teamName,
-        teamCode: null, // Will be generated after survey completion
+        joinMode: joinMode, // 'create' or 'join'
+        teamName: joinMode === 'create' ? teamName : null,
+        teamCode: joinMode === 'join' ? teamCode.trim() : null, // Store code to join existing team
         status: 'pending_survey', // pending_survey -> pending_approval -> approved -> rejected
         createdAt: new Date().toISOString(),
         surveyCompleted: false,
@@ -98,6 +126,8 @@ export default function ChallengePage({ params }: PageProps) {
 
       setIsLoading(false);
       setShowTeamModal(false);
+      setTeamName('');
+      setTeamCode('');
 
       // Redirect to survey
       router.push(`/challenges/${id}/survey?applicationId=${applicationId}`);
@@ -303,28 +333,97 @@ export default function ChallengePage({ params }: PageProps) {
       {showTeamModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-2xl font-bold text-black mb-4">Utwórz zespół</h3>
+            <h3 className="text-2xl font-bold text-black mb-4">Dołącz do wyzwania</h3>
             
+            {/* Mode Selection */}
             <div className="mb-6">
-              <p className="text-gray-600 mb-4">
-                Podaj nazwę zespołu. Po wypełnieniu ankiety otrzymasz 6-cyfrowy kod do zapraszania członków (max {challenge.teamMax} osoby).
-              </p>
-              
-              <div className="mt-4">
-                <label htmlFor="teamName" className="block text-sm font-medium text-gray-700 mb-2">
-                  Nazwa zespołu *
-                </label>
-                <input
-                  id="teamName"
-                  type="text"
-                  value={teamName}
-                  onChange={(e) => setTeamName(e.target.value)}
-                  placeholder="Wpisz nazwę zespołu"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">Po wypełnieniu ankiety otrzymasz 6-cyfrowy kod do zapraszania członków</p>
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => {
+                    setJoinMode('create');
+                    setTeamCode('');
+                  }}
+                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                    joinMode === 'create'
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Utwórz zespół
+                </button>
+                <button
+                  onClick={() => {
+                    setJoinMode('join');
+                    setTeamName('');
+                  }}
+                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                    joinMode === 'join'
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Dołącz po kodzie
+                </button>
               </div>
+
+              {joinMode === 'create' ? (
+                <>
+                  <p className="text-gray-600 mb-4">
+                    Podaj nazwę zespołu. Po wypełnieniu ankiety otrzymasz 6-cyfrowy kod do zapraszania członków (max {challenge.teamMax} osoby).
+                  </p>
+                  
+                  <div className="mt-4">
+                    <label htmlFor="teamName" className="block text-sm font-medium text-gray-700 mb-2">
+                      Nazwa zespołu *
+                    </label>
+                    <input
+                      id="teamName"
+                      type="text"
+                      value={teamName}
+                      onChange={(e) => setTeamName(e.target.value)}
+                      placeholder="Wpisz nazwę zespołu"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Po wypełnieniu ankiety otrzymasz 6-cyfrowy kod do zapraszania członków</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-600 mb-4">
+                    Wpisz 6-cyfrowy kod zespołu, do którego chcesz dołączyć. Po wypełnieniu ankiety dołączysz do zespołu.
+                  </p>
+                  
+                  <div className="mt-4">
+                    <label htmlFor="teamCode" className="block text-sm font-medium text-gray-700 mb-2">
+                      6-cyfrowy kod zespołu *
+                    </label>
+                    <input
+                      id="teamCode"
+                      type="text"
+                      value={teamCode}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setTeamCode(value);
+                      }}
+                      placeholder="123456"
+                      maxLength={6}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-center text-2xl font-mono tracking-widest"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Otrzymasz kod od lidera zespołu po jego utworzeniu</p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <p className="text-xs text-gray-700">
+                ⚠️ Niezależnie od wybranej opcji, musisz najpierw wypełnić ankietę. 
+                {joinMode === 'create' 
+                  ? ' Zespół zostanie utworzony dopiero po pozytywnej weryfikacji ankiety.' 
+                  : ' Dołączysz do zespołu dopiero po pozytywnej weryfikacji ankiety.'}
+              </p>
             </div>
 
             <div className="flex gap-3">
@@ -332,6 +431,8 @@ export default function ChallengePage({ params }: PageProps) {
                 onClick={() => {
                   setShowTeamModal(false);
                   setTeamName('');
+                  setTeamCode('');
+                  setJoinMode('create');
                 }}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
                 disabled={isLoading}
@@ -340,10 +441,10 @@ export default function ChallengePage({ params }: PageProps) {
               </button>
               <button
                 onClick={handleConfirmJoin}
-                disabled={isLoading || !teamName.trim()}
+                disabled={isLoading || (joinMode === 'create' ? !teamName.trim() : teamCode.length !== 6)}
                 className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Tworzę zespół...' : 'Dalej do ankiety'}
+                {isLoading ? (joinMode === 'create' ? 'Tworzę...' : 'Sprawdzam...') : 'Dalej do ankiety'}
               </button>
             </div>
           </div>

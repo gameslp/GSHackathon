@@ -196,11 +196,23 @@ export default function ProfilePage() {
                           {app.teamCode && app.participationType === 'team' && (
                             <div className="mb-4 p-4 bg-blue-50 rounded-lg">
                               <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="text-sm font-medium text-gray-700">Kod zespołu:</p>
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-gray-700">
+                                    {app.joinMode === 'create' ? 'Kod Twojego zespołu:' : 'Kod zespołu:'}
+                                  </p>
                                   <p className="text-2xl font-bold text-primary font-mono tracking-wider">
                                     {app.teamCode}
                                   </p>
+                                  {app.joinMode === 'create' && (
+                                    <p className="text-xs text-gray-600 mt-1">
+                                      Udostępnij ten kod członkom zespołu, aby mogli dołączyć
+                                    </p>
+                                  )}
+                                  {app.joinMode === 'join' && (
+                                    <p className="text-xs text-gray-600 mt-1">
+                                      Dołączyłeś do zespołu używając tego kodu
+                                    </p>
+                                  )}
                                 </div>
                                 <button
                                   onClick={() => {
