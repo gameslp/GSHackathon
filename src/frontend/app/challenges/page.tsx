@@ -1,12 +1,23 @@
+'use client';
+
+import { useState } from 'react';
 import Header from '@/lib/components/Header';
 import Footer from '@/lib/components/Footer';
 import ChallengeCard from '@/lib/components/ChallengeCard';
 import { getFeaturedChallenges } from '@/lib/services/mockData';
 
 export default function ChallengesPage() {
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const challenges = getFeaturedChallenges();
-  const activeChall = challenges.filter(c => c.status === 'active');
-  const upcomingChall = challenges.filter(c => c.status === 'upcoming');
+  
+  const filteredChallenges = selectedCategory === 'All' 
+    ? challenges 
+    : challenges.filter(c => c.category === selectedCategory);
+  
+  const activeChall = filteredChallenges.filter(c => c.status === 'active');
+  const upcomingChall = filteredChallenges.filter(c => c.status === 'upcoming');
+  
+  const categories = ['All', 'Classification', 'Regression', 'NLP', 'Computer Vision', 'Time Series'];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -18,12 +29,19 @@ export default function ChallengesPage() {
         </div>
         <div className="mb-8 bg-white border border-gray-200 rounded-lg p-4">
           <div className="flex flex-wrap gap-4">
-            <button className="px-4 py-2 bg-[#7297c5] text-white rounded-lg font-medium">All</button>
-            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Classification</button>
-            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Regression</button>
-            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">NLP</button>
-            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Computer Vision</button>
-            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Time Series</button>
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  selectedCategory === category
+                    ? 'bg-primary text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {category}
+              </button>
+            ))}
           </div>
         </div>
         <section className="mb-12">

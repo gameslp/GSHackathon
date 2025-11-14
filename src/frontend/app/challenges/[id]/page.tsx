@@ -4,9 +4,10 @@ import Footer from '@/lib/components/Footer';
 import Button from '@/lib/components/Button';
 import { getFeaturedChallenges } from '@/lib/services/mockData';
 
-export default function ChallengePage({ params }: { params: { id: string } }) {
+export default async function ChallengePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const challenges = getFeaturedChallenges();
-  const challenge = challenges.find(c => c.id === params.id);
+  const challenge = challenges.find(c => c.id === parseInt(id));
 
   if (!challenge) {
     notFound();
@@ -48,10 +49,10 @@ export default function ChallengePage({ params }: { params: { id: string } }) {
               <h1 className="text-4xl font-bold text-black mb-4">{challenge.title}</h1>
               <p className="text-lg text-gray-600 mb-6">{challenge.description}</p>
               <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <div className="w-8 h-8 bg-[#7297c5] rounded-full flex items-center justify-center text-white text-sm font-bold">
-                  {challenge.organizerName.charAt(0)}
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-bold">
+                  {challenge.organizerName?.charAt(0) || 'O'}
                 </div>
-                <span>Hosted by <strong>{challenge.organizerName}</strong></span>
+                <span>Hosted by <strong>{challenge.organizerName || 'Anonymous'}</strong></span>
               </div>
             </div>
           </div>
@@ -87,24 +88,60 @@ export default function ChallengePage({ params }: { params: { id: string } }) {
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-gray-600">Days Remaining</span>
-                  <span className="font-bold text-[#7297c5] text-xl">{challenge.daysRemaining} days</span>
+                  <span className="font-bold text-primary text-xl">{challenge.daysRemaining} days</span>
                 </div>
               </div>
             </div>
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <h2 className="text-2xl font-bold text-black mb-4">Rules</h2>
-              <ul className="list-disc list-inside space-y-2 text-gray-700">
-                <li>Maximum 5 submissions per day</li>
-                <li>Teams of up to 3 members are allowed</li>
-                <li>External data sources are not permitted</li>
-                <li>Final submission deadline: {new Date(challenge.endDate).toLocaleDateString()}</li>
-              </ul>
+              <div className="text-gray-700 whitespace-pre-line">
+                {challenge.rules}
+              </div>
+            </div>
+            
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h2 className="text-2xl font-bold text-black mb-4">Team Requirements</h2>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm text-gray-600">Minimum Team Size</p>
+                    <p className="text-2xl font-bold text-black">{challenge.teamMin} {challenge.teamMin === 1 ? 'member' : 'members'}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">Maximum Team Size</p>
+                    <p className="text-2xl font-bold text-black">{challenge.teamMax} {challenge.teamMax === 1 ? 'member' : 'members'}</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600">
+                  You can participate individually or form a team. Teams can be created after registration and you can invite other participants to join your team.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h2 className="text-2xl font-bold text-black mb-4">Registration</h2>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                  <span className="text-gray-600">Registration Opens</span>
+                  <span className="font-semibold text-black">{new Date(challenge.startDate).toLocaleDateString()}</span>
+                </div>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-gray-600">Status</span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                    challenge.status === 'active' ? 'bg-green-100 text-green-800' : 
+                    challenge.status === 'upcoming' ? 'bg-yellow-100 text-yellow-800' : 
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {challenge.status === 'active' ? 'Open' : challenge.status === 'upcoming' ? 'Coming Soon' : 'Closed'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
           <div className="space-y-6">
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-black mb-4">Prize Pool</h3>
-              <p className="text-4xl font-bold text-[#7297c5] mb-2">{formatPrize(challenge.prize)}</p>
+              <p className="text-4xl font-bold text-primary mb-2">{formatPrize(challenge.prize)}</p>
               <p className="text-sm text-gray-600">Total prize money</p>
             </div>
             <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -112,25 +149,25 @@ export default function ChallengePage({ params }: { params: { id: string } }) {
               <div className="space-y-4">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Participants</p>
-                  <p className="text-2xl font-bold text-black">{challenge.status === 'upcoming' ? 'TBA' : challenge.participants.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-black">{challenge.status === 'upcoming' ? 'TBA' : (challenge.participants || 0).toLocaleString()}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Teams</p>
-                  <p className="text-2xl font-bold text-black">{challenge.status === 'upcoming' ? 'TBA' : Math.floor(challenge.participants / 2).toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-black">{challenge.status === 'upcoming' ? 'TBA' : Math.floor((challenge.participants || 0) / 2).toLocaleString()}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Submissions</p>
-                  <p className="text-2xl font-bold text-black">{challenge.status === 'upcoming' ? 'TBA' : (challenge.participants * 3).toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-black">{challenge.status === 'upcoming' ? 'TBA' : ((challenge.participants || 0) * 3).toLocaleString()}</p>
                 </div>
               </div>
             </div>
             <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-black mb-4">Quick Links</h3>
+              <h3 className="text-lg font-semibold text-black mb-4">Resources</h3>
               <div className="space-y-2">
-                <a href="#" className="block text-[#7297c5] hover:text-[#5a7ba3] font-medium">→ Discussion Forum</a>
-                <a href="#" className="block text-[#7297c5] hover:text-[#5a7ba3] font-medium">→ Data Description</a>
-                <a href="#" className="block text-[#7297c5] hover:text-[#5a7ba3] font-medium">→ Sample Notebooks</a>
-                <a href="#" className="block text-[#7297c5] hover:text-[#5a7ba3] font-medium">→ Submit Predictions</a>
+                <a href="#" className="block text-primary hover:text-primary-dark font-medium">→ Discussion Forum</a>
+                <a href="#" className="block text-primary hover:text-primary-dark font-medium">→ Data Description</a>
+                <a href="#" className="block text-primary hover:text-primary-dark font-medium">→ Sample Notebooks</a>
+                <a href="#" className="block text-primary hover:text-primary-dark font-medium">→ Submit Predictions</a>
               </div>
             </div>
           </div>
