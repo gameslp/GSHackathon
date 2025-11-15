@@ -26,25 +26,25 @@ RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir \
     # Obliczenia i dane
     numpy==1.26.3 \
-    pandas==2.1.4 \
-    scipy==1.11.4 \
-    # Machine Learning
-    scikit-learn==1.4.0 \
-    xgboost==2.0.3 \
-    # Deep Learning - TensorFlow
-    tensorflow==2.15.0 \
-    # Deep Learning - PyTorch
-    torch==2.1.2 \
-    torchvision==0.16.2 \
-    # NLP
-    transformers==4.36.2 \
-    # Computer Vision
-    opencv-python==4.9.0.80 \
-    pillow==10.2.0 \
-    # Wizualizacja
-    matplotlib==3.8.2 \
-    # Narzędzia
-    jupyter==1.0.0
+    pandas==2.1.4
+    # scipy==1.11.4 \
+    # # Machine Learning
+    # scikit-learn==1.4.0 \
+    # xgboost==2.0.3 \
+    # # Deep Learning - TensorFlow
+    # tensorflow==2.15.0 \
+    # # Deep Learning - PyTorch
+    # torch==2.1.2 \
+    # torchvision==0.16.2 \
+    # # NLP
+    # transformers==4.36.2 \
+    # # Computer Vision
+    # opencv-python==4.9.0.80 \
+    # pillow==10.2.0 \
+    # # Wizualizacja
+    # matplotlib==3.8.2 \
+    # # Narzędzia
+    # jupyter==1.0.0
 
 # Utworzenie użytkownika non-root
 RUN groupadd -g 1000 runner && \

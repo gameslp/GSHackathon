@@ -68,9 +68,9 @@ export class ScoringModel {
       userSolutionDir,
       organizerFilesDir,
       outputDir: path.join(tempDir, `output_${this.ScoreId}`),
-      cpuLimit: hackathon.threadLimit,
-      memoryLimit: `${hackathon.ramLimit}m`,
-      timeout: hackathon.submissionTimeout,
+      cpuLimit: 1,
+      memoryLimit: `500m`,
+      timeout: 60,
       testerFileName: AUTO_REVIEW_FILE_NAME,
     };
 
