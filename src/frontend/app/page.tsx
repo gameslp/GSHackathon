@@ -10,6 +10,7 @@ import FaultyTerminal from '@/lib/components/FaultyTerminal';
 import { getCategories, getPlatformStats } from '@/lib/services/mockData';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useHackathons } from '@/lib/hooks/useHackathons';
+import type { Hackathon } from '@/lib/api/client';
 
 export default function Home() {
   const { user } = useAuth();
@@ -21,7 +22,7 @@ export default function Home() {
   const platformStats = getPlatformStats();
   
   // Map API hackathons to Challenge type for display
-  const featuredChallenges = (hackathonsData?.hackathons || []).map((h: any) => ({
+  const featuredChallenges = (hackathonsData?.hackathons || []).map((h: Hackathon) => ({
     ...h,
     category: h.type || 'Other',
     difficulty: 'Intermediate' as const,

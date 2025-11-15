@@ -16,12 +16,14 @@ import {
 } from '@/lib/api/client';
 import { unwrapResponse } from '@/lib/api/utils';
 import { teamKeys } from '@/lib/hooks/useTeams';
+import { hackathonKeys } from '@/lib/hooks/useHackathons';
 
 // Query keys
 export const adminKeys = {
   all: ['admin'] as const,
   users: () => [...adminKeys.all, 'users'] as const,
   usersList: (filters: GetAdminUsersData) => [...adminKeys.users(), filters] as const,
+  judges: () => [...adminKeys.all, 'judges'] as const,
   hackathonTeams: (hackathonId: number, filters?: unknown) =>
     [...adminKeys.all, 'hackathon', hackathonId, 'teams', filters] as const,
   hackathonTeamsBase: (hackathonId: number) =>
@@ -35,9 +37,18 @@ type SurveyQuestionDto = {
   order: number;
 };
 
+type JudgeUserDto = {
+  id: number;
+  username: string;
+  name?: string | null;
+  surname?: string | null;
+  email?: string | null;
+  createdAt?: string;
+};
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
-const adminJsonFetch = async <T>(url: string, options: RequestInit = {}): Promise<T> => {
+export const adminJsonFetch = async <T>(url: string, options: RequestInit = {}): Promise<T> => {
   const res = await fetch(`${API_BASE_URL}${url}`, {
     credentials: 'include',
     headers: {
@@ -109,6 +120,49 @@ export function useDeleteUser() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.users() });
+    },
+  });
+}
+
+export function useJudgeUsersList(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: adminKeys.judges(),
+    queryFn: async () => {
+      const data = await adminJsonFetch<{ judges: JudgeUserDto[] }>('/admin/judges');
+      return data.judges;
+    },
+    enabled: options?.enabled ?? true,
+  });
+}
+
+export function useAssignJudgeToHackathon() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ hackathonId, judgeId }: { hackathonId: number; judgeId: number }) => {
+      return adminJsonFetch<{ assignment: unknown }>(`/hackathons/${hackathonId}/judges`, {
+        method: 'POST',
+        body: JSON.stringify({ judgeId }),
+      });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: hackathonKeys.detail(variables.hackathonId) });
+      queryClient.invalidateQueries({ queryKey: adminKeys.judges() });
+    },
+  });
+}
+
+export function useRemoveJudgeFromHackathon() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ hackathonId, judgeId }: { hackathonId: number; judgeId: number }) => {
+      return adminJsonFetch<{ judgeId: number }>(`/hackathons/${hackathonId}/judges/${judgeId}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: hackathonKeys.detail(variables.hackathonId) });
     },
   });
 }

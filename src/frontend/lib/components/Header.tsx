@@ -56,6 +56,14 @@ const Header = () => {
                     Admin
                   </Link>
                 )}
+                {user.role === 'JUDGE' && (
+                  <Link
+                    href="/dashboard"
+                    className="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-[#7297c5] border border-[#7297c5] rounded-lg hover:bg-[#7297c5] hover:text-white transition-colors"
+                  >
+                    Dashboard
+                  </Link>
+                )}
                 <Link
                   href="/profile"
                   className="flex items-center space-x-2 px-3 py-2 text-black hover:text-[#7297c5] transition-colors"
@@ -65,6 +73,13 @@ const Header = () => {
                   </div>
                   <span className="font-medium">{user.username}</span>
                 </Link>
+                <button
+                  onClick={() => logout()}
+                  className="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-[#7297c5] border border-[#7297c5] rounded-lg hover:bg-[#7297c5] hover:text-white transition-colors disabled:opacity-60"
+                  disabled={isLoggingOut}
+                >
+                  {isLoggingOut ? 'Signing out...' : 'Sign Out'}
+                </button>
               </>
             ) : (
               <>
