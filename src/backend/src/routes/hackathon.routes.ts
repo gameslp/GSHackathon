@@ -17,6 +17,7 @@ import {
   assignJudgeToHackathon,
   removeJudgeFromHackathon,
   getJudgeHackathons,
+  updateHackathonThumbnail,
   createHackathonResource,
   deleteHackathonResource,
   getProvidedFiles,
@@ -34,7 +35,7 @@ import {
 import { auth } from '../middleware/auth';
 import { requireRole } from '../middleware/requireRole';
 import { Role } from '../generated/prisma/enums';
-import { resourceUpload, providedUpload } from '../lib/uploads';
+import { resourceUpload, providedUpload, thumbnailUpload } from '../lib/uploads';
 
 const hackathonRouter = Router();
 
@@ -829,6 +830,13 @@ hackathonRouter.delete(
   '/hackathons/:hackathonId/resources/:resourceId',
   ...adminAuth,
   deleteHackathonResource
+);
+
+hackathonRouter.post(
+  '/hackathons/:hackathonId/thumbnail',
+  auth,
+  thumbnailUpload.single('file'),
+  updateHackathonThumbnail
 );
 
 hackathonRouter.get('/hackathons/:hackathonId/provided-files', auth, getProvidedFiles);

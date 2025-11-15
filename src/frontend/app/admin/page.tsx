@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element */
+
 import { useMemo, useState, type ReactNode } from 'react';
 import Header from '@/lib/components/Header';
 import Footer from '@/lib/components/Footer';
@@ -35,7 +37,14 @@ import {
   useUploadProvidedFile,
   useDeleteProvidedFile,
   useToggleProvidedFileVisibility,
+  useUploadHackathonThumbnail,
 } from '@/lib/hooks/useHackathonFiles';
+import {
+  useFileFormats,
+  useCreateFileFormat,
+  useUpdateFileFormat,
+  useDeleteFileFormat,
+} from '@/lib/hooks/useFileFormats';
 import type { Hackathon } from '@/lib/api/client';
 
 const HACKATHON_LIMIT = 5;
@@ -145,7 +154,28 @@ export default function AdminDashboardPage() {
   const [providedFileKey, setProvidedFileKey] = useState(0);
   const [providedPublic, setProvidedPublic] = useState(false);
   const [providedError, setProvidedError] = useState<string | null>(null);
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailInputKey, setThumbnailInputKey] = useState(0);
+  const [thumbnailFeedback, setThumbnailFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
+    null
+  );
+
+  // File format management state
+  const [formatFormData, setFormatFormData] = useState({
+    name: '',
+    description: '',
+    extension: '',
+    maxSizeKB: '',
+    obligatory: false,
+  });
+  const [editingFormatId, setEditingFormatId] = useState<number | null>(null);
+  const [formatFeedback, setFormatFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const getAssetUrl = (url?: string | null) => {
+  if (!url) return null;
+  return url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+};
 
   const hackathonQueryParams = useMemo(
     () => ({ query: { page: hackathonPage, limit: HACKATHON_LIMIT } }),
@@ -220,6 +250,7 @@ export default function AdminDashboardPage() {
   const { data: judgeOptions = [], isLoading: judgesLoading } = useJudgeUsersList();
   const assignJudgeMutation = useAssignJudgeToHackathon();
   const removeJudgeMutation = useRemoveJudgeFromHackathon();
+  const uploadThumbnailMutation = useUploadHackathonThumbnail();
   const assignedJudges = useMemo(() => {
     const detailWithJudges =
       hackathonDetail as (Hackathon & { judgeAssignments?: HackathonJudgeAssignment[] }) | null;
@@ -240,6 +271,15 @@ export default function AdminDashboardPage() {
   const uploadProvided = useUploadProvidedFile();
   const deleteProvided = useDeleteProvidedFile();
   const toggleProvided = useToggleProvidedFileVisibility();
+
+  // File format hooks
+  const { data: fileFormats = [], isLoading: formatsLoading } = useFileFormats(activeHackathonId ?? 0, {
+    enabled: Boolean(activeHackathonId),
+  });
+  const createFormatMutation = useCreateFileFormat();
+  const updateFormatMutation = useUpdateFileFormat();
+  const deleteFormatMutation = useDeleteFileFormat();
+
   const [newQuestionText, setNewQuestionText] = useState('');
   const [newQuestionOrder, setNewQuestionOrder] = useState('');
   const [editingQuestion, setEditingQuestion] = useState<{ id: number; text: string; order: string } | null>(null);
@@ -519,6 +559,95 @@ export default function AdminDashboardPage() {
     );
   };
 
+  // File format handlers
+  const handleFormatSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeHackathonId) return;
+
+    const maxSizeKB = parseInt(formatFormData.maxSizeKB);
+    if (isNaN(maxSizeKB) || maxSizeKB <= 0) {
+      setFormatFeedback({ type: 'error', message: 'Please enter a valid file size' });
+      return;
+    }
+
+    if (!formatFormData.extension.startsWith('.')) {
+      setFormatFeedback({ type: 'error', message: 'Extension must start with a dot (e.g., .csv)' });
+      return;
+    }
+
+    try {
+      setFormatFeedback(null);
+
+      if (editingFormatId) {
+        await updateFormatMutation.mutateAsync({
+          formatId: editingFormatId,
+          hackathonId: activeHackathonId,
+          data: {
+            name: formatFormData.name,
+            description: formatFormData.description,
+            extension: formatFormData.extension,
+            maxSizeKB,
+            obligatory: formatFormData.obligatory,
+          },
+        });
+        setFormatFeedback({ type: 'success', message: 'File format updated successfully' });
+        setEditingFormatId(null);
+      } else {
+        await createFormatMutation.mutateAsync({
+          hackathonId: activeHackathonId,
+          data: {
+            name: formatFormData.name,
+            description: formatFormData.description,
+            extension: formatFormData.extension,
+            maxSizeKB,
+            obligatory: formatFormData.obligatory,
+          },
+        });
+        setFormatFeedback({ type: 'success', message: 'File format created successfully' });
+      }
+
+      setFormatFormData({
+        name: '',
+        description: '',
+        extension: '',
+        maxSizeKB: '',
+        obligatory: false,
+      });
+    } catch (error) {
+      setFormatFeedback({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to save file format',
+      });
+    }
+  };
+
+  const handleDeleteFormat = async (formatId: number) => {
+    if (!activeHackathonId) return;
+    if (!confirm('Are you sure you want to delete this file format?')) return;
+
+    try {
+      setFormatFeedback(null);
+      await deleteFormatMutation.mutateAsync({ formatId, hackathonId: activeHackathonId });
+      setFormatFeedback({ type: 'success', message: 'File format deleted successfully' });
+    } catch (error) {
+      setFormatFeedback({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to delete file format',
+      });
+    }
+  };
+
+  const startEditFormat = (format: typeof fileFormats[0]) => {
+    setEditingFormatId(format.id);
+    setFormatFormData({
+      name: format.name,
+      description: format.description,
+      extension: format.extension,
+      maxSizeKB: String(format.maxSizeKB),
+      obligatory: format.obligatory,
+    });
+  };
+
   const handleRoleChange = (userId: number, role: 'ADMIN' | 'JUDGE' | 'PARTICIPANT') => {
     setRoleChangeUserId(userId);
     updateUserRoleMutation.mutate(
@@ -689,6 +818,35 @@ export default function AdminDashboardPage() {
           setProvidedError(
             mutationError instanceof Error ? mutationError.message : 'Failed to delete file'
           );
+        },
+      }
+    );
+  };
+
+  const handleThumbnailUpload = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!activeHackathonId) {
+      setThumbnailFeedback({ type: 'error', message: 'Select a hackathon first.' });
+      return;
+    }
+    if (!thumbnailFile) {
+      setThumbnailFeedback({ type: 'error', message: 'Choose an image to upload.' });
+      return;
+    }
+    setThumbnailFeedback(null);
+    uploadThumbnailMutation.mutate(
+      { hackathonId: activeHackathonId, file: thumbnailFile },
+      {
+        onSuccess: () => {
+          setThumbnailFeedback({ type: 'success', message: 'Thumbnail updated.' });
+          setThumbnailFile(null);
+          setThumbnailInputKey((key) => key + 1);
+        },
+        onError: (mutationError) => {
+          setThumbnailFeedback({
+            type: 'error',
+            message: mutationError instanceof Error ? mutationError.message : 'Failed to update thumbnail',
+          });
         },
       }
     );
@@ -1193,19 +1351,81 @@ export default function AdminDashboardPage() {
                             <p className="font-semibold text-black mb-1">Description</p>
                             <p>{hackathonDetail.description}</p>
                           </div>
-                          <div>
-                            <p className="font-semibold text-black mb-1">Rules</p>
-                            <p>{hackathonDetail.rules}</p>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                      <div>
+                        <p className="font-semibold text-black mb-1">Rules</p>
+                        <p>{hackathonDetail.rules}</p>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
 
-                  <CollapsibleSection
-                    title="Assigned judges"
-                    description="Assign judges to review teams and submissions."
-                  >
+              <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold text-black">Thumbnail image</h3>
+                    <p className="text-sm text-gray-500">
+                      Upload a hero image to represent this hackathon.
+                    </p>
+                  </div>
+                  {thumbnailFeedback && (
+                    <span
+                      className={`text-sm px-3 py-1 rounded-md border ${
+                        thumbnailFeedback.type === 'success'
+                          ? 'bg-green-50 border-green-200 text-green-700'
+                          : 'bg-red-50 border-red-200 text-red-700'
+                      }`}
+                    >
+                      {thumbnailFeedback.message}
+                    </span>
+                  )}
+                </div>
+                {!isHackathonSelected ? (
+                  <p className="text-sm text-gray-600">Select a hackathon to manage thumbnails.</p>
+                ) : (
+                  <>
+                    {hackathonDetail?.thumbnailUrl ? (
+                      <img
+                        src={getAssetUrl(hackathonDetail.thumbnailUrl) ?? ''}
+                        alt={`${hackathonDetail.title} thumbnail`}
+                        className="w-full h-64 object-cover rounded-lg border border-gray-200"
+                      />
+                    ) : (
+                      <p className="text-sm text-gray-600">No thumbnail uploaded yet.</p>
+                    )}
+                    <form className="space-y-3" onSubmit={handleThumbnailUpload}>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Select image
+                        </label>
+                        <input
+                          key={thumbnailInputKey}
+                          type="file"
+                          accept="image/*"
+                          className="w-full text-sm text-gray-600"
+                          onChange={(event) => setThumbnailFile(event.target.files?.[0] ?? null)}
+                        />
+                        {thumbnailFile && (
+                          <p className="text-xs text-gray-500 mt-1">Selected: {thumbnailFile.name}</p>
+                        )}
+                      </div>
+                      <Button
+                        type="submit"
+                        variant="primary"
+                        size="sm"
+                        disabled={uploadThumbnailMutation.isPending}
+                      >
+                        {uploadThumbnailMutation.isPending ? 'Uploading...' : 'Upload thumbnail'}
+                      </Button>
+                    </form>
+                  </>
+                )}
+              </div>
+
+              <CollapsibleSection
+                title="Assigned judges"
+                description="Assign judges to review teams and submissions."
+              >
                     {judgeFeedback && (
                       <span
                         className={`text-sm px-3 py-1 rounded-md border ${
@@ -1588,6 +1808,160 @@ export default function AdminDashboardPage() {
                           <Button type="submit" variant="primary" size="sm" disabled={createSurveyQuestionMutation.isPending}>
                             {createSurveyQuestionMutation.isPending ? 'Adding...' : 'Add question'}
                           </Button>
+                        </form>
+                      </div>
+                    )}
+                  </CollapsibleSection>
+
+                  <CollapsibleSection
+                    title="Submission file formats"
+                    description="Define required and optional file format requirements for submissions."
+                    defaultOpen={false}
+                  >
+                    {!isHackathonSelected ? (
+                      <p className="text-sm text-gray-600">Select a hackathon to manage file formats.</p>
+                    ) : formatsLoading ? (
+                      <p className="text-sm text-gray-600">Loading file formats...</p>
+                    ) : (
+                      <div>
+                        {formatFeedback && (
+                          <div
+                            className={`mb-4 p-3 rounded-lg border text-sm ${
+                              formatFeedback.type === 'success'
+                                ? 'bg-green-50 border-green-200 text-green-700'
+                                : 'bg-red-50 border-red-200 text-red-700'
+                            }`}
+                          >
+                            {formatFeedback.message}
+                          </div>
+                        )}
+
+                        {fileFormats.length === 0 ? (
+                          <p className="text-sm text-gray-600 mb-4">No file format requirements defined yet.</p>
+                        ) : (
+                          <div className="space-y-3 mb-4">
+                            {fileFormats.map((format) => (
+                              <div key={format.id} className="border border-gray-200 rounded-lg p-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <h3 className="font-semibold text-black">{format.name}</h3>
+                                      {format.obligatory && (
+                                        <span className="px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-800 rounded">
+                                          Required
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-gray-600 mt-1">{format.description}</p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {format.extension} • Max {Math.round(format.maxSizeKB / 1024)} MB
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => startEditFormat(format)}>
+                                      Edit
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleDeleteFormat(format.id)}>
+                                      Delete
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <form onSubmit={handleFormatSubmit} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                          <p className="text-sm font-semibold text-black">
+                            {editingFormatId ? 'Edit File Format' : 'Add New File Format'}
+                          </p>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                            <input
+                              type="text"
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              value={formatFormData.name}
+                              onChange={(e) => setFormatFormData((prev) => ({ ...prev, name: e.target.value }))}
+                              required
+                              placeholder="e.g., Predictions File"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                            <textarea
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              value={formatFormData.description}
+                              onChange={(e) => setFormatFormData((prev) => ({ ...prev, description: e.target.value }))}
+                              required
+                              rows={2}
+                              placeholder="Describe what this file should contain (minimum 10 characters)"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Extension</label>
+                              <input
+                                type="text"
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                value={formatFormData.extension}
+                                onChange={(e) => setFormatFormData((prev) => ({ ...prev, extension: e.target.value }))}
+                                required
+                                placeholder=".csv"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Max Size (KB)</label>
+                              <input
+                                type="number"
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                value={formatFormData.maxSizeKB}
+                                onChange={(e) => setFormatFormData((prev) => ({ ...prev, maxSizeKB: e.target.value }))}
+                                required
+                                min="1"
+                                placeholder="51200"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id="obligatory"
+                              checked={formatFormData.obligatory}
+                              onChange={(e) => setFormatFormData((prev) => ({ ...prev, obligatory: e.target.checked }))}
+                            />
+                            <label htmlFor="obligatory" className="text-sm text-gray-700">
+                              Required file (participants must upload this to submit)
+                            </label>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              type="submit"
+                              variant="primary"
+                              size="sm"
+                              disabled={createFormatMutation.isPending || updateFormatMutation.isPending}
+                            >
+                              {editingFormatId ? 'Update Format' : 'Add Format'}
+                            </Button>
+                            {editingFormatId && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingFormatId(null);
+                                  setFormatFormData({
+                                    name: '',
+                                    description: '',
+                                    extension: '',
+                                    maxSizeKB: '',
+                                    obligatory: false,
+                                  });
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            )}
+                          </div>
                         </form>
                       </div>
                     )}

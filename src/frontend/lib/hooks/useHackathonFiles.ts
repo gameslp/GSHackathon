@@ -200,3 +200,62 @@ export function useToggleProvidedFileVisibility() {
     },
   });
 }
+
+export function useUploadHackathonThumbnail() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ hackathonId, file }: { hackathonId: number; file: File }) => {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${API_BASE_URL}/hackathons/${hackathonId}/thumbnail`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        await parseError(response);
+      }
+
+      return response.json().catch(() => ({}));
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: hackathonKeys.detail(variables.hackathonId) });
+      queryClient.invalidateQueries({ queryKey: hackathonKeys.lists(), exact: false });
+    },
+  });
+}
+
+export function useUploadSubmissionFile() {
+  return useMutation({
+    mutationFn: async ({
+      hackathonId,
+      file,
+      formatId,
+    }: {
+      hackathonId: number;
+      file: File;
+      formatId: number;
+    }) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('hackathonId', String(hackathonId));
+      formData.append('fileFormatId', String(formatId));
+
+      const response = await fetch(`${API_BASE_URL}/hackathons/submissions/upload`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        await parseError(response);
+      }
+
+      const data = await response.json();
+      return data.fileUrl as string;
+    },
+  });
+}

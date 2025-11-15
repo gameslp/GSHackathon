@@ -19,9 +19,13 @@ ensureDir(baseUploadDir);
 
 export const RESOURCE_UPLOAD_DIR = path.join(baseUploadDir, 'resources');
 export const PROVIDED_UPLOAD_DIR = path.join(baseUploadDir, 'provided');
+export const THUMBNAIL_UPLOAD_DIR = path.join(baseUploadDir, 'thumbnails');
+export const SUBMISSION_UPLOAD_DIR = path.join(baseUploadDir, 'submissions');
 
 ensureDir(RESOURCE_UPLOAD_DIR);
 ensureDir(PROVIDED_UPLOAD_DIR);
+ensureDir(THUMBNAIL_UPLOAD_DIR);
+ensureDir(SUBMISSION_UPLOAD_DIR);
 
 const sanitizeFileName = (originalName: string) => {
   const ext = path.extname(originalName);
@@ -55,8 +59,24 @@ export const providedUpload = multer({
   },
 });
 
+export const thumbnailUpload = multer({
+  storage: createStorage(THUMBNAIL_UPLOAD_DIR),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10 MB
+  },
+});
+
+export const submissionUpload = multer({
+  storage: createStorage(SUBMISSION_UPLOAD_DIR),
+  limits: {
+    fileSize: 200 * 1024 * 1024, // 200 MB
+  },
+});
+
 export const buildResourceUrl = (filename: string) => `/uploads/resources/${filename}`;
 export const buildProvidedFileUrl = (filename: string) => `/uploads/provided/${filename}`;
+export const buildThumbnailUrl = (filename: string) => `/uploads/thumbnails/${filename}`;
+export const buildSubmissionUrl = (filename: string) => `/uploads/submissions/${filename}`;
 
 export const deleteUploadedFile = async (directory: string, fileUrl?: string | null) => {
   if (!fileUrl) return;

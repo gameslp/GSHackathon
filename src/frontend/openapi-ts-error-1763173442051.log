@@ -1,0 +1,13 @@
+[2025-11-15T02:24:02.051Z] Error: Missing $ref pointer "#/components/schemas/SurveyQuestion". Token "SurveyQuestion" does not exist.
+Stack:
+MissingPointerError: Missing $ref pointer "#/components/schemas/SurveyQuestion". Token "SurveyQuestion" does not exist.
+    at Pointer.resolve (/Users/maciekciesielski/Documents/hackathonGS/GSHackathon/src/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/lib/pointer.js:113:23)
+    at $Ref.resolve (/Users/maciekciesielski/Documents/hackathonGS/GSHackathon/src/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/lib/ref.js:79:24)
+    at $Refs._resolve (/Users/maciekciesielski/Documents/hackathonGS/GSHackathon/src/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/lib/refs.js:168:21)
+    at inventory$Ref (/Users/maciekciesielski/Documents/hackathonGS/GSHackathon/src/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/lib/bundle.js:136:25)
+    at crawl (/Users/maciekciesielski/Documents/hackathonGS/GSHackathon/src/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/lib/bundle.js:266:21)
+    at crawl (/Users/maciekciesielski/Documents/hackathonGS/GSHackathon/src/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/lib/bundle.js:281:21)
+    at crawl (/Users/maciekciesielski/Documents/hackathonGS/GSHackathon/src/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/lib/bundle.js:281:21)
+    at crawl (/Users/maciekciesielski/Documents/hackathonGS/GSHackathon/src/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/lib/bundle.js:281:21)
+    at crawl (/Users/maciekciesielski/Documents/hackathonGS/GSHackathon/src/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/lib/bundle.js:281:21)
+    at crawl (/Users/maciekciesielski/Documents/hackathonGS/GSHackathon/src/frontend/node_modules/@hey-api/json-schema-ref-parser/dist/lib/bundle.js:281:21)

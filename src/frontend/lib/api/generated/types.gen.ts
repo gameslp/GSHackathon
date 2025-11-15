@@ -170,6 +170,10 @@ export type TeamDetails = {
      * Team captain user ID
      */
     captainId?: number;
+    /**
+     * Whether team has been accepted by admins
+     */
+    isAccepted?: boolean;
     hackathon?: {
         id?: number;
         title?: string;
@@ -229,6 +233,15 @@ export type TeamWithSurvey = {
             order?: number;
         }>;
     }>;
+    createdAt?: string;
+    updatedAt?: string;
+};
+
+export type SurveyQuestion = {
+    id?: number;
+    question?: string;
+    order?: number | null;
+    hackathonId?: number;
     createdAt?: string;
     updatedAt?: string;
 };
@@ -463,6 +476,582 @@ export type DeleteAdminUsersByIdResponses = {
 
 export type DeleteAdminUsersByIdResponse = DeleteAdminUsersByIdResponses[keyof DeleteAdminUsersByIdResponses];
 
+export type GetAdminHackathonsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Page number
+         */
+        page?: number;
+        /**
+         * Number of hackathons per page
+         */
+        limit?: number;
+    };
+    url: '/admin/hackathons';
+};
+
+export type GetAdminHackathonsErrors = {
+    /**
+     * Not authenticated
+     */
+    401: unknown;
+    /**
+     * Forbidden - Admin access required
+     */
+    403: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type GetAdminHackathonsResponses = {
+    /**
+     * Hackathons retrieved successfully
+     */
+    200: {
+        hackathons?: Array<Hackathon>;
+        pagination?: {
+            page?: number;
+            limit?: number;
+            total?: number;
+            totalPages?: number;
+        };
+    };
+};
+
+export type GetAdminHackathonsResponse = GetAdminHackathonsResponses[keyof GetAdminHackathonsResponses];
+
+export type PostAdminHackathonsData = {
+    body: {
+        title: string;
+        description: string;
+        rules: string;
+        type: 'CLASSIFICATION' | 'REGRESSION' | 'NLP' | 'COMPUTER_VISION' | 'TIME_SERIES' | 'OTHER';
+        /**
+         * Prize amount in dollars
+         */
+        prize: number;
+        teamMax: number;
+        teamMin: number;
+        registrationOpen: string;
+        startDate: string;
+        endDate: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/admin/hackathons';
+};
+
+export type PostAdminHackathonsErrors = {
+    /**
+     * Validation failed
+     */
+    400: unknown;
+    /**
+     * Not authenticated
+     */
+    401: unknown;
+    /**
+     * Forbidden - Admin access required
+     */
+    403: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type PostAdminHackathonsResponses = {
+    /**
+     * Hackathon created successfully
+     */
+    201: unknown;
+};
+
+export type DeleteAdminHackathonsByIdData = {
+    body?: never;
+    path: {
+        /**
+         * Hackathon ID
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/admin/hackathons/{id}';
+};
+
+export type DeleteAdminHackathonsByIdErrors = {
+    /**
+     * Invalid hackathon ID
+     */
+    400: unknown;
+    /**
+     * Not authenticated
+     */
+    401: unknown;
+    /**
+     * Forbidden - Admin access required
+     */
+    403: unknown;
+    /**
+     * Hackathon not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type DeleteAdminHackathonsByIdResponses = {
+    /**
+     * Hackathon deleted successfully
+     */
+    200: unknown;
+};
+
+export type GetAdminHackathonsByIdData = {
+    body?: never;
+    path: {
+        /**
+         * Hackathon ID
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/admin/hackathons/{id}';
+};
+
+export type GetAdminHackathonsByIdErrors = {
+    /**
+     * Invalid hackathon ID
+     */
+    400: unknown;
+    /**
+     * Not authenticated
+     */
+    401: unknown;
+    /**
+     * Forbidden - Admin access required
+     */
+    403: unknown;
+    /**
+     * Hackathon not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type GetAdminHackathonsByIdResponses = {
+    /**
+     * Hackathon retrieved successfully
+     */
+    200: Hackathon;
+};
+
+export type GetAdminHackathonsByIdResponse = GetAdminHackathonsByIdResponses[keyof GetAdminHackathonsByIdResponses];
+
+export type PutAdminHackathonsByIdData = {
+    body: {
+        title?: string;
+        description?: string;
+        rules?: string;
+        type?: 'CLASSIFICATION' | 'REGRESSION' | 'NLP' | 'COMPUTER_VISION' | 'TIME_SERIES' | 'OTHER';
+        prize?: number;
+        teamMax?: number;
+        teamMin?: number;
+        registrationOpen?: string;
+        startDate?: string;
+        endDate?: string;
+    };
+    path: {
+        /**
+         * Hackathon ID
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/admin/hackathons/{id}';
+};
+
+export type PutAdminHackathonsByIdErrors = {
+    /**
+     * Validation failed or invalid hackathon ID
+     */
+    400: unknown;
+    /**
+     * Not authenticated
+     */
+    401: unknown;
+    /**
+     * Forbidden - Admin access required
+     */
+    403: unknown;
+    /**
+     * Hackathon not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type PutAdminHackathonsByIdResponses = {
+    /**
+     * Hackathon updated successfully
+     */
+    200: unknown;
+};
+
+export type GetAdminHackathonsByHackathonIdTeamsData = {
+    body?: never;
+    path: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+    };
+    query?: {
+        /**
+         * Page number
+         */
+        page?: number;
+        /**
+         * Number of teams per page
+         */
+        limit?: number;
+    };
+    url: '/admin/hackathons/{hackathonId}/teams';
+};
+
+export type GetAdminHackathonsByHackathonIdTeamsErrors = {
+    /**
+     * Invalid hackathon ID
+     */
+    400: unknown;
+    /**
+     * Not authenticated
+     */
+    401: unknown;
+    /**
+     * Forbidden - Admin access required
+     */
+    403: unknown;
+    /**
+     * Hackathon not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type GetAdminHackathonsByHackathonIdTeamsResponses = {
+    /**
+     * Teams retrieved successfully
+     */
+    200: unknown;
+};
+
+export type GetAdminHackathonsByHackathonIdSurveyQuestionsData = {
+    body?: never;
+    path: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+    };
+    query?: never;
+    url: '/admin/hackathons/{hackathonId}/survey-questions';
+};
+
+export type GetAdminHackathonsByHackathonIdSurveyQuestionsErrors = {
+    /**
+     * Invalid hackathon ID
+     */
+    400: unknown;
+    /**
+     * Not authenticated
+     */
+    401: unknown;
+    /**
+     * Forbidden - Admin access required
+     */
+    403: unknown;
+    /**
+     * Hackathon not found
+     */
+    404: unknown;
+};
+
+export type GetAdminHackathonsByHackathonIdSurveyQuestionsResponses = {
+    /**
+     * Questions retrieved successfully
+     */
+    200: {
+        questions?: Array<SurveyQuestion>;
+    };
+};
+
+export type GetAdminHackathonsByHackathonIdSurveyQuestionsResponse = GetAdminHackathonsByHackathonIdSurveyQuestionsResponses[keyof GetAdminHackathonsByHackathonIdSurveyQuestionsResponses];
+
+export type PostAdminHackathonsByHackathonIdSurveyQuestionsData = {
+    body: {
+        question: string;
+        /**
+         * Optional order (defaults to end)
+         */
+        order?: number;
+    };
+    path: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+    };
+    query?: never;
+    url: '/admin/hackathons/{hackathonId}/survey-questions';
+};
+
+export type PostAdminHackathonsByHackathonIdSurveyQuestionsErrors = {
+    /**
+     * Validation failed
+     */
+    400: unknown;
+    /**
+     * Not authenticated
+     */
+    401: unknown;
+    /**
+     * Forbidden - Admin access required
+     */
+    403: unknown;
+    /**
+     * Hackathon not found
+     */
+    404: unknown;
+};
+
+export type PostAdminHackathonsByHackathonIdSurveyQuestionsResponses = {
+    /**
+     * Question created successfully
+     */
+    201: unknown;
+};
+
+export type DeleteAdminSurveyQuestionsByQuestionIdData = {
+    body?: never;
+    path: {
+        /**
+         * Question ID
+         */
+        questionId: number;
+    };
+    query?: never;
+    url: '/admin/survey-questions/{questionId}';
+};
+
+export type DeleteAdminSurveyQuestionsByQuestionIdErrors = {
+    /**
+     * Invalid question ID
+     */
+    400: unknown;
+    /**
+     * Not authenticated
+     */
+    401: unknown;
+    /**
+     * Forbidden - Admin access required
+     */
+    403: unknown;
+    /**
+     * Question not found
+     */
+    404: unknown;
+};
+
+export type DeleteAdminSurveyQuestionsByQuestionIdResponses = {
+    /**
+     * Question deleted successfully
+     */
+    200: unknown;
+};
+
+export type PatchAdminSurveyQuestionsByQuestionIdData = {
+    body: {
+        question?: string;
+        order?: number;
+    };
+    path: {
+        /**
+         * Question ID
+         */
+        questionId: number;
+    };
+    query?: never;
+    url: '/admin/survey-questions/{questionId}';
+};
+
+export type PatchAdminSurveyQuestionsByQuestionIdErrors = {
+    /**
+     * Validation failed
+     */
+    400: unknown;
+    /**
+     * Not authenticated
+     */
+    401: unknown;
+    /**
+     * Forbidden - Admin access required
+     */
+    403: unknown;
+    /**
+     * Question not found
+     */
+    404: unknown;
+};
+
+export type PatchAdminSurveyQuestionsByQuestionIdResponses = {
+    /**
+     * Question updated successfully
+     */
+    200: unknown;
+};
+
+export type GetAdminTeamsByTeamIdData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        teamId: number;
+    };
+    query?: never;
+    url: '/admin/teams/{teamId}';
+};
+
+export type GetAdminTeamsByTeamIdErrors = {
+    /**
+     * Invalid team ID
+     */
+    400: unknown;
+    /**
+     * Not authenticated
+     */
+    401: unknown;
+    /**
+     * Forbidden - Admin access required
+     */
+    403: unknown;
+    /**
+     * Team not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type GetAdminTeamsByTeamIdResponses = {
+    /**
+     * Team details retrieved successfully
+     */
+    200: unknown;
+};
+
+export type PostAdminTeamsByTeamIdAcceptData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        teamId: number;
+    };
+    query?: never;
+    url: '/admin/teams/{teamId}/accept';
+};
+
+export type PostAdminTeamsByTeamIdAcceptErrors = {
+    /**
+     * Invalid team ID or team already accepted
+     */
+    400: unknown;
+    /**
+     * Not authenticated
+     */
+    401: unknown;
+    /**
+     * Forbidden - Admin access required
+     */
+    403: unknown;
+    /**
+     * Team not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type PostAdminTeamsByTeamIdAcceptResponses = {
+    /**
+     * Team accepted successfully
+     */
+    200: unknown;
+};
+
+export type PostAdminTeamsByTeamIdRejectData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        teamId: number;
+    };
+    query?: never;
+    url: '/admin/teams/{teamId}/reject';
+};
+
+export type PostAdminTeamsByTeamIdRejectErrors = {
+    /**
+     * Invalid team ID
+     */
+    400: unknown;
+    /**
+     * Not authenticated
+     */
+    401: unknown;
+    /**
+     * Forbidden - Admin access required
+     */
+    403: unknown;
+    /**
+     * Team not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type PostAdminTeamsByTeamIdRejectResponses = {
+    /**
+     * Team rejected successfully
+     */
+    200: unknown;
+};
+
 export type PostAuthRegisterStartData = {
     body: RegisterStartRequest;
     path?: never;
@@ -673,6 +1262,173 @@ export type PatchAuthProfileResponses = {
 };
 
 export type PatchAuthProfileResponse = PatchAuthProfileResponses[keyof PatchAuthProfileResponses];
+
+export type PostHackathonsResourcesUploadData = {
+    body: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+        /**
+         * Resource file to upload
+         */
+        file: Blob | File;
+    };
+    path?: never;
+    query?: never;
+    url: '/hackathons/resources/upload';
+};
+
+export type PostHackathonsResourcesUploadErrors = {
+    /**
+     * Invalid hackathon ID or no file uploaded
+     */
+    400: _Error;
+    /**
+     * Not authorized to upload resources
+     */
+    403: _Error;
+    /**
+     * Hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type PostHackathonsResourcesUploadError = PostHackathonsResourcesUploadErrors[keyof PostHackathonsResourcesUploadErrors];
+
+export type PostHackathonsResourcesUploadResponses = {
+    /**
+     * File uploaded successfully
+     */
+    200: {
+        message?: string;
+        fileUrl?: string;
+        fileName?: string;
+        /**
+         * File size in KB
+         */
+        fileSize?: number;
+    };
+};
+
+export type PostHackathonsResourcesUploadResponse = PostHackathonsResourcesUploadResponses[keyof PostHackathonsResourcesUploadResponses];
+
+export type PostHackathonsProvidedFilesUploadData = {
+    body: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+        /**
+         * File to provide to participants
+         */
+        file: Blob | File;
+    };
+    path?: never;
+    query?: never;
+    url: '/hackathons/provided-files/upload';
+};
+
+export type PostHackathonsProvidedFilesUploadErrors = {
+    /**
+     * Invalid hackathon ID or no file uploaded
+     */
+    400: _Error;
+    /**
+     * Not authorized to upload files
+     */
+    403: _Error;
+    /**
+     * Hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type PostHackathonsProvidedFilesUploadError = PostHackathonsProvidedFilesUploadErrors[keyof PostHackathonsProvidedFilesUploadErrors];
+
+export type PostHackathonsProvidedFilesUploadResponses = {
+    /**
+     * File uploaded successfully
+     */
+    200: {
+        message?: string;
+        fileUrl?: string;
+        fileName?: string;
+        /**
+         * File size in KB
+         */
+        fileSize?: number;
+    };
+};
+
+export type PostHackathonsProvidedFilesUploadResponse = PostHackathonsProvidedFilesUploadResponses[keyof PostHackathonsProvidedFilesUploadResponses];
+
+export type PostHackathonsSubmissionsUploadData = {
+    body: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+        /**
+         * File format ID to validate against
+         */
+        fileFormatId: number;
+        /**
+         * Submission file to upload
+         */
+        file: Blob | File;
+    };
+    path?: never;
+    query?: never;
+    url: '/hackathons/submissions/upload';
+};
+
+export type PostHackathonsSubmissionsUploadErrors = {
+    /**
+     * Invalid request, file extension/size validation failed
+     */
+    400: _Error;
+    /**
+     * Not authorized to upload files for this hackathon
+     */
+    403: _Error;
+    /**
+     * Hackathon or file format not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type PostHackathonsSubmissionsUploadError = PostHackathonsSubmissionsUploadErrors[keyof PostHackathonsSubmissionsUploadErrors];
+
+export type PostHackathonsSubmissionsUploadResponses = {
+    /**
+     * File uploaded successfully
+     */
+    200: {
+        message?: string;
+        fileFormatId?: number;
+        fileUrl?: string;
+        fileName?: string;
+        /**
+         * File size in KB
+         */
+        fileSize?: number;
+    };
+};
+
+export type PostHackathonsSubmissionsUploadResponse = PostHackathonsSubmissionsUploadResponses[keyof PostHackathonsSubmissionsUploadResponses];
 
 export type GetHackathonsByHackathonIdTeamsData = {
     body?: never;
@@ -1253,6 +2009,570 @@ export type GetHealthResponses = {
 
 export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
 
+export type GetHackathonsByHackathonIdSubmissionsData = {
+    body?: never;
+    path: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+    };
+    query?: never;
+    url: '/hackathons/{hackathonId}/submissions';
+};
+
+export type GetHackathonsByHackathonIdSubmissionsErrors = {
+    /**
+     * Invalid hackathon ID
+     */
+    400: _Error;
+    /**
+     * Not authorized to view all submissions
+     */
+    403: _Error;
+    /**
+     * Hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type GetHackathonsByHackathonIdSubmissionsError = GetHackathonsByHackathonIdSubmissionsErrors[keyof GetHackathonsByHackathonIdSubmissionsErrors];
+
+export type GetHackathonsByHackathonIdSubmissionsResponses = {
+    /**
+     * Submissions retrieved successfully
+     */
+    200: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+export type GetHackathonsByHackathonIdSubmissionsResponse = GetHackathonsByHackathonIdSubmissionsResponses[keyof GetHackathonsByHackathonIdSubmissionsResponses];
+
+export type PostHackathonsByHackathonIdSubmissionsData = {
+    body?: never;
+    path: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+    };
+    query?: never;
+    url: '/hackathons/{hackathonId}/submissions';
+};
+
+export type PostHackathonsByHackathonIdSubmissionsErrors = {
+    /**
+     * Invalid hackathon ID
+     */
+    400: _Error;
+    /**
+     * Not part of an accepted team
+     */
+    403: _Error;
+    /**
+     * Hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type PostHackathonsByHackathonIdSubmissionsError = PostHackathonsByHackathonIdSubmissionsErrors[keyof PostHackathonsByHackathonIdSubmissionsErrors];
+
+export type PostHackathonsByHackathonIdSubmissionsResponses = {
+    /**
+     * Submission created successfully
+     */
+    201: {
+        message?: string;
+        submissionId?: number;
+    };
+};
+
+export type PostHackathonsByHackathonIdSubmissionsResponse = PostHackathonsByHackathonIdSubmissionsResponses[keyof PostHackathonsByHackathonIdSubmissionsResponses];
+
+export type PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitData = {
+    body: {
+        files: Array<{
+            fileFormatId?: number;
+            fileUrl?: string;
+        }>;
+    };
+    path: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+        /**
+         * Submission ID
+         */
+        submissionId: number;
+    };
+    query?: never;
+    url: '/hackathons/{hackathonId}/submissions/{submissionId}/submit';
+};
+
+export type PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitErrors = {
+    /**
+     * Validation failed or submission already sent
+     */
+    400: _Error;
+    /**
+     * Not authorized
+     */
+    403: _Error;
+    /**
+     * Hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitError = PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitErrors[keyof PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitErrors];
+
+export type PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitResponses = {
+    /**
+     * Submission submitted successfully
+     */
+    201: {
+        message?: string;
+        submission?: {
+            [key: string]: unknown;
+        };
+    };
+};
+
+export type PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitResponse = PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitResponses[keyof PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitResponses];
+
+export type GetSubmissionsBySubmissionIdData = {
+    body?: never;
+    path: {
+        /**
+         * Submission ID
+         */
+        submissionId: number;
+    };
+    query?: never;
+    url: '/submissions/{submissionId}';
+};
+
+export type GetSubmissionsBySubmissionIdErrors = {
+    /**
+     * Invalid submission ID
+     */
+    400: _Error;
+    /**
+     * Not authorized to view this submission
+     */
+    403: _Error;
+    /**
+     * Submission not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type GetSubmissionsBySubmissionIdError = GetSubmissionsBySubmissionIdErrors[keyof GetSubmissionsBySubmissionIdErrors];
+
+export type GetSubmissionsBySubmissionIdResponses = {
+    /**
+     * Submission retrieved successfully
+     */
+    200: {
+        id?: number;
+        teamId?: number;
+        hackathonId?: number;
+        url?: string;
+        score?: number | null;
+        scoreComment?: string | null;
+        sendAt?: string | null;
+        files?: Array<{
+            [key: string]: unknown;
+        }>;
+    };
+};
+
+export type GetSubmissionsBySubmissionIdResponse = GetSubmissionsBySubmissionIdResponses[keyof GetSubmissionsBySubmissionIdResponses];
+
+export type GetHackathonsByHackathonIdMySubmissionData = {
+    body?: never;
+    path: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+    };
+    query?: never;
+    url: '/hackathons/{hackathonId}/my-submission';
+};
+
+export type GetHackathonsByHackathonIdMySubmissionErrors = {
+    /**
+     * Invalid hackathon ID
+     */
+    400: _Error;
+    /**
+     * Hackathon or submission not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type GetHackathonsByHackathonIdMySubmissionError = GetHackathonsByHackathonIdMySubmissionErrors[keyof GetHackathonsByHackathonIdMySubmissionErrors];
+
+export type GetHackathonsByHackathonIdMySubmissionResponses = {
+    /**
+     * Team submission retrieved successfully
+     */
+    200: {
+        id?: number;
+        teamId?: number;
+        hackathonId?: number;
+        url?: string;
+        score?: number | null;
+        scoreComment?: string | null;
+        sendAt?: string | null;
+        files?: Array<{
+            [key: string]: unknown;
+        }>;
+    };
+};
+
+export type GetHackathonsByHackathonIdMySubmissionResponse = GetHackathonsByHackathonIdMySubmissionResponses[keyof GetHackathonsByHackathonIdMySubmissionResponses];
+
+export type PostSubmissionsBySubmissionIdScoreData = {
+    body: {
+        /**
+         * Score to assign
+         */
+        score: number;
+        /**
+         * Optional comment about the score
+         */
+        scoreComment?: string;
+    };
+    path: {
+        /**
+         * Submission ID
+         */
+        submissionId: number;
+    };
+    query?: never;
+    url: '/submissions/{submissionId}/score';
+};
+
+export type PostSubmissionsBySubmissionIdScoreErrors = {
+    /**
+     * Invalid submission ID or score
+     */
+    400: _Error;
+    /**
+     * Not authorized to score submissions
+     */
+    403: _Error;
+    /**
+     * Submission not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type PostSubmissionsBySubmissionIdScoreError = PostSubmissionsBySubmissionIdScoreErrors[keyof PostSubmissionsBySubmissionIdScoreErrors];
+
+export type PostSubmissionsBySubmissionIdScoreResponses = {
+    /**
+     * Submission scored successfully
+     */
+    200: {
+        message?: string;
+        submission?: {
+            [key: string]: unknown;
+        };
+    };
+};
+
+export type PostSubmissionsBySubmissionIdScoreResponse = PostSubmissionsBySubmissionIdScoreResponses[keyof PostSubmissionsBySubmissionIdScoreResponses];
+
+export type GetHackathonsByHackathonIdFileFormatsData = {
+    body?: never;
+    path: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+    };
+    query?: never;
+    url: '/hackathons/{hackathonId}/file-formats';
+};
+
+export type GetHackathonsByHackathonIdFileFormatsErrors = {
+    /**
+     * Invalid hackathon ID
+     */
+    400: _Error;
+    /**
+     * Not authorized to view file formats
+     */
+    403: _Error;
+    /**
+     * Hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type GetHackathonsByHackathonIdFileFormatsError = GetHackathonsByHackathonIdFileFormatsErrors[keyof GetHackathonsByHackathonIdFileFormatsErrors];
+
+export type GetHackathonsByHackathonIdFileFormatsResponses = {
+    /**
+     * File formats retrieved successfully
+     */
+    200: Array<{
+        id?: number;
+        hackathonId?: number;
+        name?: string;
+        description?: string;
+        extension?: string;
+        maxSizeKB?: number;
+        obligatory?: boolean;
+    }>;
+};
+
+export type GetHackathonsByHackathonIdFileFormatsResponse = GetHackathonsByHackathonIdFileFormatsResponses[keyof GetHackathonsByHackathonIdFileFormatsResponses];
+
+export type PostHackathonsByHackathonIdFileFormatsData = {
+    body: {
+        name: string;
+        description: string;
+        extension: string;
+        /**
+         * Maximum file size in KB (max 100MB)
+         */
+        maxSizeKB: number;
+        /**
+         * Whether this file is mandatory
+         */
+        obligatory?: boolean;
+    };
+    path: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+    };
+    query?: never;
+    url: '/hackathons/{hackathonId}/file-formats';
+};
+
+export type PostHackathonsByHackathonIdFileFormatsErrors = {
+    /**
+     * Validation failed or invalid hackathon ID
+     */
+    400: {
+        error?: string;
+        details?: Array<unknown>;
+    };
+    /**
+     * Not authorized to add file formats
+     */
+    403: _Error;
+    /**
+     * Hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type PostHackathonsByHackathonIdFileFormatsError = PostHackathonsByHackathonIdFileFormatsErrors[keyof PostHackathonsByHackathonIdFileFormatsErrors];
+
+export type PostHackathonsByHackathonIdFileFormatsResponses = {
+    /**
+     * File format created successfully
+     */
+    201: {
+        message?: string;
+        format?: {
+            [key: string]: unknown;
+        };
+    };
+};
+
+export type PostHackathonsByHackathonIdFileFormatsResponse = PostHackathonsByHackathonIdFileFormatsResponses[keyof PostHackathonsByHackathonIdFileFormatsResponses];
+
+export type DeleteFileFormatsByFormatIdData = {
+    body?: never;
+    path: {
+        /**
+         * File format ID
+         */
+        formatId: number;
+    };
+    query?: never;
+    url: '/file-formats/{formatId}';
+};
+
+export type DeleteFileFormatsByFormatIdErrors = {
+    /**
+     * Invalid format ID
+     */
+    400: _Error;
+    /**
+     * Not authorized to delete this format
+     */
+    403: _Error;
+    /**
+     * File format or hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type DeleteFileFormatsByFormatIdError = DeleteFileFormatsByFormatIdErrors[keyof DeleteFileFormatsByFormatIdErrors];
+
+export type DeleteFileFormatsByFormatIdResponses = {
+    /**
+     * File format deleted successfully
+     */
+    200: {
+        message?: string;
+        deletedFormatId?: number;
+    };
+};
+
+export type DeleteFileFormatsByFormatIdResponse = DeleteFileFormatsByFormatIdResponses[keyof DeleteFileFormatsByFormatIdResponses];
+
+export type PutFileFormatsByFormatIdData = {
+    body: {
+        name?: string;
+        description?: string;
+        extension?: string;
+        maxSizeKB?: number;
+        obligatory?: boolean;
+    };
+    path: {
+        /**
+         * File format ID
+         */
+        formatId: number;
+    };
+    query?: never;
+    url: '/file-formats/{formatId}';
+};
+
+export type PutFileFormatsByFormatIdErrors = {
+    /**
+     * Validation failed or invalid format ID
+     */
+    400: {
+        error?: string;
+        details?: Array<unknown>;
+    };
+    /**
+     * Not authorized to update this format
+     */
+    403: _Error;
+    /**
+     * File format or hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type PutFileFormatsByFormatIdError = PutFileFormatsByFormatIdErrors[keyof PutFileFormatsByFormatIdErrors];
+
+export type PutFileFormatsByFormatIdResponses = {
+    /**
+     * File format updated successfully
+     */
+    200: {
+        message?: string;
+        format?: {
+            [key: string]: unknown;
+        };
+    };
+};
+
+export type PutFileFormatsByFormatIdResponse = PutFileFormatsByFormatIdResponses[keyof PutFileFormatsByFormatIdResponses];
+
+export type PostFileFormatsByFormatIdValidateData = {
+    body: {
+        fileName: string;
+        fileSizeKB: number;
+    };
+    path: {
+        /**
+         * File format ID
+         */
+        formatId: number;
+    };
+    query?: never;
+    url: '/file-formats/{formatId}/validate';
+};
+
+export type PostFileFormatsByFormatIdValidateErrors = {
+    /**
+     * Invalid format ID or missing parameters
+     */
+    400: _Error;
+    /**
+     * Not authorized to validate files for this hackathon
+     */
+    403: _Error;
+    /**
+     * Format or hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type PostFileFormatsByFormatIdValidateError = PostFileFormatsByFormatIdValidateErrors[keyof PostFileFormatsByFormatIdValidateErrors];
+
+export type PostFileFormatsByFormatIdValidateResponses = {
+    /**
+     * Validation result
+     */
+    200: {
+        valid?: boolean;
+        errors?: Array<string>;
+    };
+};
+
+export type PostFileFormatsByFormatIdValidateResponse = PostFileFormatsByFormatIdValidateResponses[keyof PostFileFormatsByFormatIdValidateResponses];
+
 export type PostTeamsCreateData = {
     body: {
         /**
@@ -1438,3 +2758,46 @@ export type GetTeamsHackathonByHackathonIdSurveyResponses = {
 };
 
 export type GetTeamsHackathonByHackathonIdSurveyResponse = GetTeamsHackathonByHackathonIdSurveyResponses[keyof GetTeamsHackathonByHackathonIdSurveyResponses];
+
+export type GetTeamsMyData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/teams/my';
+};
+
+export type GetTeamsMyErrors = {
+    /**
+     * Not authenticated
+     */
+    401: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type GetTeamsMyResponses = {
+    /**
+     * Teams retrieved successfully
+     */
+    200: {
+        teams?: Array<{
+            id?: number;
+            name?: string;
+            invitationCode?: string;
+            captainId?: number;
+            isCaptain?: boolean;
+            isAccepted?: boolean;
+            memberCount?: number;
+            hackathon?: {
+                id?: number;
+                title?: string;
+                startDate?: string;
+                endDate?: string;
+            };
+        }>;
+    };
+};
+
+export type GetTeamsMyResponse = GetTeamsMyResponses[keyof GetTeamsMyResponses];

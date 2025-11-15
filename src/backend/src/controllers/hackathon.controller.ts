@@ -10,8 +10,10 @@ import { HackathonType } from '../generated/prisma/enums';
 import {
   RESOURCE_UPLOAD_DIR,
   PROVIDED_UPLOAD_DIR,
+  THUMBNAIL_UPLOAD_DIR,
   buildResourceUrl,
   buildProvidedFileUrl,
+  buildThumbnailUrl,
   deleteUploadedFile,
 } from '../lib/uploads';
 import { HackathonJudgeModel } from '../models/hackathonJudge';
@@ -992,6 +994,50 @@ export const getJudgeHackathons = async (req: AuthRequest, res: Response) => {
     return res.status(200).json({ hackathons });
   } catch (error) {
     console.error('Get judge hackathons error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const updateHackathonThumbnail = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const hackathonId = parseInt(req.params.hackathonId);
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    const hackathon = await HackathonModel.findById(hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    if (hackathon.organizerId !== req.user.userId && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized to update thumbnail' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Thumbnail file is required' });
+    }
+
+    if (hackathon.thumbnailUrl) {
+      await deleteUploadedFile(THUMBNAIL_UPLOAD_DIR, hackathon.thumbnailUrl);
+    }
+
+    const updatedHackathon = await HackathonModel.update(hackathonId, {
+      thumbnailUrl: buildThumbnailUrl(req.file.filename),
+    });
+
+    return res.status(200).json({
+      message: 'Thumbnail updated successfully',
+      hackathon: updatedHackathon,
+    });
+  } catch (error) {
+    console.error('Update thumbnail error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };

@@ -18,6 +18,7 @@ export interface CreateHackathonData {
   ramLimit?: number | null;
   submissionTimeout?: number | null;
   submissionLimit?: number | null;
+  thumbnailUrl?: string | null;
   autoScoringEnabled?: boolean | null;
 }
 
@@ -37,6 +38,7 @@ export interface UpdateHackathonData {
   ramLimit?: number | null;
   submissionTimeout?: number | null;
   submissionLimit?: number | null;
+  thumbnailUrl?: string | null;
   autoScoringEnabled?: boolean | null;
 }
 
@@ -59,6 +61,7 @@ export class HackathonModel {
         ramLimit: data.ramLimit ?? null,
         submissionTimeout: data.submissionTimeout ?? null,
         submissionLimit: data.submissionLimit ?? null,
+        thumbnailUrl: data.thumbnailUrl ?? null,
         autoScoringEnabled: data.autoScoringEnabled ?? false,
         organizer: {
           connect: { id: data.organizerId },

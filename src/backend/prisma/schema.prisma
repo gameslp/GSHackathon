@@ -58,6 +58,7 @@ model Hackathon {
   organizerId Int
   type        HackathonType
   prize       Int
+  thumbnailUrl String?
 
   teams          Team[]
   teamMax        Int
@@ -207,7 +208,7 @@ model Submission {
   hackathon   Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
   files       SubmissionFile[]
 
-  sendAt      DateTime @default(now())
+  sendAt      DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

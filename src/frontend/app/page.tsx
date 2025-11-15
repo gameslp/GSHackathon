@@ -126,6 +126,7 @@ export default function Home() {
     daysRemaining: h.endDate ? Math.ceil((new Date(h.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0,
     status: 'active' as const,
     organizerName: h.organizer?.username || 'Unknown',
+    thumbnailUrl: h.thumbnailUrl ?? undefined,
   }));
 
   return (

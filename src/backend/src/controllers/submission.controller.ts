@@ -4,6 +4,7 @@ import { SubmissionModel } from '../models/submission';
 import { SubmissionFileModel } from '../models/submissionFile';
 import { HackathonModel } from '../models/hackathon';
 import { TeamModel } from '../models/team';
+import { SubmissionFileFormatModel } from '../models/submissionFileFormat';
 import { AuthRequest } from '../middleware/auth';
 import OpenAI from 'openai';
 import fs from 'fs';
@@ -16,12 +17,22 @@ const submitSchema = z.object({
   files: z.array(
     z.object({
       fileFormatId: z.number().int().positive(),
-      fileUrl: z.string().url('File URL must be valid'),
+      fileUrl: z.string().min(1, 'File URL is required'),
     })
   ),
 });
 
-const createSubmissionSchema = z.object({
+const createSubmissionSchema = z.object({});
+
+const draftFilesSchema = z.object({
+  files: z
+    .array(
+      z.object({
+        fileFormatId: z.number().int().positive(),
+        fileUrl: z.string().min(1, 'File URL is required'),
+      })
+    )
+    .default([]),
 });
 
 export const createSubmission = async (req: AuthRequest, res: Response) => {
@@ -56,7 +67,26 @@ export const createSubmission = async (req: AuthRequest, res: Response) => {
     }
 
 
-    // Create submission
+    const submissionLimit = hackathon.submissionLimit ?? null;
+
+    const existingDraft = await SubmissionModel.findDraftByTeamAndHackathon(userTeam.id, hackathonId);
+
+    if (existingDraft) {
+      return res.status(200).json({
+        message: 'Draft submission already exists',
+        submissionId: existingDraft.id,
+      });
+    }
+
+    if (submissionLimit) {
+      const submittedCount = await SubmissionModel.countSubmittedByTeam(userTeam.id, hackathonId);
+      if (submittedCount >= submissionLimit) {
+        return res.status(400).json({
+          error: 'Submission limit reached for this hackathon',
+        });
+      }
+    }
+
     const submission = await SubmissionModel.create({
       teamId: userTeam.id,
       hackathonId,
@@ -122,10 +152,59 @@ export const submit = async (req: AuthRequest, res: Response) => {
 
     const data = validationResult.data;
 
+    // Get all file format requirements for this hackathon
+    const requiredFormats = await SubmissionFileFormatModel.findByHackathon(hackathonId);
+    const obligatoryFormats = requiredFormats.filter(format => format.obligatory);
+
+    // Check if all obligatory formats are present in the submission
+    const uploadedFormatIds = new Set((data.files || []).map(f => f.fileFormatId));
+    const missingFormats = obligatoryFormats.filter(format => !uploadedFormatIds.has(format.id));
+
+    if (missingFormats.length > 0) {
+      const missingNames = missingFormats.map(f => f.name).join(', ');
+      return res.status(400).json({
+        error: `Missing required files: ${missingNames}`,
+      });
+    }
+
+    const submissionLimit = hackathon.submissionLimit ?? null;
+    if (submissionLimit) {
+      const submittedCount = await SubmissionModel.countSubmittedByTeam(userTeam.id, hackathonId);
+      if (submittedCount >= submissionLimit) {
+        return res.status(400).json({
+          error: 'Submission limit reached for this hackathon',
+        });
+      }
+    }
+
+    // Validate that all provided file format IDs exist and belong to this hackathon
+    if (data.files && data.files.length > 0) {
+      for (const file of data.files) {
+        const format = requiredFormats.find(f => f.id === file.fileFormatId);
+        if (!format) {
+          return res.status(400).json({
+            error: `Invalid file format ID: ${file.fileFormatId}`,
+          });
+        }
+      }
+    }
+
+    await SubmissionFileModel.deleteBySubmission(submissionId);
+
+    if (data.files && data.files.length > 0) {
+      await SubmissionFileModel.createMany(
+        data.files.map((file) => ({
+          submissionId,
+          fileFormatId: file.fileFormatId,
+          fileUrl: file.fileUrl,
+        }))
+      );
+    }
+
+    // Update submission as sent
     const submission = await SubmissionModel.update(submissionId, {
       sendAt: new Date(),
     });
-
 
     return res.status(201).json({
       message: 'Submission created successfully',
@@ -135,6 +214,78 @@ export const submit = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error('Submit hackathon error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const saveDraftSubmissionFiles = async (req: AuthRequest, res: Response) => {
+  try {
+    const submissionId = parseInt(req.params.submissionId);
+
+    if (!submissionId || isNaN(submissionId)) {
+      return res.status(400).json({ error: 'Invalid submission ID' });
+    }
+
+    const validationResult = draftFilesSchema.safeParse(req.body);
+
+    if (!validationResult.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: validationResult.error.issues,
+      });
+    }
+
+    const submission = await SubmissionModel.findById(submissionId);
+
+    if (!submission) {
+      return res.status(404).json({ error: 'Submission not found' });
+    }
+
+    if (submission.sendAt) {
+      return res.status(400).json({ error: 'Cannot edit files of a finalized submission' });
+    }
+
+    const hackathon = await HackathonModel.findById(submission.hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    const userTeam = await TeamModel.getUserTeamInHackathon(req.user.userId, submission.hackathonId);
+
+    if (!userTeam || userTeam.id !== submission.teamId) {
+      return res.status(403).json({ error: 'You are not the owner of this submission' });
+    }
+
+    const formats = await SubmissionFileFormatModel.findByHackathon(submission.hackathonId);
+    const formatIds = new Set(formats.map((format) => format.id));
+
+    for (const file of validationResult.data.files ?? []) {
+      if (!formatIds.has(file.fileFormatId)) {
+        return res.status(400).json({ error: `Invalid file format ID: ${file.fileFormatId}` });
+      }
+    }
+
+    await SubmissionFileModel.deleteBySubmission(submissionId);
+
+    if (validationResult.data.files.length > 0) {
+      await SubmissionFileModel.createMany(
+        validationResult.data.files.map((file) => ({
+          submissionId,
+          fileFormatId: file.fileFormatId,
+          fileUrl: file.fileUrl,
+        }))
+      );
+    }
+
+    const files = await SubmissionFileModel.findBySubmission(submissionId);
+
+    return res.status(200).json({
+      message: 'Draft files updated successfully',
+      files,
+    });
+  } catch (error) {
+    console.error('Save draft submission files error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -261,6 +412,48 @@ export const getMyTeamSubmission = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error('Get my team submission error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get all team's submissions for a hackathon
+export const getMyTeamSubmissions = async (req: AuthRequest, res: Response) => {
+  try {
+    const hackathonId = parseInt(req.params.hackathonId);
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    const hackathon = await HackathonModel.findById(hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    // Get user's team
+    const userTeam = await TeamModel.getUserTeamInHackathon(req.user.userId, hackathonId);
+
+    if (!userTeam) {
+      return res.status(200).json([]); // Return empty array if not in a team
+    }
+
+    const submissions = await SubmissionModel.findAllByTeamAndHackathon(userTeam.id, hackathonId);
+
+    // Get files for each submission
+    const submissionsWithFiles = await Promise.all(
+      submissions.map(async (submission) => {
+        const files = await SubmissionFileModel.findBySubmission(submission.id);
+        return {
+          ...submission,
+          files,
+        };
+      })
+    );
+
+    return res.status(200).json(submissionsWithFiles);
+  } catch (error) {
+    console.error('Get my team submissions error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
