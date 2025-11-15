@@ -10,7 +10,6 @@ import {
   type GetHackathonsData,
   type PostHackathonsData,
   type PutHackathonsByIdData,
-  type DeleteHackathonsByIdData,
 } from '@/lib/api/client';
 import { unwrapResponse } from '@/lib/api/utils';
 

@@ -15,7 +15,7 @@ const Footer = () => {
               <span className="text-xl font-bold">HackathonHub</span>
             </div>
             <p className="text-gray-400 text-sm">
-              The world's leading platform for data science competitions and collaborative learning.
+              The world&rsquo;s leading platform for data science competitions and collaborative learning.
             </p>
           </div>
           

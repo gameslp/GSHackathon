@@ -48,8 +48,9 @@ export default function SignUpPage() {
             setStep('qrcode');
           }
         },
-        onError: (error: any) => {
-          setError(error?.message || 'Failed to start registration');
+        onError: (mutationError: unknown) => {
+          const message = mutationError instanceof Error ? mutationError.message : 'Failed to start registration';
+          setError(message);
         },
       }
     );
@@ -71,8 +72,9 @@ export default function SignUpPage() {
     registerConfirmMutation.mutate(
       { username, token: code },
       {
-        onError: (error: any) => {
-          setError(error?.message || 'Invalid verification code');
+        onError: (mutationError: unknown) => {
+          const message = mutationError instanceof Error ? mutationError.message : 'Invalid verification code';
+          setError(message);
         },
       }
     );
@@ -196,7 +198,7 @@ export default function SignUpPage() {
                     className="w-full"
                     onClick={handleContinueToVerify}
                   >
-                    I've Scanned the QR Code
+                    I&rsquo;ve Scanned the QR Code
                   </Button>
                   
                   <button

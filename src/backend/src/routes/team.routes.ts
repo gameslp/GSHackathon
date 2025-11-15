@@ -4,6 +4,7 @@ import {
   joinTeam,
   getMyTeam,
   getHackathonSurvey,
+  getUserTeams,
 } from '../controllers/team.controller';
 import { auth } from '../middleware/auth';
 
@@ -267,5 +268,62 @@ teamRouter.get('/teams/hackathon/:hackathonId', auth, getMyTeam);
  *               $ref: '#/components/schemas/Error'
  */
 teamRouter.get('/teams/hackathon/:hackathonId/survey', getHackathonSurvey);
+
+/**
+ * @openapi
+ * /teams/my:
+ *   get:
+ *     tags:
+ *       - Teams
+ *     summary: Get all teams for current user
+ *     description: Retrieve all teams that the authenticated user is a member of
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Teams retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 teams:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       name:
+ *                         type: string
+ *                       invitationCode:
+ *                         type: string
+ *                       captainId:
+ *                         type: integer
+ *                       isCaptain:
+ *                         type: boolean
+ *                       isAccepted:
+ *                         type: boolean
+ *                       memberCount:
+ *                         type: integer
+ *                       hackathon:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           title:
+ *                             type: string
+ *                           startDate:
+ *                             type: string
+ *                             format: date-time
+ *                           endDate:
+ *                             type: string
+ *                             format: date-time
+ *       401:
+ *         description: Not authenticated
+ *       500:
+ *         description: Internal server error
+ */
+teamRouter.get('/teams/my', auth, getUserTeams);
 
 export default teamRouter;
