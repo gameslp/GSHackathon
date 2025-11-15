@@ -141,7 +141,7 @@ function ChallengePageContent({ hackathonId }: { hackathonId: number }) {
   const thumbnailUrl = hackathon?.thumbnailUrl
     ? hackathon.thumbnailUrl.startsWith('http')
       ? hackathon.thumbnailUrl
-      : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${hackathon.thumbnailUrl}`
+      : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/uploads${hackathon.thumbnailUrl}`
     : null;
 
   const initializeSurveyResponses = () => {
