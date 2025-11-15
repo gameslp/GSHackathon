@@ -47,7 +47,7 @@ function parseScoreFromOutput(output: string): number | null {
 	const score = parseFloat(trimmed);
 
 	// Zwróć score tylko jeśli to prawidłowa liczba
-	return isNaN(score) ? null : score;
+	return isNaN(score) ? 0 : score;
 }
 
 /**

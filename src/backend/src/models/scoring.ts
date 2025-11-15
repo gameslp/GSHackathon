@@ -77,8 +77,10 @@ export class ScoringModel {
     const result = await runDockerTest(payload);
     
     if(result.error) {
+      SubmissionModel.update(this.Submission.id, {score: 0,});
       SubmissionModel.updateScoreComment(this.Submission.id, `CHECKER RUNTIME ERROR:\n${result.error}`, this.ScoreId);
     } else if (result.timedOut) {
+      SubmissionModel.update(this.Submission.id, {score: 0,});
       SubmissionModel.updateScoreComment(this.Submission.id, `⚠️ TIME LIMIT EXCEEDED (${hackathon.submissionTimeout}s)`, this.ScoreId);
     } else {
       SubmissionModel.update(this.Submission.id, {
