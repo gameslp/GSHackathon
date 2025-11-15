@@ -8,6 +8,8 @@ import {
   getMyTeamSubmission,
   getMyTeamSubmissions,
   scoreSubmission,
+  triggerRejudgeScoring,
+  triggerAllRejudgeScoring,
   getAICodeAssistance,
 } from '../controllers/submission.controller';
 import { auth } from '../middleware/auth';
@@ -510,6 +512,110 @@ submissionRouter.get('/hackathons/:hackathonId/my-submissions', auth, getMyTeamS
  *               $ref: '#/components/schemas/Error'
  */
 submissionRouter.post('/submissions/:submissionId/score', auth, scoreSubmission);
+
+/**
+ * @openapi
+ * /submissions/{submissionId}/rejudge:
+ *   post:
+ *     tags:
+ *       - Submissions
+ *     summary: Trigger rejudge scoring for a submission
+ *     description: Re-run automatic scoring for a specific submission (organizer/admin/judge only)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: submissionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Submission ID
+ *     responses:
+ *       200:
+ *         description: Rejudge scoring triggered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Rejudge scoring triggered successfully"
+ *       400:
+ *         description: Invalid submission ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Not authorized to trigger rejudge
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Submission or hackathon not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+submissionRouter.post('/submissions/:submissionId/rejudge', auth, triggerRejudgeScoring);
+
+/**
+ * @openapi
+ * /hackathons/{hackathonId}/submissions/rejudge-all:
+ *   post:
+ *     tags:
+ *       - Submissions
+ *     summary: Trigger rejudge scoring for all submissions
+ *     description: Re-run automatic scoring for all submissions in a hackathon (organizer/admin/judge only)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: hackathonId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Hackathon ID
+ *     responses:
+ *       200:
+ *         description: Rejudge scoring triggered for all submissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Rejudge scoring triggered successfully"
+ *       403:
+ *         description: Not authorized to trigger rejudge
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Hackathon not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+submissionRouter.post('/hackathons/:hackathonId/submissions/rejudge-all', auth, triggerAllRejudgeScoring);
 
 /**
  * @openapi

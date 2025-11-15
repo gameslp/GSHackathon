@@ -515,6 +515,76 @@ export const scoreSubmission = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const triggerRejudgeScoring = async (req: AuthRequest, res: Response) => {
+  try{
+    const submissionId = parseInt(req.params.submissionId);
+
+    if (!submissionId || isNaN(submissionId)) {
+      return res.status(400).json({ error: 'Invalid submission ID' });
+    }
+
+    const submission = await SubmissionModel.findById(submissionId);
+
+    if (!submission) {
+      return res.status(404).json({ error: 'Submission not found' });
+    }
+
+    const hackathon = await HackathonModel.findById(submission.hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    const isOrganizer = req.user.userId === hackathon.organizerId;
+    const isAdmin = req.user.role === 'ADMIN';
+    const isJudge = req.user.role === 'JUDGE';
+
+    if(!hackathon.autoScoringEnabled) {
+      return res.status(400).json({ error: 'Auto scoring is not enabled for this hackathon' });
+    }
+
+    if (!isOrganizer && !isAdmin && !isJudge) {
+      return res.status(403).json({ error: 'Not authorized to score submissions' });
+    }
+
+    await SubmissionModel.triggerRejudgeScoring(submissionId);
+    return res.status(200).json({ message: 'Rejudge scoring triggered successfully' });
+  }
+  catch (error) {
+    console.error('Trigger rejudge scoring error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+export const triggerAllRejudgeScoring = async (req: AuthRequest, res: Response) => {
+  try{
+    const hackathon = await HackathonModel.findById(parseInt(req.params.hackathonId));
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    const isOrganizer = req.user.userId === hackathon.organizerId;
+    const isAdmin = req.user.role === 'ADMIN';
+    const isJudge = req.user.role === 'JUDGE';
+
+    if (!isOrganizer && !isAdmin && !isJudge) {
+      return res.status(403).json({ error: 'Not authorized to score submissions' });
+    }
+
+    if(!hackathon.autoScoringEnabled) {
+      return res.status(400).json({ error: 'Auto scoring is not enabled for this hackathon' });
+    }
+
+    await SubmissionModel.triggerAllRejudgeScoringForHackathon(hackathon.id);
+    return res.status(200).json({ message: 'Rejudge scoring triggered successfully' });
+  }
+  catch (error) {
+    console.error('Trigger all rejudge scoring error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 // Get AI assistance for submission's Python code
 export const getAICodeAssistance = async (req: AuthRequest, res: Response) => {
   try {
