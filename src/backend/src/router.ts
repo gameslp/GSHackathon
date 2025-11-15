@@ -9,6 +9,7 @@ import hackathonRouter from "./routes/hackathon.routes";
 import fileRouter from "./routes/files.routes";
 import submissionRouter from "./routes/submission.routes";
 import fileUploadRouter from "./routes/fileUpload.routes";
+import submissionFileFormatRouter from "./routes/submissionFileFormat.routes";
 
 export function setupRoutes(app: Application) {
 
@@ -28,6 +29,7 @@ export function setupRoutes(app: Application) {
       app.use(hackathonRouter);
       app.use(submissionRouter);
       app.use(fileUploadRouter);
+      app.use(submissionFileFormatRouter);
       app.use(fileRouter);
       app.use(healthRouter);
 
