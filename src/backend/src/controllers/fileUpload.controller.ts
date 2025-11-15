@@ -12,7 +12,7 @@ import { SubmissionFileModel } from 'src/models/submissionFile';
 import { SubmissionModel } from 'src/models/submission';
 import { id } from 'zod/v4/locales';
 
-const uploadDir = path.join(__dirname, '../../uploads');
+export const uploadDir = path.join(__dirname, '../../uploads');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
