@@ -18,6 +18,7 @@ export interface CreateHackathonData {
   ramLimit?: number | null;
   submissionTimeout?: number | null;
   submissionLimit?: number | null;
+  thumbnailUrl?: string | null;
 }
 
 export interface UpdateHackathonData {
@@ -36,6 +37,7 @@ export interface UpdateHackathonData {
   ramLimit?: number | null;
   submissionTimeout?: number | null;
   submissionLimit?: number | null;
+  thumbnailUrl?: string | null;
 }
 
 export class HackathonModel {
@@ -57,6 +59,7 @@ export class HackathonModel {
         ramLimit: data.ramLimit ?? null,
         submissionTimeout: data.submissionTimeout ?? null,
         submissionLimit: data.submissionLimit ?? null,
+        thumbnailUrl: data.thumbnailUrl ?? null,
         organizer: {
           connect: { id: data.organizerId },
         },

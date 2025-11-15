@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import { SubmissionFileFormatModel } from '../models/submissionFileFormat';
 import { HackathonModel } from '../models/hackathon';
 import { TeamModel } from '../models/team';
+import { buildSubmissionUrl } from '../lib/uploads';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -143,7 +144,6 @@ export const uploadSubmissionFile = async (req: AuthRequest, res: Response) => {
   try {
     const fileFormatId = parseInt(req.body.fileFormatId);
     const hackathonId = parseInt(req.body.hackathonId);
-    const submissionId = parseInt(req.body.submissionId);
 
     if (!fileFormatId || isNaN(fileFormatId)) {
       return res.status(400).json({ error: 'Invalid file format ID' });
@@ -151,10 +151,6 @@ export const uploadSubmissionFile = async (req: AuthRequest, res: Response) => {
 
     if (!hackathonId || isNaN(hackathonId)) {
       return res.status(400).json({ error: 'Invalid hackathon ID' });
-    }
-
-    if (await SubmissionModel.isSend(submissionId)) {
-      return res.status(400).json({ error: 'Cannot upload files to a sent submission' });
     }
 
     if (!req.file) {
@@ -200,20 +196,11 @@ export const uploadSubmissionFile = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Generate file URL
-    const fileUrl = `submissions/${req.file.filename}`;
-    await fs.promises.rename(req.file.path, path.join(uploadDir, fileUrl));
-
-    const createResponse = await SubmissionFileModel.create({
-      submissionId,
-      fileFormatId,
-      fileUrl,
-    });
+    // Generate file URL using centralized function
+    const fileUrl = buildSubmissionUrl(req.file.filename);
 
     return res.status(200).json({
       message: 'File uploaded successfully',
-      id: createResponse.id,
-      submissionId,
       fileFormatId,
       fileUrl,
       fileName: req.file.originalname,

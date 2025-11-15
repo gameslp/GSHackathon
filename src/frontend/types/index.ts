@@ -32,6 +32,7 @@ export interface Hackathon {
   updatedAt: string;
   organizer?: User;
   resources?: HackathonResource[];
+  thumbnailUrl?: string | null;
 }
 
 export interface HackathonResource {

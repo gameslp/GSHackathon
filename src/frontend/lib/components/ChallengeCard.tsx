@@ -1,5 +1,8 @@
+/* eslint-disable @next/next/no-img-element */
 import { Challenge } from '@/types';
 import Button from './Button';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 interface ChallengeCardProps {
   challenge: Challenge;
@@ -25,20 +28,33 @@ const ChallengeCard = ({ challenge }: ChallengeCardProps) => {
     return new Intl.NumberFormat('en-US').format(participants);
   };
 
+  const thumbnailUrl = challenge.thumbnailUrl
+    ? challenge.thumbnailUrl.startsWith('http')
+      ? challenge.thumbnailUrl
+      : `${API_BASE_URL}${challenge.thumbnailUrl}`
+    : null;
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full">
-      <div className="relative h-48 bg-linear-to-br from-[#7297c5] to-[#5a7ba3] flex items-center justify-center">
-        <div className="absolute inset-0 bg-black opacity-10"></div>
-        <div className="relative z-10 text-center px-4">
-          <div className="text-6xl mb-2">
-            {challenge.category === 'Classification' && '🎯'}
-            {challenge.category === 'Regression' && '📈'}
-            {challenge.category === 'NLP' && '💬'}
-            {challenge.category === 'Computer Vision' && '👁️'}
-            {challenge.category === 'Time Series' && '⏱️'}
-            {challenge.category === 'Other' && '🔬'}
+      <div className="relative h-48">
+        {thumbnailUrl ? (
+          <img
+            src={thumbnailUrl}
+            alt={`${challenge.title} thumbnail`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="h-full bg-linear-to-br from-[#7297c5] to-[#5a7ba3] flex items-center justify-center">
+            <div className="text-6xl mb-2">
+              {challenge.category === 'Classification' && '🎯'}
+              {challenge.category === 'Regression' && '📈'}
+              {challenge.category === 'NLP' && '💬'}
+              {challenge.category === 'Computer Vision' && '👁️'}
+              {challenge.category === 'Time Series' && '⏱️'}
+              {challenge.category === 'Other' && '🔬'}
+            </div>
           </div>
-        </div>
+        )}
         {challenge.status === 'upcoming' && (
           <div className="absolute top-3 left-3 bg-yellow-400 text-black px-3 py-1 rounded-full text-xs font-semibold">
             Coming Soon

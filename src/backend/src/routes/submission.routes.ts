@@ -2,9 +2,11 @@ import { Router } from 'express';
 import {
   createSubmission,
   submit,
+  saveDraftSubmissionFiles,
   getSubmission,
   getHackathonSubmissions,
   getMyTeamSubmission,
+  getMyTeamSubmissions,
   scoreSubmission,
 } from '../controllers/submission.controller';
 import { auth } from '../middleware/auth';
@@ -146,6 +148,53 @@ submissionRouter.post('/hackathons/:hackathonId/submissions', auth, createSubmis
  *               $ref: '#/components/schemas/Error'
  */
 submissionRouter.post('/hackathons/:hackathonId/submissions/:submissionId/submit', auth, submit);
+
+/**
+ * @openapi
+ * /submissions/{submissionId}/files:
+ *   put:
+ *     tags:
+ *       - Submissions
+ *     summary: Save draft submission files
+ *     description: Persist draft submission files so the team can return later
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: submissionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Submission ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               files:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     fileFormatId:
+ *                       type: integer
+ *                     fileUrl:
+ *                       type: string
+ *     responses:
+ *       200:
+ *         description: Draft files saved successfully
+ *       400:
+ *         description: Invalid submission ID or payload
+ *       403:
+ *         description: Not authorized to edit this submission
+ *       404:
+ *         description: Submission not found
+ *       500:
+ *         description: Internal server error
+ */
+submissionRouter.put('/submissions/:submissionId/files', auth, saveDraftSubmissionFiles);
 
 /**
  * @openapi
@@ -341,6 +390,53 @@ submissionRouter.get('/hackathons/:hackathonId/submissions', auth, getHackathonS
  *               $ref: '#/components/schemas/Error'
  */
 submissionRouter.get('/hackathons/:hackathonId/my-submission', auth, getMyTeamSubmission);
+
+/**
+ * @openapi
+ * /hackathons/{hackathonId}/my-submissions:
+ *   get:
+ *     tags:
+ *       - Submissions
+ *     summary: Get all current user's team submissions
+ *     description: Retrieve all submissions for the current user's team in a hackathon
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: hackathonId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Hackathon ID
+ *     responses:
+ *       200:
+ *         description: Team submissions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *       400:
+ *         description: Invalid hackathon ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Hackathon not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+submissionRouter.get('/hackathons/:hackathonId/my-submissions', auth, getMyTeamSubmissions);
 
 /**
  * @openapi

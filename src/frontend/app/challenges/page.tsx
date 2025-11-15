@@ -67,6 +67,7 @@ const mapHackathonToChallenge = (hackathon: Hackathon): Challenge => {
     daysRemaining,
     status,
     organizerName,
+    thumbnailUrl: hackathon.thumbnailUrl ?? undefined,
   };
 };
 

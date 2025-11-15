@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element */
+
 import { use, useMemo, useState } from 'react';
 import { notFound, useRouter } from 'next/navigation';
 import Header from '@/lib/components/Header';
@@ -10,6 +12,7 @@ import { useHackathon } from '@/lib/hooks/useHackathons';
 import { useHackathonSurvey, useMyTeam, useCreateTeam, useJoinTeam } from '@/lib/hooks/useTeams';
 import { useProvidedFiles } from '@/lib/hooks/useHackathonFiles';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useMyTeamSubmissions, useSubmission } from '@/lib/hooks/useSubmissions';
 import type { HackathonResource } from '@/types';
 
 interface PageProps {
@@ -55,6 +58,27 @@ function ChallengePageContent({ hackathonId }: { hackathonId: number }) {
   } = useProvidedFiles(hackathonId, {
     enabled: Boolean(user && canViewProvidedFiles),
   });
+
+  const {
+    data: mySubmissions = [],
+    isLoading: submissionsLoading,
+  } = useMyTeamSubmissions(hackathonId, {
+    enabled: Boolean(user && myTeam?.isAccepted),
+  });
+
+  const submittedCount = mySubmissions.filter((s) => s.sendAt).length;
+  const hasDraftSubmission = mySubmissions.some((submission) => !submission.sendAt);
+  const submissionLimit = hackathon?.submissionLimit ?? 0;
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<number | null>(null);
+  const {
+    data: selectedSubmission,
+    isLoading: selectedSubmissionLoading,
+  } = useSubmission(selectedSubmissionId ?? 0, {
+    enabled: Boolean(selectedSubmissionId),
+  });
+  const detailSubmission = selectedSubmissionId
+    ? selectedSubmission ?? mySubmissions.find((s) => s.id === selectedSubmissionId)
+    : null;
 
   const createTeam = useCreateTeam();
   const joinTeam = useJoinTeam();
@@ -115,6 +139,11 @@ function ChallengePageContent({ hackathonId }: { hackathonId: number }) {
       hackathonId: resource.hackathonId ?? hackathon.id!,
     }));
   }, [hackathon]);
+  const thumbnailUrl = hackathon?.thumbnailUrl
+    ? hackathon.thumbnailUrl.startsWith('http')
+      ? hackathon.thumbnailUrl
+      : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${hackathon.thumbnailUrl}`
+    : null;
 
   const initializeSurveyResponses = () => {
     const defaults: Record<number, string> = {};
@@ -317,6 +346,15 @@ function ChallengePageContent({ hackathonId }: { hackathonId: number }) {
             <p>{hackathon.endDate ? new Date(hackathon.endDate).toLocaleString() : 'TBD'}</p>
           </div>
         </div>
+        {thumbnailUrl && (
+          <div className="mt-6">
+            <img
+              src={thumbnailUrl}
+              alt={`${hackathon.title} thumbnail`}
+              className="w-full h-72 object-cover rounded-lg border border-gray-200"
+            />
+          </div>
+        )}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-4 text-sm text-gray-600">
             <div>
               <p className="font-semibold text-black">Registration closes</p>
@@ -404,15 +442,244 @@ function ChallengePageContent({ hackathonId }: { hackathonId: number }) {
             )}
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-            {!user && (
-              <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-4">
-                Sign in to create or join a team.
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-black">Submissions</h2>
+                <p className="text-sm text-gray-500">
+                  Track your team&rsquo;s submission history and scores
+                </p>
               </div>
-            )}
-            {globalMessage && (
-              <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3">
-                {globalMessage}
+              {myTeam?.isAccepted && submissionLimit > 0 && (
+                <span className="text-sm text-gray-600">
+                  {submittedCount} / {submissionLimit} submissions
+                </span>
+              )}
+            </div>
+
+            {!user ? (
+              <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                Sign in to view and submit solutions.
+              </div>
+            ) : !myTeam ? (
+              <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                Join a team to submit solutions.
+              </div>
+            ) : !myTeam.isAccepted ? (
+              <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                Your team needs to be accepted before you can submit.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {globalMessage && (
+                  <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3">
+                    {globalMessage}
+                  </div>
+                )}
+                {hasDraftSubmission && (
+                  <div className="text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    You have a draft submission in progress. Click &ldquo;Continue Draft&rdquo; to finish it.
+                  </div>
+                )}
+
+                {submissionsLoading ? (
+                  <p className="text-sm text-gray-600">Loading submissions...</p>
+                ) : mySubmissions.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600 mb-4">No submissions yet</p>
+                    <Button variant="primary" href={`/challenges/${hackathonId}/submit`}>
+                      Create Your First Submission
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border border-gray-200 rounded-lg">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                              Submitted
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                              Score
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                              Files
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {mySubmissions.map((submission) => {
+                            const isSelected = selectedSubmissionId === submission.id;
+                            return (
+                              <tr
+                                key={submission.id}
+                                className={`cursor-pointer ${
+                                  isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
+                                }`}
+                                onClick={() => {
+                                  if (submission.sendAt) {
+                                    setSelectedSubmissionId(submission.id);
+                                  } else {
+                                    router.push(`/challenges/${hackathonId}/submit`);
+                                  }
+                                }}
+                                title={
+                                  submission.sendAt ? 'View submission details' : 'Continue your draft'
+                                }
+                              >
+                                <td className="px-4 py-3 text-sm text-gray-700">
+                                  {submission.sendAt
+                                    ? new Date(submission.sendAt).toLocaleString()
+                                    : 'Draft'}
+                                </td>
+                              <td className="px-4 py-3">
+                                {submission.sendAt ? (
+                                  submission.score !== null && submission.score !== undefined ? (
+                                    <span className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded">
+                                      Scored
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded">
+                                      Pending Review
+                                    </span>
+                                  )
+                                ) : (
+                                  <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded">
+                                    Draft - click to continue
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                {submission.score !== null && submission.score !== undefined ? (
+                                  <div>
+                                    <p className="font-semibold text-black">{submission.score}</p>
+                                    {submission.scoreComment && (
+                                      <p className="text-xs text-gray-500 mt-1">{submission.scoreComment}</p>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-700">
+                                {submission.files?.length ?? 0} files
+                              </td>
+                            </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">Submission details</p>
+                          <p className="text-xs text-gray-500">
+                            Click a finalized submission to view review info.
+                          </p>
+                        </div>
+                        {selectedSubmissionId && (
+                          <button
+                            className="text-xs text-primary hover:underline"
+                            onClick={() => setSelectedSubmissionId(null)}
+                          >
+                            Clear selection
+                          </button>
+                        )}
+                      </div>
+                      {selectedSubmissionId ? (
+                        selectedSubmissionLoading ? (
+                          <p className="text-sm text-gray-600">Loading submission details...</p>
+                        ) : !detailSubmission ? (
+                          <p className="text-sm text-gray-600">
+                            Unable to load this submission. Try again later.
+                          </p>
+                        ) : (
+                          <div className="space-y-4">
+                            <div>
+                              <p className="text-xs text-gray-500">Submitted</p>
+                              <p className="text-sm font-medium text-black">
+                                {detailSubmission.sendAt
+                                  ? new Date(detailSubmission.sendAt).toLocaleString()
+                                  : 'Draft'}
+                              </p>
+                            </div>
+                            <div className="border border-gray-200 rounded-lg p-3">
+                              <p className="text-xs text-gray-500 mb-1">Review</p>
+                              {detailSubmission.score !== null &&
+                              detailSubmission.score !== undefined ? (
+                                <>
+                                  <p className="text-lg font-bold text-black">
+                                    Score: {detailSubmission.score}
+                                  </p>
+                                  {detailSubmission.scoreComment && (
+                                    <p className="text-sm text-gray-600 mt-1">
+                                      {detailSubmission.scoreComment}
+                                    </p>
+                                  )}
+                                </>
+                              ) : (
+                                <p className="text-sm text-gray-600">Pending review</p>
+                              )}
+                            </div>
+                            <div className="border border-gray-200 rounded-lg p-3">
+                              <p className="text-xs text-gray-500 mb-2">Files</p>
+                              {detailSubmission.files && detailSubmission.files.length > 0 ? (
+                                <ul className="space-y-2 text-sm">
+                                  {detailSubmission.files.map((file) => {
+                                    const label =
+                                      file.fileFormat?.name ||
+                                      file.fileUrl?.split('/').pop() ||
+                                      'File';
+                                    const fileHref = file.fileUrl?.startsWith('http')
+                                      ? file.fileUrl
+                                      : `${API_BASE_URL}${file.fileUrl}`;
+                                    return (
+                                      <li key={file.id} className="flex items-center justify-between">
+                                        <span className="text-gray-700">{label}</span>
+                                        <button
+                                          className="text-primary hover:underline"
+                                          onClick={() => window.open(fileHref, '_blank')}
+                                        >
+                                          Download
+                                        </button>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              ) : (
+                                <p className="text-sm text-gray-600">No files attached.</p>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      ) : (
+                        <p className="text-sm text-gray-600">Select a submission to see details.</p>
+                      )}
+                    </div>
+
+                    {(!submissionLimit || submittedCount < submissionLimit) && (
+                      <div className="flex justify-center pt-2">
+                        <Button variant="primary" href={`/challenges/${hackathonId}/submit`}>
+                          {hasDraftSubmission ? 'Continue Draft' : 'New Submission'}
+                        </Button>
+                      </div>
+                    )}
+
+                    {submissionLimit && submittedCount >= submissionLimit && (
+                      <div className="text-center py-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-sm text-yellow-800">
+                          You have reached the submission limit for this hackathon
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>

@@ -48,6 +48,21 @@ export class SubmissionModel {
         teamId,
         hackathonId,
       },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  static async findAllByTeamAndHackathon(teamId: number, hackathonId: number) {
+    return await prisma.submission.findMany({
+      where: {
+        teamId,
+        hackathonId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
   }
 
@@ -70,6 +85,31 @@ export class SubmissionModel {
   static async delete(id: number) {
     return await prisma.submission.delete({
       where: { id },
+    });
+  }
+
+  static async findDraftByTeamAndHackathon(teamId: number, hackathonId: number) {
+    return prisma.submission.findFirst({
+      where: {
+        teamId,
+        hackathonId,
+        sendAt: null,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  static async countSubmittedByTeam(teamId: number, hackathonId: number) {
+    return prisma.submission.count({
+      where: {
+        teamId,
+        hackathonId,
+        sendAt: {
+          not: null,
+        },
+      },
     });
   }
 }

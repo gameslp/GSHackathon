@@ -418,6 +418,32 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        SurveyQuestion: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'integer',
+            },
+            question: {
+              type: 'string',
+            },
+            order: {
+              type: 'integer',
+              nullable: true,
+            },
+            hackathonId: {
+              type: 'integer',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+            },
+          },
+        },
         Hackathon: {
           type: 'object',
           properties: {

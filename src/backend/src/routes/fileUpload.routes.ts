@@ -5,6 +5,7 @@ import {
   uploadSubmissionFile,
   upload,
 } from '../controllers/fileUpload.controller';
+import { submissionUpload } from '../lib/uploads';
 import { auth } from '../middleware/auth';
 
 const fileUploadRouter = Router();
@@ -239,7 +240,7 @@ fileUploadRouter.post(
 fileUploadRouter.post(
   '/hackathons/submissions/upload',
   auth,
-  upload.single('file'),
+  submissionUpload.single('file'),
   uploadSubmissionFile
 );
 
