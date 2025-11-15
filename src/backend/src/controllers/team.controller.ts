@@ -372,3 +372,57 @@ export const getHackathonSurvey = async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+export const getUserTeams = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+
+    if (!user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const teams = await prisma.team.findMany({
+      where: {
+        members: {
+          some: { id: user.userId },
+        },
+      },
+      include: {
+        hackathon: {
+          select: {
+            id: true,
+            title: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+        members: {
+          select: {
+            id: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    const formattedTeams = teams.map((team) => ({
+      id: team.id,
+      name: team.name,
+      invitationCode: team.invitationCode,
+      captainId: team.captainId,
+      isCaptain: team.captainId === user.userId,
+      isAccepted: team.isAccepted,
+      hackathon: team.hackathon,
+      memberCount: team.members.length,
+      createdAt: team.createdAt,
+      updatedAt: team.updatedAt,
+    }));
+
+    return res.status(200).json({ teams: formattedTeams });
+  } catch (error) {
+    console.error('Get user teams error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};

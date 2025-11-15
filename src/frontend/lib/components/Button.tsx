@@ -26,8 +26,8 @@ const Button = ({
   
   const variantStyles = {
     primary: 'bg-[#7297c5] text-white hover:bg-[#5a7ba3] focus:ring-[#7297c5]',
-    secondary: 'bg-black text-white hover:bg-gray-800 focus:ring-black',
-    outline: 'border-2 border-[#7297c5] text-[#7297c5] hover:bg-[#7297c5] hover:text-white focus:ring-[#7297c5]',
+secondary: 'bg-black text-white border-2 border-black hover:bg-white hover:text-black transition-all duration-200 ease-out focus:ring-black',
+    outline: 'border-2 border-[#7297c5] text-[#7297c5] bg-white hover:bg-[#7297c5] hover:text-white focus:ring-[#7297c5]',
     ghost: 'text-black hover:bg-gray-100 focus:ring-gray-200',
   };
   

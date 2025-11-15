@@ -71,6 +71,18 @@ const updateHackathonSchema = z.object({
   path: ['teamMax'],
 });
 
+const surveyQuestionSchema = z.object({
+  question: z.string().min(5).max(1000),
+  order: z.number().int().positive().optional(),
+});
+
+const updateSurveyQuestionSchema = z.object({
+  question: z.string().min(5).max(1000).optional(),
+  order: z.number().int().positive().optional(),
+}).refine(data => Object.keys(data).length > 0, {
+  message: 'At least one field must be provided',
+});
+
 export const getHackathonTeams = async (req: Request, res: Response) => {
   try {
     const hackathonId = parseInt(req.params.hackathonId);
@@ -855,6 +867,121 @@ export const getMyTeamInHackathon = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error('Get my team error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getHackathonSurveyQuestionsAdmin = async (req: Request, res: Response) => {
+  try {
+    const hackathonId = parseInt(req.params.hackathonId);
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    const hackathon = await prisma.hackathon.findUnique({ where: { id: hackathonId } });
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    const questions = await prisma.surveyQuestion.findMany({
+      where: { hackathonId },
+      orderBy: { order: 'asc' },
+    });
+
+    return res.status(200).json({ questions });
+  } catch (error) {
+    console.error('Admin get survey questions error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const createSurveyQuestion = async (req: Request, res: Response) => {
+  try {
+    const hackathonId = parseInt(req.params.hackathonId);
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    const validationResult = surveyQuestionSchema.safeParse(req.body);
+
+    if (!validationResult.success) {
+      return res.status(400).json({ error: 'Validation failed', details: validationResult.error.issues });
+    }
+
+    const hackathon = await prisma.hackathon.findUnique({ where: { id: hackathonId } });
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    const nextOrder = validationResult.data.order
+      ? validationResult.data.order
+      : ((await prisma.surveyQuestion.aggregate({
+          where: { hackathonId },
+          _max: { order: true },
+        }))._max.order || 0) + 1;
+
+    const created = await prisma.surveyQuestion.create({
+      data: {
+        hackathonId,
+        question: validationResult.data.question,
+        order: nextOrder,
+      },
+    });
+
+    return res.status(201).json({ question: created });
+  } catch (error) {
+    console.error('Create survey question error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const updateSurveyQuestion = async (req: Request, res: Response) => {
+  try {
+    const questionId = parseInt(req.params.questionId);
+    if (!questionId || isNaN(questionId)) {
+      return res.status(400).json({ error: 'Invalid question ID' });
+    }
+
+    const validationResult = updateSurveyQuestionSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({ error: 'Validation failed', details: validationResult.error.issues });
+    }
+
+    const existing = await prisma.surveyQuestion.findUnique({ where: { id: questionId } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Survey question not found' });
+    }
+
+    const updated = await prisma.surveyQuestion.update({
+      where: { id: questionId },
+      data: validationResult.data,
+    });
+
+    return res.status(200).json({ question: updated });
+  } catch (error) {
+    console.error('Update survey question error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const deleteSurveyQuestion = async (req: Request, res: Response) => {
+  try {
+    const questionId = parseInt(req.params.questionId);
+    if (!questionId || isNaN(questionId)) {
+      return res.status(400).json({ error: 'Invalid question ID' });
+    }
+
+    const existing = await prisma.surveyQuestion.findUnique({ where: { id: questionId } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Survey question not found' });
+    }
+
+    await prisma.surveyQuestion.delete({ where: { id: questionId } });
+    return res.status(200).json({ message: 'Survey question deleted', questionId });
+  } catch (error) {
+    console.error('Delete survey question error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };

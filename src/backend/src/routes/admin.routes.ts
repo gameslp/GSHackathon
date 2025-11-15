@@ -14,6 +14,10 @@ import {
   getTeamDetails,
   acceptTeam,
   rejectTeam,
+  getHackathonSurveyQuestionsAdmin,
+  createSurveyQuestion,
+  updateSurveyQuestion,
+  deleteSurveyQuestion,
 } from '../controllers/hackathon.controller';
 import { auth } from '../middleware/auth';
 import { requireRole } from '../middleware/requireRole';
@@ -562,6 +566,164 @@ adminRouter.delete('/admin/hackathons/:id', ...adminAuth, deleteHackathon);
  *         description: Internal server error
  */
 adminRouter.get('/admin/hackathons/:hackathonId/teams', ...adminAuth, getHackathonTeams);
+
+/**
+ * @openapi
+ * /admin/hackathons/{hackathonId}/survey-questions:
+ *   get:
+ *     tags:
+ *       - Admin
+ *     summary: Get survey questions for a hackathon
+ *     description: Retrieve all survey questions configured for a hackathon (Admin only)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: hackathonId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Hackathon ID
+ *     responses:
+ *       200:
+ *         description: Questions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 questions:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/SurveyQuestion'
+ *       400:
+ *         description: Invalid hackathon ID
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       404:
+ *         description: Hackathon not found
+ */
+adminRouter.get('/admin/hackathons/:hackathonId/survey-questions', ...adminAuth, getHackathonSurveyQuestionsAdmin);
+
+/**
+ * @openapi
+ * /admin/hackathons/{hackathonId}/survey-questions:
+ *   post:
+ *     tags:
+ *       - Admin
+ *     summary: Create a new survey question
+ *     description: Add a survey question to a hackathon (Admin only)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: hackathonId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Hackathon ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - question
+ *             properties:
+ *               question:
+ *                 type: string
+ *               order:
+ *                 type: integer
+ *                 description: Optional order (defaults to end)
+ *     responses:
+ *       201:
+ *         description: Question created successfully
+ *       400:
+ *         description: Validation failed
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       404:
+ *         description: Hackathon not found
+ */
+adminRouter.post('/admin/hackathons/:hackathonId/survey-questions', ...adminAuth, createSurveyQuestion);
+
+/**
+ * @openapi
+ * /admin/survey-questions/{questionId}:
+ *   patch:
+ *     tags:
+ *       - Admin
+ *     summary: Update a survey question
+ *     description: Update text or order of a survey question (Admin only)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Question ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               question:
+ *                 type: string
+ *               order:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Question updated successfully
+ *       400:
+ *         description: Validation failed
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       404:
+ *         description: Question not found
+ */
+adminRouter.patch('/admin/survey-questions/:questionId', ...adminAuth, updateSurveyQuestion);
+
+/**
+ * @openapi
+ * /admin/survey-questions/{questionId}:
+ *   delete:
+ *     tags:
+ *       - Admin
+ *     summary: Delete a survey question
+ *     description: Remove a survey question from a hackathon (Admin only)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Question ID
+ *     responses:
+ *       200:
+ *         description: Question deleted successfully
+ *       400:
+ *         description: Invalid question ID
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       404:
+ *         description: Question not found
+ */
+adminRouter.delete('/admin/survey-questions/:questionId', ...adminAuth, deleteSurveyQuestion);
 
 /**
  * @openapi

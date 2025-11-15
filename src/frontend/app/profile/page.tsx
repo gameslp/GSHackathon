@@ -7,11 +7,13 @@ import Footer from '@/lib/components/Footer';
 import Button from '@/lib/components/Button';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useUpdateProfile } from '@/lib/hooks/useAuthMutations';
+import { useUserTeams, type UserTeamSummary } from '@/lib/hooks/useTeams';
 import type { UserProfile } from '@/lib/api/client';
 
 export default function ProfilePage() {
   const { user, loading, error, logout, isLoggingOut, refetch } = useAuth();
   const updateProfile = useUpdateProfile();
+  const { data: myTeams = [], isLoading: teamsLoading } = useUserTeams({ enabled: Boolean(user) });
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const profileCompletion = useMemo(() => {
@@ -155,6 +157,16 @@ export default function ProfilePage() {
                 </p>
               </div>
             </div>
+
+            <div className="bg-white border border-gray-200 rounded-lg p-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-black">My teams</h2>
+                <Link href="/challenges" className="text-sm text-primary hover:underline">
+                  Find a challenge
+                </Link>
+              </div>
+              <TeamsTable teams={myTeams} loading={teamsLoading} />
+            </div>
           </div>
         )}
       </main>
@@ -240,5 +252,87 @@ function ProfileDetailsForm({ user, isSubmitting, errorMessage, onSubmit }: Prof
         </p>
       </div>
     </form>
+  );
+}
+
+interface TeamsTableProps {
+  teams: UserTeamSummary[];
+  loading: boolean;
+}
+
+function TeamsTable({ teams, loading }: TeamsTableProps) {
+  if (loading) {
+    return <p className="text-gray-600">Loading your teams...</p>;
+  }
+
+  if (!teams || teams.length === 0) {
+    return (
+      <p className="text-gray-600">
+        You are not part of any teams yet. Visit a challenge page to create or join one.
+      </p>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full border border-gray-200 rounded-lg">
+        <thead className="bg-gray-50">
+          <tr className="text-left text-sm text-gray-600">
+            <th className="px-4 py-3 font-semibold">Hackathon</th>
+            <th className="px-4 py-3 font-semibold">Team</th>
+            <th className="px-4 py-3 font-semibold">Role</th>
+            <th className="px-4 py-3 font-semibold">Status</th>
+            <th className="px-4 py-3 font-semibold">Members</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100 text-sm">
+          {teams.map((team) => (
+            <tr
+              key={team.id}
+              className="hover:bg-gray-50 cursor-pointer"
+              onClick={() => {
+                if (team.hackathon?.id) {
+                  window.location.href = `/challenges/${team.hackathon.id}`;
+                }
+              }}
+            >
+              <td className="px-4 py-3">
+                <div className="font-medium text-black">{team.hackathon?.title ?? 'Unknown hackathon'}</div>
+                <div className="text-xs text-gray-500">
+                  ID: {team.hackathon?.id ?? 'N/A'}
+                </div>
+              </td>
+              <td className="px-4 py-3">
+                <div className="font-medium text-black">{team.name}</div>
+                <div className="text-xs text-gray-500 font-mono">Code: {team.invitationCode}</div>
+              </td>
+              <td className="px-4 py-3">
+                {team.isCaptain ? (
+                  <span className="px-2 py-1 text-xs font-semibold text-blue-800 bg-blue-50 rounded-full">
+                    Captain
+                  </span>
+                ) : (
+                  <span className="px-2 py-1 text-xs font-semibold text-gray-700 bg-gray-100 rounded-full">
+                    Member
+                  </span>
+                )}
+              </td>
+              <td className="px-4 py-3">
+                {team.isAccepted ? (
+                  <span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-50 rounded-full">
+                    Accepted
+                  </span>
+                ) : (
+                  <span className="px-2 py-1 text-xs font-semibold text-yellow-800 bg-yellow-50 rounded-full">
+                    Pending
+                  </span>
+                )}
+              </td>
+              <td className="px-4 py-3 text-gray-700">{team.memberCount}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

@@ -15,7 +15,7 @@ const Footer = () => {
               <span className="text-xl font-bold">HackathonHub</span>
             </div>
             <p className="text-gray-400 text-sm">
-              The world's leading platform for data science competitions and collaborative learning.
+              The world&rsquo;s leading platform for data science competitions and collaborative learning.
             </p>
           </div>
           
@@ -23,7 +23,6 @@ const Footer = () => {
             <h3 className="font-semibold mb-4">Platform</h3>
             <ul className="space-y-2 text-sm text-gray-400">
               <li><Link href="/challenges" className="hover:text-[#7297c5] transition-colors">Challenges</Link></li>
-              <li><Link href="/leaderboard" className="hover:text-[#7297c5] transition-colors">Leaderboard</Link></li>
               <li><Link href="/datasets" className="hover:text-[#7297c5] transition-colors">Datasets</Link></li>
               <li><Link href="/notebooks" className="hover:text-[#7297c5] transition-colors">Notebooks</Link></li>
             </ul>

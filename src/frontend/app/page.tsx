@@ -1,12 +1,17 @@
+'use client';
+
 import Header from '@/lib/components/Header';
 import Footer from '@/lib/components/Footer';
 import Button from '@/lib/components/Button';
 import ChallengeCard from '@/lib/components/ChallengeCard';
 import CategoryCard from '@/lib/components/CategoryCard';
 import StatsCard from '@/lib/components/StatsCard';
+import FaultyTerminal from '@/lib/components/FaultyTerminal';
 import { getFeaturedChallenges, getCategories, getPlatformStats } from '@/lib/services/mockData';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 export default function Home() {
+  const { user } = useAuth();
   const featuredChallenges = getFeaturedChallenges().slice(0, 3);
   const categories = getCategories();
   const platformStats = getPlatformStats();
@@ -17,13 +22,34 @@ export default function Home() {
       
       <main>
         {/* Hero Section */}
-        <section className="bg-linear-to-br from-[#7297c5] to-[#5a7ba3] text-white py-20">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto text-center">
+        <section className="relative text-black py-20 overflow-hidden">
+          <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+            <FaultyTerminal
+              scale={2.5}
+              gridMul={[2, 1]}
+              digitSize={1.6}
+              timeScale={1}
+              pause={false}
+              scanlineIntensity={1}
+              glitchAmount={1}
+              flickerAmount={1}
+              noiseAmp={1}
+              chromaticAberration={0}
+              dither={0}
+              curvature={0}
+              tint="#8D683A"
+              mouseReact={true}
+              mouseStrength={0.5}
+              pageLoadAnimation={false}
+              brightness={0.25}
+            />
+          </div>
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="max-w-4xl mx-auto text-center bg-white/95 rounded-lg p-8 md:p-12">
               <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
                 Compete. Learn. Showcase Your Data Science Skills.
               </h1>
-              <p className="text-xl md:text-2xl mb-8 text-white/90">
+              <p className="text-xl md:text-2xl mb-8 text-black/80">
                 Join the world&rsquo;s largest community of data scientists and machine learning engineers. 
                 Solve real-world problems, win prizes, and advance your career.
               </p>
@@ -31,18 +57,17 @@ export default function Home() {
                 <Button variant="secondary" size="lg" href="/signup">
                   Get Started Free
                 </Button>
-                <Button variant="outline" size="lg" href="/challenges" className="border-white text-white hover:bg-white hover:text-[#7297c5]">
+                <Button variant="outline" size="lg" href="/challenges" className="border-black text-black hover:bg-black hover:text-white">
                   Explore Challenges
                 </Button>
               </div>
               
               {/* Stats Preview */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-8">
                 {platformStats.map((stat, index) => (
                   <div key={index} className="text-center">
-                    <div className="text-4xl mb-2">{stat.icon}</div>
                     <div className="text-3xl font-bold mb-1">{stat.value}</div>
-                    <div className="text-sm text-white/80">{stat.label}</div>
+                    <div className="text-sm text-black/70">{stat.label}</div>
                   </div>
                 ))}
               </div>
@@ -161,26 +186,28 @@ export default function Home() {
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-20 bg-black text-white">
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="text-4xl font-bold mb-4">
-              Ready to Start Your Data Science Journey?
-            </h2>
-            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-              Join thousands of data scientists competing in challenges, learning from experts, 
-              and building their careers on HackathonHub.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="primary" size="lg" href="/signup">
-                Join Now - It&rsquo;s Free
-              </Button>
-              <Button variant="outline" size="lg" href="/learn" className="border-white text-white hover:bg-white hover:text-black">
-                Learn More
-              </Button>
+        {/* CTA Section - Hidden for logged in users */}
+        {!user && (
+          <section className="py-20 bg-black text-white">
+            <div className="container mx-auto px-4 text-center">
+              <h2 className="text-4xl font-bold mb-4">
+                Ready to Start Your Data Science Journey?
+              </h2>
+              <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+                Join thousands of data scientists competing in challenges, learning from experts, 
+                and building their careers on HackathonHub.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button variant="primary" size="lg" href="/signup">
+                  Join Now - It&rsquo;s Free
+                </Button>
+                <Button variant="outline" size="lg" href="/learn">
+                  Learn More
+                </Button>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
       </main>
       
       <Footer />

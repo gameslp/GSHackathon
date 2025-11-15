@@ -27,12 +27,6 @@ const Header = () => {
               Challenges
             </Link>
             <Link 
-              href="/leaderboard" 
-              className="text-black hover:text-[#7297c5] font-medium transition-colors"
-            >
-              Leaderboard
-            </Link>
-            <Link 
               href="/learn" 
               className="text-black hover:text-[#7297c5] font-medium transition-colors"
             >
@@ -51,6 +45,14 @@ const Header = () => {
               <div className="text-sm text-gray-500">Checking session...</div>
             ) : user ? (
               <>
+                {user.role === 'ADMIN' && (
+                  <Link
+                    href="/admin"
+                    className="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-[#7297c5] border border-[#7297c5] rounded-lg hover:bg-[#7297c5] hover:text-white transition-colors"
+                  >
+                    Admin
+                  </Link>
+                )}
                 <Link
                   href="/profile"
                   className="hidden sm:flex items-center space-x-2 px-4 py-2 text-black hover:text-primary font-medium transition-colors"

@@ -10,12 +10,14 @@ import {
   type PostTeamsCreateResponses,
   type PostTeamsJoinResponses,
 } from '@/lib/api/client';
+import { client as apiClient } from '@/lib/api/client';
 import { unwrapResponse } from '@/lib/api/utils';
 
 // Query keys
 export const teamKeys = {
   all: ['teams'] as const,
   myTeam: (hackathonId: number) => [...teamKeys.all, 'my', hackathonId] as const,
+  myTeamsList: () => [...teamKeys.all, 'list'] as const,
   survey: (hackathonId: number) => [...teamKeys.all, 'survey', hackathonId] as const,
 };
 
@@ -71,12 +73,47 @@ export function useHackathonSurvey(hackathonId: number) {
   });
 }
 
-const invalidateMyTeam = (team: TeamDetails | undefined, queryClient: ReturnType<typeof useQueryClient>) => {
-  const hackathonId = team?.hackathon?.id;
-  if (hackathonId) {
-    queryClient.invalidateQueries({ queryKey: teamKeys.myTeam(hackathonId) });
+const invalidateTeamQueries = (team: TeamDetails | undefined, queryClient: ReturnType<typeof useQueryClient>) => {
+  if (team?.hackathon?.id) {
+    queryClient.invalidateQueries({ queryKey: teamKeys.myTeam(team.hackathon.id) });
   }
+  queryClient.invalidateQueries({ queryKey: teamKeys.myTeamsList() });
 };
+
+export type UserTeamSummary = {
+  id: number;
+  name: string;
+  invitationCode: string;
+  captainId: number;
+  isCaptain: boolean;
+  isAccepted: boolean;
+  memberCount: number;
+  hackathon?: {
+    id: number;
+    title: string;
+    startDate?: string;
+    endDate?: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export function useUserTeams(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: teamKeys.myTeamsList(),
+    enabled: options?.enabled ?? true,
+    queryFn: async () => {
+      const response = await apiClient.get<{ teams?: UserTeamSummary[] }, { error?: string }>({
+        url: '/teams/my',
+      });
+      if ('error' in response && response.error) {
+        const message = typeof response.error === 'string' ? response.error : response.error?.error;
+        throw new Error(message || 'Failed to load teams');
+      }
+      return response.data?.teams ?? [];
+    },
+  });
+}
 
 /**
  * Hook to create a new team
@@ -91,7 +128,7 @@ export function useCreateTeam() {
     },
     onSuccess: (data) => {
       if (data?.team) {
-        invalidateMyTeam(data.team, queryClient);
+        invalidateTeamQueries(data.team, queryClient);
       }
     },
   });
@@ -110,7 +147,7 @@ export function useJoinTeam() {
     },
     onSuccess: (data) => {
       if (data?.team) {
-        invalidateMyTeam(data.team, queryClient);
+        invalidateTeamQueries(data.team, queryClient);
       }
     },
   });

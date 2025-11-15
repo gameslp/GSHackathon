@@ -15,6 +15,7 @@ import {
   type PostHackathonsTeamsByTeamIdRejectResponses,
 } from '@/lib/api/client';
 import { unwrapResponse } from '@/lib/api/utils';
+import { teamKeys } from '@/lib/hooks/useTeams';
 
 // Query keys
 export const adminKeys = {
@@ -24,6 +25,34 @@ export const adminKeys = {
   hackathonTeams: (hackathonId: number, filters?: unknown) =>
     [...adminKeys.all, 'hackathon', hackathonId, 'teams', filters] as const,
   teamDetail: (teamId: number) => [...adminKeys.all, 'team', teamId] as const,
+};
+
+type SurveyQuestionDto = {
+  id: number;
+  question: string;
+  order: number;
+};
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+const adminJsonFetch = async <T>(url: string, options: RequestInit = {}): Promise<T> => {
+  const res = await fetch(`${API_BASE_URL}${url}`, {
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const message = (data as { error?: string })?.error || 'Request failed';
+    throw new Error(message);
+  }
+
+  return data as T;
 };
 
 /**
@@ -160,6 +189,71 @@ export function useRejectTeam() {
       if (variables.hackathonId) {
         queryClient.invalidateQueries({ queryKey: adminKeys.hackathonTeams(variables.hackathonId) });
       }
+    },
+  });
+}
+
+export function useCreateSurveyQuestion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      hackathonId,
+      question,
+      order,
+    }: {
+      hackathonId: number;
+      question: string;
+      order?: number;
+    }) => {
+      return adminJsonFetch<{ question: SurveyQuestionDto }>(
+        `/admin/hackathons/${hackathonId}/survey-questions`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ question, order }),
+        }
+      );
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: teamKeys.survey(variables.hackathonId) });
+    },
+  });
+}
+
+export function useUpdateSurveyQuestion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      questionId,
+      payload,
+    }: {
+      questionId: number;
+      hackathonId: number;
+      payload: { question?: string; order?: number };
+    }) => {
+      return adminJsonFetch<{ question: SurveyQuestionDto }>(
+        `/admin/survey-questions/${questionId}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify(payload),
+        }
+      );
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: teamKeys.survey(variables.hackathonId) });
+    },
+  });
+}
+
+export function useDeleteSurveyQuestion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ questionId }: { questionId: number; hackathonId: number }) => {
+      return adminJsonFetch<{ questionId: number }>(`/admin/survey-questions/${questionId}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: teamKeys.survey(variables.hackathonId) });
     },
   });
 }

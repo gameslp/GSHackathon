@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable react-hooks/set-state-in-effect -- Component manages internal visibility transitions */
+
 import { useCallback, useEffect, useState } from 'react';
 
 export type ToastType = 'success' | 'info' | 'error' | 'warning';
@@ -156,3 +158,5 @@ const Toast = ({
 };
 
 export default Toast;
+
+/* eslint-enable react-hooks/set-state-in-effect */
