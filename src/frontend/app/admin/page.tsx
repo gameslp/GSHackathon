@@ -1850,19 +1850,21 @@ export default function AdminDashboardPage() {
                         </p>
                       ) : (
                         <>
-                          {hackathonDetail?.thumbnailUrl ? (
-                            <img
-                              src={
-                                getAssetUrl(hackathonDetail.thumbnailUrl) ?? ""
-                              }
-                              alt={`${hackathonDetail.title} thumbnail`}
-                              className="w-full h-72 object-cover rounded-lg border border-gray-200"
-                            />
-                          ) : (
-                            <p className="text-sm text-gray-600">
-                              No thumbnail uploaded yet.
-                            </p>
-                          )}
+                          <div className="w-full aspect-video bg-gray-100 rounded-lg border border-gray-200 overflow-hidden flex items-center justify-center">
+                            {hackathonDetail?.thumbnailUrl ? (
+                              <img
+                                src={
+                                  getAssetUrl(hackathonDetail.thumbnailUrl) ?? ""
+                                }
+                                alt={`${hackathonDetail.title} thumbnail`}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <p className="text-sm text-gray-600">
+                                No thumbnail uploaded yet.
+                              </p>
+                            )}
+                          </div>
                           <form
                             className="space-y-3"
                             onSubmit={handleThumbnailUpload}

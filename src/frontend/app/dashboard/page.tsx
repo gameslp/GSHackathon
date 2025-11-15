@@ -5,16 +5,16 @@ import Header from '@/lib/components/Header';
 import Footer from '@/lib/components/Footer';
 import Button from '@/lib/components/Button';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { useJudgeHackathons } from '@/lib/hooks/useJudges';
-import { useHackathonTeams, useTeamDetail } from '@/lib/hooks/useAdmin';
-
-const TEAM_LIMIT = 6;
+import { useJudgeHackathons } from '@/lib/hooks/useHackathons';
+import { useHackathonSubmissions, useScoreSubmission } from '@/lib/hooks/useSubmissions';
 
 export default function JudgeDashboardPage() {
   const { user, loading } = useAuth();
   const [selectedHackathonId, setSelectedHackathonId] = useState<number | null>(null);
-  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
-  const [teamPageByHackathon, setTeamPageByHackathon] = useState<Record<number, number>>({});
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<number | null>(null);
+  const [scoreValue, setScoreValue] = useState('');
+  const [scoreComment, setScoreComment] = useState('');
+  const [scoreFeedback, setScoreFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const {
     data: assignedHackathons = [],
@@ -28,32 +28,44 @@ export default function JudgeDashboardPage() {
     }
     return assignedHackathons[0]?.id ?? null;
   }, [assignedHackathons, selectedHackathonId]);
-  const currentTeamPage = currentHackathonId
-    ? teamPageByHackathon[currentHackathonId] ?? 1
-    : 1;
-  const { data: teamsData, isLoading: teamsLoading } = useHackathonTeams(currentHackathonId ?? 0, {
-    query: { page: currentTeamPage, limit: TEAM_LIMIT },
-  });
-  const teams = useMemo(() => teamsData?.teams ?? [], [teamsData]);
-  const teamPagination = teamsData?.pagination;
 
-  const currentTeamId = useMemo(() => {
-    if (selectedTeamId && teams.some((team) => team.id === selectedTeamId)) {
-      return selectedTeamId;
+  const { data: submissions = [], isLoading: submissionsLoading } = useHackathonSubmissions(
+    currentHackathonId ?? 0,
+    { enabled: !!currentHackathonId }
+  );
+
+  const scoreSubmissionMutation = useScoreSubmission();
+
+  const selectedSubmission = submissions.find((s) => s.id === selectedSubmissionId);
+
+  const handleScoreSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSubmissionId) return;
+
+    const score = parseFloat(scoreValue);
+    if (isNaN(score) || score < 0) {
+      setScoreFeedback({ type: 'error', message: 'Please enter a valid score' });
+      return;
     }
-    return teams[0]?.id ?? null;
-  }, [teams, selectedTeamId]);
 
-  const updateTeamPage = (nextPage: number) => {
-    if (!currentHackathonId) return;
-    setTeamPageByHackathon((prev) => ({
-      ...prev,
-      [currentHackathonId]: nextPage,
-    }));
+    try {
+      setScoreFeedback(null);
+      await scoreSubmissionMutation.mutateAsync({
+        submissionId: selectedSubmissionId,
+        score,
+        scoreComment: scoreComment || undefined,
+      });
+      setScoreFeedback({ type: 'success', message: 'Score submitted successfully' });
+      setScoreValue('');
+      setScoreComment('');
+      setSelectedSubmissionId(null);
+    } catch (error) {
+      setScoreFeedback({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to score submission',
+      });
+    }
   };
-
-  const { data: teamDetailResp, isLoading: teamDetailLoading } = useTeamDetail(currentTeamId ?? 0);
-  const teamDetail = teamDetailResp?.team;
 
   if (loading) {
     return (
@@ -126,7 +138,7 @@ export default function JudgeDashboardPage() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <section className="bg-white border border-gray-200 rounded-lg p-4">
-              <h2 className="text-lg font-semibold text-black mb-3">Assigned hackathons</h2>
+              <h2 className="text-lg font-semibold text-black mb-3">Assigned Hackathons</h2>
               <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
                 {assignedHackathons.map((hackathon) => {
                   const isActive = hackathon.id === currentHackathonId;
@@ -135,11 +147,7 @@ export default function JudgeDashboardPage() {
                       key={hackathon.id}
                       onClick={() => {
                         setSelectedHackathonId(hackathon.id);
-                        setTeamPageByHackathon((prev) => ({
-                          ...prev,
-                          [hackathon.id]: 1,
-                        }));
-                        setSelectedTeamId(null);
+                        setSelectedSubmissionId(null);
                       }}
                       className={`w-full text-left p-3 rounded-lg border ${
                         isActive ? 'border-primary bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
@@ -167,116 +175,159 @@ export default function JudgeDashboardPage() {
                     </h2>
                     {currentHackathonId && (
                       <p className="text-sm text-gray-500">
-                        Review teams and their survey responses.
+                        Review and score all submissions.
                       </p>
                     )}
                   </div>
                 </div>
                 {!currentHackathonId ? (
-                  <p className="text-sm text-gray-600">Choose a hackathon to view its teams.</p>
-                ) : teamsLoading ? (
-                  <p className="text-sm text-gray-600">Loading teams...</p>
-                ) : teams.length === 0 ? (
-                  <p className="text-sm text-gray-600">No teams have registered yet.</p>
+                  <p className="text-sm text-gray-600">Choose a hackathon to view its submissions.</p>
+                ) : submissionsLoading ? (
+                  <p className="text-sm text-gray-600">Loading submissions...</p>
+                ) : submissions.length === 0 ? (
+                  <p className="text-sm text-gray-600">No submissions yet.</p>
                 ) : (
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
-                      {teams.map((team) => (
-                        <button
-                          key={team.id}
-                          onClick={() => setSelectedTeamId(team.id ?? null)}
-                          className={`w-full text-left p-4 ${
-                            currentTeamId === team.id
-                              ? 'bg-blue-50 border-l-4 border-primary'
-                              : 'hover:bg-gray-50'
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      {submissions.map((submission) => (
+                        <div
+                          key={submission.id}
+                          className={`border rounded-lg p-4 cursor-pointer ${
+                            selectedSubmissionId === submission.id
+                              ? 'border-primary bg-blue-50'
+                              : 'border-gray-200 hover:bg-gray-50'
                           }`}
+                          onClick={() => setSelectedSubmissionId(submission.id)}
                         >
-                          <p className="font-semibold text-black">{team.name}</p>
-                          <p className="text-xs text-gray-500 font-mono">
-                            Code: {team.invitationCode}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Members: {team.memberCount ?? team.members?.length ?? 0}
-                          </p>
-                        </button>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <p className="font-semibold text-black">Team: {submission.team?.name ?? 'Unknown'}</p>
+                              <p className="text-xs text-gray-500">
+                                Submitted: {submission.sendAt ? new Date(submission.sendAt).toLocaleString() : 'Draft'}
+                              </p>
+                              {submission.files && submission.files.length > 0 && (
+                                <p className="text-xs text-gray-600 mt-1">
+                                  {submission.files.length} file{submission.files.length !== 1 ? 's' : ''} attached
+                                </p>
+                              )}
+                              {submission.score !== null && submission.score !== undefined && (
+                                <p className="text-sm font-semibold text-green-700 mt-1">Score: {submission.score}</p>
+                              )}
+                            </div>
+                            {submission.sendAt && (submission.score === null || submission.score === undefined) && (
+                              <span className="px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded">
+                                Needs Scoring
+                              </span>
+                            )}
+                            {submission.score !== null && submission.score !== undefined && (
+                              <span className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded">
+                                Scored
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       ))}
-                      {teamPagination && currentHackathonId && (
-                        <div className="flex items-center justify-between px-4 py-3 text-sm text-gray-600">
-                          <button
-                            onClick={() => updateTeamPage(Math.max(1, currentTeamPage - 1))}
-                            disabled={teamPagination.page <= 1}
-                            className="text-primary disabled:text-gray-300"
-                          >
-                            Previous
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (
-                                teamPagination.totalPages &&
-                                teamPagination.page < teamPagination.totalPages
-                              ) {
-                                updateTeamPage(currentTeamPage + 1);
-                              }
-                            }}
-                            disabled={
-                              !!teamPagination.totalPages &&
-                              teamPagination.page >= teamPagination.totalPages
-                            }
-                            className="text-primary disabled:text-gray-300"
-                          >
-                            Next
-                          </button>
-                        </div>
-                      )}
                     </div>
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      {teamDetailLoading ? (
-                        <p className="text-sm text-gray-600">Loading team details...</p>
-                      ) : !teamDetail ? (
-                        <p className="text-sm text-gray-600">
-                          Select a team to view their submission details.
-                        </p>
-                      ) : (
-                        <div className="space-y-4">
+
+                    {selectedSubmission && selectedSubmission.sendAt && (
+                      <div className="border-t border-gray-200 pt-6 space-y-4">
+                        <h3 className="text-lg font-semibold text-black">Review Submission</h3>
+
+                        {/* Submission Files */}
+                        {selectedSubmission.files && selectedSubmission.files.length > 0 && (
                           <div>
-                            <h3 className="text-xl font-semibold text-black">{teamDetail.name}</h3>
-                            <p className="text-sm text-gray-500 font-mono">
-                              Invitation code: {teamDetail.invitationCode}
-                            </p>
-                            <span
-                              className={`inline-block mt-2 px-2 py-1 text-xs font-semibold rounded-full ${
-                                teamDetail.isAccepted
-                                  ? 'bg-green-50 text-green-800'
-                                  : 'bg-yellow-50 text-yellow-800'
-                              }`}
-                            >
-                              {teamDetail.isAccepted ? 'Accepted' : 'Pending'}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-semibold text-black mb-2">Members</p>
-                            <ul className="space-y-2">
-                              {teamDetail.memberResponses?.map((entry) => (
-                                <li
-                                  key={entry.member.id}
-                                  className="border border-gray-200 rounded-lg px-3 py-2"
-                                >
-                                  <p className="font-medium text-black">{entry.member.username}</p>
-                                  <ul className="mt-2 space-y-1 text-xs text-gray-600">
-                                    {entry.surveyResponses?.map((response) => (
-                                      <li key={response.questionId}>
-                                        <span className="font-semibold">{response.question}:</span>{' '}
-                                        {response.answer}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </li>
+                            <p className="text-sm font-medium text-gray-700 mb-2">Submitted Files</p>
+                            <div className="space-y-2">
+                              {selectedSubmission.files.map((file) => (
+                                <div key={file.id} className="flex items-center justify-between border border-gray-200 rounded-lg p-3">
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium text-black">{file.title || file.name}</p>
+                                    <p className="text-xs text-gray-500">{file.name}</p>
+                                  </div>
+                                  <a
+                                    href={file.url}
+                                    download
+                                    className="text-sm text-primary hover:underline"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    Download
+                                  </a>
+                                </div>
                               ))}
-                            </ul>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
+                        )}
+
+                        {/* Current Score Info */}
+                        {selectedSubmission.score !== null && selectedSubmission.score !== undefined && (
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <p className="text-sm font-medium text-green-800">Current Score: {selectedSubmission.score}</p>
+                            {selectedSubmission.scoreComment && (
+                              <p className="text-xs text-green-700 mt-1">{selectedSubmission.scoreComment}</p>
+                            )}
+                            <p className="text-xs text-green-600 mt-1">
+                              You can update the score by submitting a new one below.
+                            </p>
+                          </div>
+                        )}
+
+                        {scoreFeedback && (
+                          <div
+                            className={`p-3 rounded-lg border text-sm ${
+                              scoreFeedback.type === 'success'
+                                ? 'bg-green-50 border-green-200 text-green-700'
+                                : 'bg-red-50 border-red-200 text-red-700'
+                            }`}
+                          >
+                            {scoreFeedback.message}
+                          </div>
+                        )}
+
+                        <form onSubmit={handleScoreSubmit} className="space-y-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {selectedSubmission.score !== null && selectedSubmission.score !== undefined
+                                ? 'Update Score'
+                                : 'Score'}
+                            </label>
+                            <input
+                              type="number"
+                              step="0.0001"
+                              min="0"
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                              value={scoreValue}
+                              onChange={(e) => setScoreValue(e.target.value)}
+                              required
+                              placeholder={selectedSubmission.score !== null && selectedSubmission.score !== undefined
+                                ? `Current: ${selectedSubmission.score}`
+                                : 'Enter score'}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Comment (optional)</label>
+                            <textarea
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                              value={scoreComment}
+                              onChange={(e) => setScoreComment(e.target.value)}
+                              rows={3}
+                              placeholder="Add feedback..."
+                            />
+                          </div>
+                          <Button
+                            type="submit"
+                            variant="primary"
+                            size="sm"
+                            disabled={scoreSubmissionMutation.isPending}
+                          >
+                            {scoreSubmissionMutation.isPending
+                              ? 'Submitting...'
+                              : selectedSubmission.score !== null && selectedSubmission.score !== undefined
+                              ? 'Update Score'
+                              : 'Submit Score'}
+                          </Button>
+                        </form>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

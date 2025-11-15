@@ -642,9 +642,9 @@ export const getAICodeAssistance = async (req: AuthRequest, res: Response) => {
     const filePath = ProvidedFileModel.getUploadsDir(`${file!}`);
     const fileSize = fs.statSync(filePath).size;
     
-    if (fileSize > 10000) {
-      return res.status(400).json({ error: 'The specified file is too large for analysis' });
-    }
+    // if (fileSize > 10000) {
+    //   return res.status(400).json({ error: 'The specified file is too large for analysis' });
+    // }
     
     const fileContent = fs.readFileSync(filePath, 'utf-8');
 
@@ -665,7 +665,7 @@ ${fileContent}`;
 
     // Call ChatGPT API
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o',
       messages: [
         {
           role: 'system',
@@ -681,7 +681,16 @@ ${fileContent}`;
     });
 
     const assistanceResponse = completion.choices[0]?.message?.content || 'No response generated';
-    const typedResponse: { hints: { message: string; line: number }[] } = JSON.parse(assistanceResponse);
+    
+    // Clean the response - remove markdown code blocks if present
+    let cleanedResponse = assistanceResponse.trim();
+    if (cleanedResponse.startsWith('```json')) {
+      cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (cleanedResponse.startsWith('```')) {
+      cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    
+    const typedResponse: { hints: { message: string; line: number }[] } = JSON.parse(cleanedResponse);
 
     return res.status(200).json({
       message: 'AI assistance generated successfully',

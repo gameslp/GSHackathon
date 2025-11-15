@@ -69,7 +69,8 @@ export function useRegisterStart() {
  */
 export function useRegisterConfirm() {
   const router = useRouter();
-  
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (data: RegisterConfirmRequest) => {
       const response = await postAuthRegisterConfirm({
@@ -77,8 +78,12 @@ export function useRegisterConfirm() {
       });
       return unwrapResponse(response);
     },
-    onSuccess: () => {
-      router.push('/login?registered=true');
+    onSuccess: (data) => {
+      if (data && data.user) {
+        queryClient.setQueryData(authKeys.me(), data.user);
+      }
+      window.dispatchEvent(new Event('auth-change'));
+      router.push('/profile');
     },
   });
 }
