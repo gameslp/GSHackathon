@@ -10,8 +10,8 @@ import { AuthRequest } from '../middleware/auth';
 import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
-import { uploadDir } from './fileUpload.controller';
 import { scoringQueue } from 'src/models/scoringQueue';
+import { ProvidedFileModel } from 'src/models/providedFile';
 
 // Zod validation schemas
 const submitSchema = z.object({
@@ -616,11 +616,11 @@ export const getAICodeAssistance = async (req: AuthRequest, res: Response) => {
     }
 
     // Check if user's team owns this submission
-    const isOwner = await SubmissionModel.isTeamSubmissionOwner(submissionId, userTeam.id);
+    // const isOwner = await SubmissionModel.isTeamSubmissionOwner(submissionId, userTeam.id);
 
-    if (!isOwner) {
-      return res.status(403).json({ error: 'Not authorized to get assistance for this submission' });
-    }
+    // if (!isOwner) {
+    //   return res.status(403).json({ error: 'Not authorized to get assistance for this submission' });
+    // }
 
     // Get all submission files
     const files = await SubmissionFileModel.findBySubmission(submissionId);
@@ -636,7 +636,8 @@ export const getAICodeAssistance = async (req: AuthRequest, res: Response) => {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const filePath = path.join(__dirname, uploadDir, pythonFile!);
+    // const filePath = path.join(__dirname, uploadDir, pythonFile!);
+    const filePath = ProvidedFileModel.getUploadsDir(`${pythonFile!}`);
     const fileSize = fs.statSync(filePath).size;
     
     if (fileSize > 10000) {

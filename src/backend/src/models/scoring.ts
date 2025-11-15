@@ -3,7 +3,7 @@ import { SubmissionModel } from "./submission";
 import os from "os";
 import { Submission as SubmissionType} from "@prisma/client";
 import path from "path";
-import { copyFileSync } from "fs";
+import { copyFileSync, mkdir, mkdirSync } from "fs";
 import { ProvidedFileModel } from "./providedFile";
 import { HackathonModel } from "./hackathon";
 
@@ -13,7 +13,6 @@ export class ScoringModel {
   public SubmissionId: number;
   public Submission: SubmissionType;
   public ScoreId: number;
-  public static uploadDirectory: string = "../../uploads"
 
   public constructor(submissionId: number) {
     this.ScoreId = Math.random() * 1e9;
@@ -48,15 +47,18 @@ export class ScoringModel {
 
     const tempDir = os.tmpdir();
     const userSolutionDir = path.join(tempDir, `submission_${this.ScoreId}`);
+    mkdirSync(userSolutionDir, { recursive: true });
     files.forEach((file) => {
-      const filePath = path.join(ScoringModel.uploadDirectory, file.fileUrl);
+      // const filePath = path.join(ScoringModel.uploadDirectory, file.fileUrl);
+      const filePath = ProvidedFileModel.getUploadsDir(`${file.fileUrl}`);
       const destPath = path.join(userSolutionDir, file.fileFormat.name);
       copyFileSync(filePath, destPath);
     });
 
     const organizerFilesDir = path.join(tempDir, `organizer_files_${this.ScoreId}`);
+    mkdirSync(organizerFilesDir, { recursive: true });
     organizerFiles.forEach((file) => {
-      const filePath = path.join(ScoringModel.uploadDirectory, file.fileUrl);
+      const filePath = ProvidedFileModel.getUploadsDir(`${file.fileUrl}`);
       const destPath = path.join(organizerFilesDir, file.name);
       copyFileSync(filePath, destPath);
     });

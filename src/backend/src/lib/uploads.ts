@@ -2,12 +2,13 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { promises as fsPromises } from 'node:fs';
 import multer from 'multer';
+import { ProvidedFileModel } from 'src/models/providedFile';
 
 const projectRoot = process.cwd();
-const baseUploadDir =
-  process.env.UPLOAD_ROOT && process.env.UPLOAD_ROOT.trim().length > 0
-    ? path.resolve(process.env.UPLOAD_ROOT)
-    : path.join(projectRoot, 'uploads');
+const baseUploadDir = ProvidedFileModel.getUploadsDir();
+  // process.env.UPLOAD_ROOT && process.env.UPLOAD_ROOT.trim().length > 0
+  //   ? path.resolve(process.env.UPLOAD_ROOT)
+  //   : path.join(projectRoot, 'uploads');
 
 const ensureDir = (dirPath: string) => {
   if (!fs.existsSync(dirPath)) {
@@ -73,10 +74,10 @@ export const submissionUpload = multer({
   },
 });
 
-export const buildResourceUrl = (filename: string) => `/uploads/resources/${filename}`;
-export const buildProvidedFileUrl = (filename: string) => `/uploads/provided/${filename}`;
-export const buildThumbnailUrl = (filename: string) => `/uploads/thumbnails/${filename}`;
-export const buildSubmissionUrl = (filename: string) => `/uploads/submissions/${filename}`;
+export const buildResourceUrl = (filename: string) =>  `/resources/${filename}`;
+export const buildProvidedFileUrl = (filename: string) => `/provided/${filename}`;
+export const buildThumbnailUrl = (filename: string) => `/thumbnails/${filename}`;
+export const buildSubmissionUrl = (filename: string) => `/submissions/${filename}`;
 
 export const deleteUploadedFile = async (directory: string, fileUrl?: string | null) => {
   if (!fileUrl) return;
