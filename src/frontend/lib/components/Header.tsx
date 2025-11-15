@@ -27,12 +27,6 @@ const Header = () => {
               Challenges
             </Link>
             <Link 
-              href="/leaderboard" 
-              className="text-black hover:text-[#7297c5] font-medium transition-colors"
-            >
-              Leaderboard
-            </Link>
-            <Link 
               href="/learn" 
               className="text-black hover:text-[#7297c5] font-medium transition-colors"
             >
