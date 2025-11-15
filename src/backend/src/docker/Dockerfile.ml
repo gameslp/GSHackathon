@@ -27,9 +27,9 @@ RUN pip install --no-cache-dir \
     # Obliczenia i dane
     numpy==1.26.3 \
     pandas==2.1.4
-    # scipy==1.11.4 \
+    scipy==1.11.4 \
     # # Machine Learning
-    # scikit-learn==1.4.0 \
+    scikit-learn==1.4.0 \
     # xgboost==2.0.3 \
     # # Deep Learning - TensorFlow
     # tensorflow==2.15.0 \

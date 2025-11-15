@@ -2520,6 +2520,44 @@ export default function AdminDashboardPage() {
                       </p>
                     ) : (
                       <>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                          <h4 className="text-sm font-semibold text-blue-900 mb-2">How Auto Review Works</h4>
+                          <div className="text-sm text-blue-800 space-y-2">
+                            <p>
+                              The auto review system runs your custom <code className="font-mono bg-blue-100 px-1 rounded">test-auto.py</code> script
+                              in a secure sandboxed environment after each team submission. The script automatically evaluates submissions
+                              and assigns scores based on your criteria.
+                            </p>
+
+                            <div className="mt-3">
+                              <p className="font-semibold mb-1">Script Environment:</p>
+                              <ul className="list-disc list-inside space-y-1 ml-2">
+                                <li><span className="font-medium">Python 3.11</span> with libraries: <code className="font-mono bg-blue-100 px-1 rounded text-xs">numpy</code>, <code className="font-mono bg-blue-100 px-1 rounded text-xs">pandas</code>, <code className="font-mono bg-blue-100 px-1 rounded text-xs">scikit-learn</code></li>
+                                <li><span className="font-medium">Hackathon files:</span> All your provided files are available in <code className="font-mono bg-blue-100 px-1 rounded">/problem</code> directory</li>
+                                <li><span className="font-medium">Submission files:</span> Team's submitted files are available in <code className="font-mono bg-blue-100 px-1 rounded">/submission</code> directory</li>
+                                <li><span className="font-medium">Output:</span> Write results to <code className="font-mono bg-blue-100 px-1 rounded">/output</code> directory</li>
+                              </ul>
+                            </div>
+
+                            <div className="mt-3">
+                              <p className="font-semibold mb-1">Script Requirements:</p>
+                              <ul className="list-disc list-inside space-y-1 ml-2">
+                                <li>Must be named <code className="font-mono bg-blue-100 px-1 rounded">test-auto.py</code></li>
+                                <li>Must output a numeric score (double between 0 and 100) (the script's responsibility to calculate and report)</li>
+                                <li>Should not print to stdout anything else than solution score, stdout can be seen for participants</li>
+                                <li>Should handle errors gracefully (missing files, invalid formats, etc.)</li>
+                                <li>Runs with limited resources and timeout for security</li>
+                              </ul>
+                            </div>
+
+                            <p className="mt-3 text-xs italic">
+                              Example: Your script could load ground truth from <code className="font-mono bg-blue-100 px-1 rounded">/problem/test_labels.csv</code>,
+                              read predictions from <code className="font-mono bg-blue-100 px-1 rounded">/submission/predictions.csv</code>,
+                              and calculate accuracy score.
+                            </p>
+                          </div>
+                        </div>
+
                         {autoScriptFeedback && (
                           <div
                             className={`text-sm rounded-lg px-3 py-2 border ${
@@ -2597,10 +2635,13 @@ export default function AdminDashboardPage() {
                             </Button>
                           </div>
                         ) : (
-                          <p className="text-sm text-gray-600">
-                            Upload a <code className="font-mono text-xs">test-auto.py</code> script. It runs inside a
-                            sandbox after every submission and has access to submissions plus private provided files.
-                          </p>
+                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <p className="text-sm font-medium text-gray-700 mb-2">No script uploaded</p>
+                            <p className="text-sm text-gray-600">
+                              Upload a <code className="font-mono text-xs bg-gray-200 px-1 rounded">test-auto.py</code> script to enable automatic scoring.
+                              Your script will run in an isolated Python environment after each team submission.
+                            </p>
+                          </div>
                         )}
                         <form className="border border-gray-200 rounded-lg p-4 space-y-3" onSubmit={handleAutoScriptUpload}>
                           <div>
