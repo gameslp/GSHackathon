@@ -12,6 +12,10 @@ import {
   getActiveHackathons,
   getUpcomingHackathons,
   getHackathonsByOrganizer,
+  getHackathonJudges,
+  assignJudgeToHackathon,
+  removeJudgeFromHackathon,
+  getJudgeHackathons,
   createHackathonResource,
   deleteHackathonResource,
   getProvidedFiles,
@@ -113,7 +117,7 @@ const adminAuth = [auth, requireRole([Role.ADMIN])];
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-hackathonRouter.get('/hackathons/:hackathonId/teams', ...adminAuth, getHackathonTeams);
+hackathonRouter.get('/hackathons/:hackathonId/teams', auth, getHackathonTeams);
 
 /**
  * @openapi
@@ -173,7 +177,7 @@ hackathonRouter.get('/hackathons/:hackathonId/teams', ...adminAuth, getHackathon
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-hackathonRouter.get('/hackathons/teams/:teamId', ...adminAuth, getTeamDetails);
+hackathonRouter.get('/hackathons/teams/:teamId', auth, getTeamDetails);
 
 /**
  * @openapi
@@ -804,6 +808,10 @@ hackathonRouter.put('/hackathons/:id', auth, updateHackathon);
  */
 hackathonRouter.delete('/hackathons/:id', auth, deleteHackathon);
 
+hackathonRouter.get('/hackathons/:hackathonId/judges', ...adminAuth, getHackathonJudges);
+hackathonRouter.post('/hackathons/:hackathonId/judges', ...adminAuth, assignJudgeToHackathon);
+hackathonRouter.delete('/hackathons/:hackathonId/judges/:judgeId', ...adminAuth, removeJudgeFromHackathon);
+
 hackathonRouter.post(
   '/hackathons/:hackathonId/resources',
   ...adminAuth,
@@ -830,5 +838,7 @@ hackathonRouter.post(
   ...adminAuth,
   toggleProvidedFileVisibility
 );
+
+hackathonRouter.get('/judges/hackathons', auth, getJudgeHackathons);
 
 export default hackathonRouter;

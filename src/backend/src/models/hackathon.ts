@@ -65,6 +65,19 @@ export class HackathonModel {
         organizer: true,
         teams: true,
         resources: true,
+        judgeAssignments: {
+          include: {
+            judge: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                surname: true,
+                email: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -80,6 +93,19 @@ export class HackathonModel {
           },
         },
         resources: true,
+        judgeAssignments: {
+          include: {
+            judge: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                surname: true,
+                email: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -90,6 +116,19 @@ export class HackathonModel {
         organizer: true,
         teams: true,
         resources: true,
+        judgeAssignments: {
+          include: {
+            judge: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                surname: true,
+                email: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -100,6 +139,19 @@ export class HackathonModel {
       include: {
         teams: true,
         resources: true,
+        judgeAssignments: {
+          include: {
+            judge: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                surname: true,
+                email: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -112,6 +164,19 @@ export class HackathonModel {
         organizer: true,
         teams: true,
         resources: true,
+        judgeAssignments: {
+          include: {
+            judge: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                surname: true,
+                email: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -133,6 +198,19 @@ export class HackathonModel {
         organizer: true,
         teams: true,
         resources: true,
+        judgeAssignments: {
+          include: {
+            judge: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                surname: true,
+                email: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -146,6 +224,19 @@ export class HackathonModel {
       include: {
         organizer: true,
         resources: true,
+        judgeAssignments: {
+          include: {
+            judge: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                surname: true,
+                email: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         startDate: 'asc',

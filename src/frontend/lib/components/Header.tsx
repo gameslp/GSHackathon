@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useMemo } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
 
@@ -11,17 +12,22 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
       <div className="container mx-auto px-4">
-        <div className="flex items-center h-16">
+        <div className="flex items-center justify-between h-16">
           {/* Logo - Left */}
-          <Link href="/" className="flex items-center space-x-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-[#7297c5] rounded-lg">
-              <span className="text-white font-bold text-xl">H</span>
-            </div>
-            <span className="text-xl font-bold text-black">HackathonHub</span>
-          </Link>
+          <div className="flex items-center flex-1">
+            <Link href="/" className="flex items-center">
+              <Image 
+                src="/logo.png" 
+                alt="HackathonHub Logo" 
+                width={180} 
+                height={40} 
+                className="object-contain"
+              />
+            </Link>
+          </div>
           
           {/* Navigation - Center */}
-          <nav className="hidden md:flex items-center space-x-8 mx-auto">
+          <nav className="hidden md:flex items-center space-x-8 flex-shrink-0">
             <Link 
               href="/challenges" 
               className="text-black hover:text-[#7297c5] font-medium transition-colors"
@@ -43,7 +49,7 @@ const Header = () => {
           </nav>
           
           {/* User Section - Right */}
-          <div className="flex items-center space-x-3 ml-auto">
+          <div className="flex items-center space-x-3 flex-1 justify-end">
             {loading ? (
               <div className="text-sm text-gray-500">Checking session...</div>
             ) : user ? (
@@ -56,6 +62,14 @@ const Header = () => {
                     Admin
                   </Link>
                 )}
+                {user.role === 'JUDGE' && (
+                  <Link
+                    href="/dashboard"
+                    className="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-[#7297c5] border border-[#7297c5] rounded-lg hover:bg-[#7297c5] hover:text-white transition-colors"
+                  >
+                    Dashboard
+                  </Link>
+                )}
                 <Link
                   href="/profile"
                   className="flex items-center space-x-2 px-3 py-2 text-black hover:text-[#7297c5] transition-colors"
@@ -65,6 +79,13 @@ const Header = () => {
                   </div>
                   <span className="font-medium">{user.username}</span>
                 </Link>
+                <button
+                  onClick={() => logout()}
+                  className="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-[#7297c5] border border-[#7297c5] rounded-lg hover:bg-[#7297c5] hover:text-white transition-colors disabled:opacity-60"
+                  disabled={isLoggingOut}
+                >
+                  {isLoggingOut ? 'Signing out...' : 'Sign Out'}
+                </button>
               </>
             ) : (
               <>

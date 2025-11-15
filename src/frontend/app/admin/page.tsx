@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import Header from '@/lib/components/Header';
 import Footer from '@/lib/components/Footer';
 import Button from '@/lib/components/Button';
@@ -21,6 +21,12 @@ import {
   useCreateSurveyQuestion,
   useUpdateSurveyQuestion,
   useDeleteSurveyQuestion,
+  useAdminUsers,
+  useUpdateUserRole,
+  useDeleteUser,
+  useJudgeUsersList,
+  useAssignJudgeToHackathon,
+  useRemoveJudgeFromHackathon,
 } from '@/lib/hooks/useAdmin';
 import {
   useUploadHackathonResource,
@@ -34,6 +40,7 @@ import type { Hackathon } from '@/lib/api/client';
 
 const HACKATHON_LIMIT = 5;
 const TEAM_LIMIT = 6;
+const USER_LIMIT = 10;
 
 type HackathonFormState = {
   title: string;
@@ -58,6 +65,23 @@ type SurveyQuestionListItem = {
   question?: string;
   order?: number;
 };
+
+type HackathonJudgeAssignment = {
+  id: number;
+  judge?: {
+    id: number;
+    username: string;
+    name?: string | null;
+    surname?: string | null;
+    email?: string | null;
+  };
+};
+
+const roleOptions = [
+  { value: 'ADMIN', label: 'Admin' },
+  { value: 'JUDGE', label: 'Judge' },
+  { value: 'PARTICIPANT', label: 'Participant' },
+] as const;
 
 const typeOptions: { value: Hackathon['type']; label: string }[] = [
   { value: 'CLASSIFICATION', label: 'Classification' },
@@ -98,6 +122,7 @@ const toIso = (value: string) => (value ? new Date(value).toISOString() : undefi
 export default function AdminDashboardPage() {
   const { user, loading, error } = useAuth();
 
+  const [activeTab, setActiveTab] = useState<'hackathons' | 'users'>('hackathons');
   const [hackathonPage, setHackathonPage] = useState(1);
   const [selectedHackathonId, setSelectedHackathonId] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -105,6 +130,12 @@ export default function AdminDashboardPage() {
   const [formState, setFormState] = useState<HackathonFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  const [userPage, setUserPage] = useState(1);
+  const [roleChangeUserId, setRoleChangeUserId] = useState<number | null>(null);
+  const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
+  const [selectedJudgeId, setSelectedJudgeId] = useState('');
+  const [removingJudgeId, setRemovingJudgeId] = useState<number | null>(null);
+  const [judgeFeedback, setJudgeFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [resourceTitle, setResourceTitle] = useState('');
   const [resourceFile, setResourceFile] = useState<File | null>(null);
   const [resourceFileKey, setResourceFileKey] = useState(0);
@@ -124,6 +155,13 @@ export default function AdminDashboardPage() {
     useHackathons(hackathonQueryParams);
   const hackathons = useMemo(() => hackathonList?.hackathons ?? [], [hackathonList]);
   const hackathonPagination = hackathonList?.pagination;
+  const { data: usersData, isLoading: usersLoading } = useAdminUsers({
+    query: { page: userPage, limit: USER_LIMIT },
+  });
+  const users = useMemo(() => usersData?.users ?? [], [usersData]);
+  const userPagination = usersData?.pagination;
+  const updateUserRoleMutation = useUpdateUserRole();
+  const deleteUserMutation = useDeleteUser();
 
   const activeHackathonId = useMemo(() => {
     if (isCreating) return null;
@@ -161,8 +199,14 @@ export default function AdminDashboardPage() {
     isLoading: teamDetailLoading,
   } = useTeamDetail(activeTeamId ?? 0);
   const teamDetail = teamDetailResp?.team;
+  const hasSurveyResponses = useMemo(() => {
+    return (
+      teamDetail?.memberResponses?.some(
+        (entry) => entry.surveyResponses && entry.surveyResponses.length > 0
+      ) ?? false
+    );
+  }, [teamDetail?.memberResponses]);
   const isHackathonSelected = Boolean(activeHackathonId);
-
   const createMutation = useCreateHackathon();
   const updateMutation = useUpdateHackathon();
   const deleteMutation = useDeleteHackathon();
@@ -173,6 +217,19 @@ export default function AdminDashboardPage() {
   const createSurveyQuestionMutation = useCreateSurveyQuestion();
   const updateSurveyQuestionMutation = useUpdateSurveyQuestion();
   const deleteSurveyQuestionMutation = useDeleteSurveyQuestion();
+  const { data: judgeOptions = [], isLoading: judgesLoading } = useJudgeUsersList();
+  const assignJudgeMutation = useAssignJudgeToHackathon();
+  const removeJudgeMutation = useRemoveJudgeFromHackathon();
+  const assignedJudges = useMemo(() => {
+    const detailWithJudges =
+      hackathonDetail as (Hackathon & { judgeAssignments?: HackathonJudgeAssignment[] }) | null;
+    return detailWithJudges?.judgeAssignments ?? [];
+  }, [hackathonDetail]);
+  const availableJudges = useMemo(() => {
+    return judgeOptions.filter(
+      (judge) => !assignedJudges.some((assignment) => assignment.judge?.id === judge.id)
+    );
+  }, [judgeOptions, assignedJudges]);
   const uploadResource = useUploadHackathonResource();
   const deleteResource = useDeleteHackathonResource();
   const {
@@ -462,6 +519,79 @@ export default function AdminDashboardPage() {
     );
   };
 
+  const handleRoleChange = (userId: number, role: 'ADMIN' | 'JUDGE' | 'PARTICIPANT') => {
+    setRoleChangeUserId(userId);
+    updateUserRoleMutation.mutate(
+      { userId, role },
+      {
+        onSettled: () => {
+          setRoleChangeUserId(null);
+        },
+      }
+    );
+  };
+
+  const handleDeleteUserAccount = (userId: number) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) {
+      return;
+    }
+    setDeleteUserId(userId);
+    deleteUserMutation.mutate(userId, {
+      onSettled: () => setDeleteUserId(null),
+    });
+  };
+
+  const handleAssignJudge = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!activeHackathonId) {
+      setJudgeFeedback({ type: 'error', message: 'Select a hackathon to assign judges.' });
+      return;
+    }
+    if (!selectedJudgeId) {
+      setJudgeFeedback({ type: 'error', message: 'Choose a judge to assign.' });
+      return;
+    }
+    setJudgeFeedback(null);
+    assignJudgeMutation.mutate(
+      { hackathonId: activeHackathonId, judgeId: Number(selectedJudgeId) },
+      {
+        onSuccess: () => {
+          setSelectedJudgeId('');
+          setJudgeFeedback({ type: 'success', message: 'Judge assigned successfully.' });
+        },
+        onError: (mutationError) => {
+          setJudgeFeedback({
+            type: 'error',
+            message: mutationError instanceof Error ? mutationError.message : 'Failed to assign judge',
+          });
+        },
+      }
+    );
+  };
+
+  const handleRemoveJudge = (judgeId: number) => {
+    if (!activeHackathonId) return;
+    setJudgeFeedback(null);
+    setRemovingJudgeId(judgeId);
+    removeJudgeMutation.mutate(
+      { hackathonId: activeHackathonId, judgeId },
+      {
+        onSuccess: () => {
+          setJudgeFeedback({ type: 'success', message: 'Judge removed.' });
+        },
+        onSettled: () => {
+          setRemovingJudgeId(null);
+        },
+        onError: (mutationError) => {
+          setJudgeFeedback({
+            type: 'error',
+            message: mutationError instanceof Error ? mutationError.message : 'Failed to remove judge',
+          });
+        },
+      }
+    );
+  };
+
   const handleResourceUpload = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!activeHackathonId) {
@@ -656,7 +786,24 @@ export default function AdminDashboardPage() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          <div className="flex flex-wrap gap-3">
+            {['hackathons', 'users'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab as 'hackathons' | 'users')}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold border ${
+                  activeTab === tab
+                    ? 'bg-primary text-white border-primary'
+                    : 'border-gray-200 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {tab === 'hackathons' ? 'Hackathon management' : 'User management'}
+              </button>
+            ))}
+          </div>
+
+          {activeTab === 'hackathons' ? (
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
             <section className="bg-white border border-gray-200 rounded-lg p-4 xl:col-span-1">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-lg font-semibold text-black">Hackathons</h2>
@@ -1055,13 +1202,114 @@ export default function AdminDashboardPage() {
                     )}
                   </div>
 
-                  <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-xl font-semibold text-black">Public resources</h3>
-                        <p className="text-sm text-gray-500">Files visible to everyone on the challenge page.</p>
-                      </div>
-                    </div>
+                  <CollapsibleSection
+                    title="Assigned judges"
+                    description="Assign judges to review teams and submissions."
+                  >
+                    {judgeFeedback && (
+                      <span
+                        className={`text-sm px-3 py-1 rounded-md border ${
+                          judgeFeedback.type === 'success'
+                            ? 'bg-green-50 border-green-200 text-green-700'
+                            : 'bg-red-50 border-red-200 text-red-700'
+                        }`}
+                      >
+                        {judgeFeedback.message}
+                      </span>
+                    )}
+                    {!isHackathonSelected ? (
+                      <p className="text-sm text-gray-600">
+                        Select a hackathon to manage assigned judges.
+                      </p>
+                    ) : judgesLoading ? (
+                      <p className="text-sm text-gray-600">Loading judges...</p>
+                    ) : (
+                      <>
+                        {assignedJudges.length === 0 ? (
+                          <p className="text-sm text-gray-600">No judges assigned yet.</p>
+                        ) : (
+                          <ul className="divide-y divide-gray-100">
+                            {assignedJudges.map((assignment) => (
+                              <li
+                                key={assignment.id}
+                                className="py-3 flex items-center justify-between text-sm"
+                              >
+                                <div>
+                                  <p className="font-semibold text-black">
+                                    {assignment.judge?.username ?? 'Unknown judge'}
+                                  </p>
+                                  {assignment.judge?.email && (
+                                    <p className="text-xs text-gray-500">
+                                      {assignment.judge.email}
+                                    </p>
+                                  )}
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    assignment.judge?.id && handleRemoveJudge(assignment.judge.id)
+                                  }
+                                  disabled={
+                                    !assignment.judge?.id ||
+                                    (removingJudgeId === assignment.judge.id &&
+                                      removeJudgeMutation.isPending)
+                                  }
+                                >
+                                  {removingJudgeId === assignment.judge?.id &&
+                                  removeJudgeMutation.isPending
+                                    ? 'Removing...'
+                                    : 'Remove'}
+                                </Button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <form
+                          className="border border-gray-200 rounded-lg p-4 space-y-3"
+                          onSubmit={handleAssignJudge}
+                        >
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Assign judge
+                            </label>
+                            <select
+                              value={selectedJudgeId}
+                              onChange={(event) => setSelectedJudgeId(event.target.value)}
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                              disabled={!availableJudges.length}
+                            >
+                              <option value="">Select judge</option>
+                              {availableJudges.map((judge) => (
+                                <option key={judge.id} value={judge.id}>
+                                  {judge.username}
+                                </option>
+                              ))}
+                            </select>
+                            {!availableJudges.length && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                All judges are already assigned.
+                              </p>
+                            )}
+                          </div>
+                          <Button
+                            type="submit"
+                            variant="primary"
+                            size="sm"
+                            disabled={assignJudgeMutation.isPending || !selectedJudgeId}
+                          >
+                            {assignJudgeMutation.isPending ? 'Assigning...' : 'Assign judge'}
+                          </Button>
+                        </form>
+                      </>
+                    )}
+                  </CollapsibleSection>
+
+                  <CollapsibleSection
+                    title="Public resources"
+                    description="Files visible to everyone on the challenge page."
+                    defaultOpen={false}
+                  >
                     {!isHackathonSelected ? (
                       <p className="text-sm text-gray-600">Select a hackathon to manage resources.</p>
                     ) : hackathonDetail?.resources && hackathonDetail.resources.length > 0 ? (
@@ -1127,17 +1375,13 @@ export default function AdminDashboardPage() {
                         {uploadResource.isPending ? 'Uploading...' : 'Upload resource'}
                       </Button>
                     </form>
-                  </div>
+                  </CollapsibleSection>
 
-                  <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-xl font-semibold text-black">Participant files</h3>
-                        <p className="text-sm text-gray-500">
-                          Files visible only to accepted teams when marked as public.
-                        </p>
-                      </div>
-                    </div>
+                  <CollapsibleSection
+                    title="Participant files"
+                    description="Files visible only to accepted teams when marked as public."
+                    defaultOpen={false}
+                  >
                     {!isHackathonSelected ? (
                       <p className="text-sm text-gray-600">Select a hackathon to manage files.</p>
                     ) : providedFilesLoading ? (
@@ -1228,15 +1472,12 @@ export default function AdminDashboardPage() {
                         {uploadProvided.isPending ? 'Uploading...' : 'Upload file'}
                       </Button>
                     </form>
-                  </div>
-
-                  <div className="bg-white border border-gray-200 rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-xl font-semibold text-black">Survey questions</h3>
-                        <p className="text-sm text-gray-500">Configure questions users must answer when joining.</p>
-                      </div>
-                    </div>
+                  </CollapsibleSection>
+                  <CollapsibleSection
+                    title="Survey questions"
+                    description="Configure questions users must answer when joining."
+                    defaultOpen={false}
+                  >
                     {!isHackathonSelected ? (
                       <p className="text-sm text-gray-600">Select a hackathon to manage survey questions.</p>
                     ) : surveyLoading ? (
@@ -1350,7 +1591,7 @@ export default function AdminDashboardPage() {
                         </form>
                       </div>
                     )}
-                  </div>
+                  </CollapsibleSection>
 
                   <div className="bg-white border border-gray-200 rounded-lg p-6">
                     <div className="flex items-center justify-between mb-4">
@@ -1503,7 +1744,7 @@ export default function AdminDashboardPage() {
                                   ))}
                                 </div>
                               </div>
-                              {teamDetail.memberResponses && teamDetail.memberResponses.length > 0 && (
+                              {hasSurveyResponses && (
                                 <div className="space-y-3">
                                   <p className="text-sm font-medium text-gray-700">Survey responses</p>
                                   {teamDetail.memberResponses.map((entry) => (
@@ -1531,9 +1772,169 @@ export default function AdminDashboardPage() {
               )}
             </section>
           </div>
+          ) : (
+            <section className="bg-white border border-gray-200 rounded-lg p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-black">User management</h2>
+                  <p className="text-gray-600">
+                    Review registered users, manage roles, or remove accounts.
+                  </p>
+                </div>
+                {userPagination && (
+                  <span className="text-sm text-gray-500">
+                    Page {userPagination.page} / {userPagination.totalPages}
+                  </span>
+                )}
+              </div>
+              {usersLoading ? (
+                <p className="text-sm text-gray-600">Loading users...</p>
+              ) : users.length === 0 ? (
+                <p className="text-sm text-gray-600">No users found.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-100 text-sm">
+                    <thead className="bg-gray-50">
+                      <tr className="text-left text-gray-600">
+                        <th className="px-4 py-3 font-semibold">Username</th>
+                        <th className="px-4 py-3 font-semibold">Role</th>
+                        <th className="px-4 py-3 font-semibold">2FA</th>
+                        <th className="px-4 py-3 font-semibold">Created</th>
+                        <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {users.map((account) => {
+                        const isRoleUpdating =
+                          roleChangeUserId === account.id && updateUserRoleMutation.isPending;
+                        const isRemoving =
+                          deleteUserId === account.id && deleteUserMutation.isPending;
+                        return (
+                          <tr key={account.id}>
+                            <td className="px-4 py-3">
+                              <p className="font-semibold text-black">{account.username}</p>
+                              <p className="text-xs text-gray-500">ID: {account.id}</p>
+                            </td>
+                            <td className="px-4 py-3">
+                              <select
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                value={account.role}
+                                onChange={(event) =>
+                                  handleRoleChange(
+                                    account.id!,
+                                    event.target.value as 'ADMIN' | 'JUDGE' | 'PARTICIPANT'
+                                  )
+                                }
+                                disabled={isRoleUpdating}
+                              >
+                                {roleOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                  account.totpConfirmed
+                                    ? 'bg-green-50 text-green-800'
+                                    : 'bg-yellow-50 text-yellow-800'
+                                }`}
+                              >
+                                {account.totpConfirmed ? 'Enabled' : 'Pending'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-600">
+                              {account.createdAt
+                                ? new Date(account.createdAt).toLocaleDateString()
+                                : 'Unknown'}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteUserAccount(account.id!)}
+                                disabled={isRemoving}
+                              >
+                                {isRemoving ? 'Removing...' : 'Delete'}
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {userPagination && (
+                <div className="flex items-center justify-between text-sm text-gray-600">
+                  <button
+                    onClick={() => setUserPage((prev) => Math.max(1, prev - 1))}
+                    disabled={userPagination.page <= 1}
+                    className="text-primary disabled:text-gray-300"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (
+                        userPagination.totalPages &&
+                        userPagination.page < userPagination.totalPages
+                      ) {
+                        setUserPage((prev) => prev + 1);
+                      }
+                    }}
+                    disabled={
+                      !!userPagination.totalPages &&
+                      userPagination.page >= userPagination.totalPages
+                    }
+                    className="text-primary disabled:text-gray-300"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </section>
+          )}
         </div>
       </main>
       <Footer />
+    </div>
+  );
+}
+
+type CollapsibleSectionProps = {
+  title: string;
+  description?: string;
+  defaultOpen?: boolean;
+  children: ReactNode;
+};
+
+function CollapsibleSection({
+  title,
+  description,
+  defaultOpen = true,
+  children,
+}: CollapsibleSectionProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-xl font-semibold text-black">{title}</h3>
+          {description && <p className="text-sm text-gray-500">{description}</p>}
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="text-sm font-semibold text-[#7297c5] hover:underline"
+        >
+          {isOpen ? 'Collapse' : 'Expand'}
+        </button>
+      </div>
+      {isOpen && <div className="mt-4 space-y-4">{children}</div>}
     </div>
   );
 }

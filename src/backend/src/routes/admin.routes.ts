@@ -3,6 +3,7 @@ import {
   getUsers,
   updateUserRole,
   deleteUser,
+  getJudgesList,
 } from '../controllers/admin.controller';
 import {
   getHackathons,
@@ -94,6 +95,8 @@ const adminAuth = [auth, requireRole([Role.ADMIN])];
  *               $ref: '#/components/schemas/Error'
  */
 adminRouter.get('/admin/users', ...adminAuth, getUsers);
+
+adminRouter.get('/admin/judges', ...adminAuth, getJudgesList);
 
 /**
  * @openapi

@@ -44,6 +44,7 @@ model User {
   teams              Team[]
   organizedHackathon Hackathon[]
   surveyResponses    SurveyResponse[]
+  judgeAssignments   HackathonJudge[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -66,6 +67,7 @@ model Hackathon {
   surveyQuestions SurveyQuestion[]
   submissionFileFormats SubmissionFileFormat[]
   providedFiles  ProvidedFile[]
+  judgeAssignments HackathonJudge[]
 
   registrationOpen  DateTime
   registrationClose DateTime
@@ -157,6 +159,20 @@ model ProvidedFile {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model HackathonJudge {
+  id          Int      @id @default(autoincrement())
+  hackathonId Int
+  judgeId     Int
+
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  judge       User      @relation(fields: [judgeId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([hackathonId, judgeId])
 }
 
 model SubmissionFileFormat {

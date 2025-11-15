@@ -42,6 +42,30 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 };
 
+export const getJudgesList = async (_req: Request, res: Response) => {
+  try {
+    const judges = await prisma.user.findMany({
+      where: { role: 'JUDGE' },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        surname: true,
+        email: true,
+        createdAt: true,
+      },
+      orderBy: {
+        username: 'asc',
+      },
+    });
+
+    return res.status(200).json({ judges });
+  } catch (error) {
+    console.error('Get judges error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 export const updateUserRole = async (req: Request, res: Response) => {
   try {
     const userId = parseInt(req.params.id);

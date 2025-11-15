@@ -4,7 +4,7 @@ import { HackathonModel } from '../models/hackathon';
 import { HackathonResourceModel } from '../models/hackathonResource';
 import { ProvidedFileModel } from '../models/providedFile';
 import { TeamModel } from '../models/team';
-import { AuthRequest } from '../middleware/auth';
+import { AuthRequest, JwtPayload } from '../middleware/auth';
 import { z } from 'zod';
 import { HackathonType } from '../generated/prisma/enums';
 import {
@@ -14,6 +14,7 @@ import {
   buildProvidedFileUrl,
   deleteUploadedFile,
 } from '../lib/uploads';
+import { HackathonJudgeModel } from '../models/hackathonJudge';
 
 // Zod validation schemas
 const nonNegativeInt = z.coerce.number().int().min(0);
@@ -111,6 +112,24 @@ const createResourceSchema = z.object({
   title: z.string().min(1).max(200),
 });
 
+const assignJudgeSchema = z.object({
+  judgeId: z.number().int().positive(),
+});
+
+const canManageHackathon = async (
+  hackathonId: number,
+  user: JwtPayload | undefined,
+  organizerId?: number
+) => {
+  if (!user) return false;
+  if (user.role === 'ADMIN') return true;
+  if (organizerId && organizerId === user.userId) return true;
+  if (user.role === 'JUDGE') {
+    return HackathonJudgeModel.isJudgeAssigned(hackathonId, user.userId);
+  }
+  return false;
+};
+
 const surveyQuestionSchema = z.object({
   question: z.string().min(5).max(1000),
   order: z.number().int().positive().optional(),
@@ -123,24 +142,39 @@ const updateSurveyQuestionSchema = z.object({
   message: 'At least one field must be provided',
 });
 
-export const getHackathonTeams = async (req: Request, res: Response) => {
+export const getHackathonTeams = async (req: AuthRequest, res: Response) => {
   try {
     const hackathonId = parseInt(req.params.hackathonId);
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
+    const currentUser = req.user;
+
     if (!hackathonId || isNaN(hackathonId)) {
       return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    if (!currentUser) {
+      return res.status(401).json({ error: 'Not authenticated' });
     }
 
     // Check if hackathon exists
     const hackathon = await prisma.hackathon.findUnique({
       where: { id: hackathonId },
+      select: {
+        organizerId: true,
+      },
     });
 
     if (!hackathon) {
       return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    const canView = await canManageHackathon(hackathonId, currentUser, hackathon.organizerId);
+
+    if (!canView) {
+      return res.status(403).json({ error: 'Not authorized to view teams for this hackathon' });
     }
 
     // Get total count for pagination
@@ -199,12 +233,17 @@ export const getHackathonTeams = async (req: Request, res: Response) => {
   }
 };
 
-export const getTeamDetails = async (req: Request, res: Response) => {
+export const getTeamDetails = async (req: AuthRequest, res: Response) => {
   try {
     const teamId = parseInt(req.params.teamId);
+    const currentUser = req.user;
 
     if (!teamId || isNaN(teamId)) {
       return res.status(400).json({ error: 'Invalid team ID' });
+    }
+
+    if (!currentUser) {
+      return res.status(401).json({ error: 'Not authenticated' });
     }
 
     // Get team with survey responses
@@ -226,6 +265,7 @@ export const getTeamDetails = async (req: Request, res: Response) => {
             title: true,
             teamMax: true,
             teamMin: true,
+            organizerId: true,
           },
         },
         surveyResponses: {
@@ -258,6 +298,12 @@ export const getTeamDetails = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Team not found' });
     }
 
+    const canView = await canManageHackathon(team.hackathonId, currentUser, team.hackathon.organizerId);
+
+    if (!canView) {
+      return res.status(403).json({ error: 'Not authorized to view this team' });
+    }
+
     // Group survey responses by member
     const memberResponses = team.members.map(member => {
       const responses = team.surveyResponses
@@ -282,6 +328,8 @@ export const getTeamDetails = async (req: Request, res: Response) => {
       };
     });
 
+    const { organizerId, ...hackathonInfo } = team.hackathon;
+
     return res.status(200).json({
       team: {
         id: team.id,
@@ -289,7 +337,8 @@ export const getTeamDetails = async (req: Request, res: Response) => {
         invitationCode: team.invitationCode,
         captainId: team.captainId,
         isAccepted: team.isAccepted,
-        hackathon: team.hackathon,
+        hackathon: hackathonInfo,
+        members: team.members,
         memberResponses,
         createdAt: team.createdAt,
         updatedAt: team.updatedAt,
@@ -753,6 +802,157 @@ export const deleteHackathonResource = async (req: AuthRequest, res: Response) =
     });
   } catch (error) {
     console.error('Delete hackathon resource error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// ===== Judge Assignment Endpoints =====
+
+export const getHackathonJudges = async (req: AuthRequest, res: Response) => {
+  try {
+    const hackathonId = parseInt(req.params.hackathonId);
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    if (!req.user || req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const hackathon = await prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+      select: { id: true },
+    });
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    const judges = await HackathonJudgeModel.findByHackathon(hackathonId);
+
+    return res.status(200).json({ judges });
+  } catch (error) {
+    console.error('Get hackathon judges error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const assignJudgeToHackathon = async (req: AuthRequest, res: Response) => {
+  try {
+    const hackathonId = parseInt(req.params.hackathonId);
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    if (!req.user || req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const validationResult = assignJudgeSchema.safeParse(req.body);
+
+    if (!validationResult.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: validationResult.error.issues,
+      });
+    }
+
+    const hackathon = await prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+      select: { id: true },
+    });
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    const judge = await prisma.user.findUnique({
+      where: { id: validationResult.data.judgeId },
+      select: { id: true, role: true },
+    });
+
+    if (!judge || judge.role !== 'JUDGE') {
+      return res.status(400).json({ error: 'User must exist and have the JUDGE role' });
+    }
+
+    const alreadyAssigned = await HackathonJudgeModel.isJudgeAssigned(
+      hackathonId,
+      validationResult.data.judgeId
+    );
+
+    if (alreadyAssigned) {
+      return res.status(400).json({ error: 'Judge already assigned to this hackathon' });
+    }
+
+    const assignment = await HackathonJudgeModel.assign(hackathonId, validationResult.data.judgeId);
+
+    return res.status(201).json({
+      message: 'Judge assigned successfully',
+      assignment,
+    });
+  } catch (error) {
+    console.error('Assign judge error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const removeJudgeFromHackathon = async (req: AuthRequest, res: Response) => {
+  try {
+    const hackathonId = parseInt(req.params.hackathonId);
+    const judgeId = parseInt(req.params.judgeId);
+
+    if (!hackathonId || isNaN(hackathonId) || !judgeId || isNaN(judgeId)) {
+      return res.status(400).json({ error: 'Invalid hackathon or judge ID' });
+    }
+
+    if (!req.user || req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const hackathon = await prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+      select: { id: true },
+    });
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    const assigned = await HackathonJudgeModel.isJudgeAssigned(hackathonId, judgeId);
+
+    if (!assigned) {
+      return res.status(404).json({ error: 'Judge is not assigned to this hackathon' });
+    }
+
+    await HackathonJudgeModel.remove(hackathonId, judgeId);
+
+    return res.status(200).json({
+      message: 'Judge removed from hackathon',
+      judgeId,
+    });
+  } catch (error) {
+    console.error('Remove judge error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getJudgeHackathons = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    if (req.user.role !== 'JUDGE') {
+      return res.status(403).json({ error: 'Judge access required' });
+    }
+
+    const hackathons = await HackathonJudgeModel.findHackathonsByJudge(req.user.userId);
+
+    return res.status(200).json({ hackathons });
+  } catch (error) {
+    console.error('Get judge hackathons error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
