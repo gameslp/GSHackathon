@@ -18,6 +18,8 @@ import {
 } from '../lib/uploads';
 import { HackathonJudgeModel } from '../models/hackathonJudge';
 
+const AUTO_REVIEW_FILE_NAME = 'test-auto.py';
+
 // Zod validation schemas
 const nonNegativeInt = z.coerce.number().int().min(0);
 const positiveInt = z.coerce.number().int().positive();
@@ -626,9 +628,15 @@ export const updateHackathon = async (req: AuthRequest, res: Response) => {
     if (data.autoScoringEnabled !== undefined) updateData.autoScoringEnabled = data.autoScoringEnabled;
 
     if (data.autoScoringEnabled === true) {
-      const hasAutoCheckFile = existingHackathon.providedFiles.some(f => f.name === "auto-check.py");
+      const hasAutoCheckFile = existingHackathon.providedFiles.some(
+        (file) => file.name === AUTO_REVIEW_FILE_NAME
+      );
       if (!hasAutoCheckFile) {
-        return res.status(400).json({ error: 'Auto-scoring cannot be enabled without the "auto-check.py" file provided by the organizer.' });
+        return res
+          .status(400)
+          .json({
+            error: `Auto-scoring cannot be enabled without the "${AUTO_REVIEW_FILE_NAME}" file provided by the organizer.`,
+          });
       }
     }
 
@@ -701,13 +709,137 @@ export const getHackathonAutoTesting = async (req: AuthRequest, res: Response) =
       return res.status(403).json({ error: 'Not authorized to delete this hackathon' });
     }
 
+    const scriptFile = hackathon.providedFiles.find((file) => file.name === AUTO_REVIEW_FILE_NAME) || null;
+
     return res.status(200).json({
-      autoScoringAvailable: hackathon.providedFiles.some(f => f.name === "auto-check.py"),
-      autoScoringEnabled: hackathon.autoScoringEnabled || false,
+      autoScoringAvailable: Boolean(scriptFile),
+      autoScoringEnabled: Boolean(hackathon.autoScoringEnabled),
+      script: scriptFile
+        ? {
+            id: scriptFile.id,
+            title: scriptFile.title,
+            name: scriptFile.name,
+            uploadedAt: scriptFile.updatedAt,
+          }
+        : null,
     });
   }
   catch (error) {
     console.error('Get hackathon auto-testing error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const uploadAutoReviewScript = async (req: AuthRequest, res: Response) => {
+  let tempFileUrl: string | null = null;
+  try {
+    const hackathonId = parseInt(req.params.id);
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Script file is required' });
+    }
+
+    const hackathon = await HackathonModel.findById(hackathonId);
+
+    if (!hackathon) {
+      await deleteUploadedFile(PROVIDED_UPLOAD_DIR, buildProvidedFileUrl(req.file.filename));
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    if (hackathon.organizerId !== req.user.userId && req.user.role !== 'ADMIN') {
+      await deleteUploadedFile(PROVIDED_UPLOAD_DIR, buildProvidedFileUrl(req.file.filename));
+      return res.status(403).json({ error: 'Not authorized to update auto review settings for this hackathon' });
+    }
+
+    const fileExtension = req.file.originalname.split('.').pop()?.toLowerCase();
+    if (fileExtension !== 'py') {
+      await deleteUploadedFile(PROVIDED_UPLOAD_DIR, buildProvidedFileUrl(req.file.filename));
+      return res.status(400).json({ error: 'Auto review script must be a .py file' });
+    }
+
+    tempFileUrl = buildProvidedFileUrl(req.file.filename);
+
+    const existingScript = await ProvidedFileModel.findByHackathonAndName(hackathonId, AUTO_REVIEW_FILE_NAME);
+    if (existingScript) {
+      await ProvidedFileModel.delete(existingScript.id);
+      await deleteUploadedFile(PROVIDED_UPLOAD_DIR, existingScript.fileUrl);
+    }
+
+    const scriptFile = await ProvidedFileModel.create({
+      hackathonId,
+      title: req.body.title?.trim() || 'Auto review script',
+      fileUrl: tempFileUrl,
+      public: false,
+      name: AUTO_REVIEW_FILE_NAME,
+    });
+
+    return res.status(200).json({
+      message: 'Auto review script uploaded successfully',
+      script: {
+        id: scriptFile.id,
+        title: scriptFile.title,
+        name: scriptFile.name,
+        uploadedAt: scriptFile.updatedAt,
+      },
+    });
+  } catch (error) {
+    if (tempFileUrl) {
+      await deleteUploadedFile(PROVIDED_UPLOAD_DIR, tempFileUrl);
+    }
+    console.error('Upload auto review script error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const deleteAutoReviewScript = async (req: AuthRequest, res: Response) => {
+  try {
+    const hackathonId = parseInt(req.params.id);
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const hackathon = await HackathonModel.findById(hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    if (hackathon.organizerId !== req.user.userId && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized to modify auto review settings for this hackathon' });
+    }
+
+    const scriptFile = await ProvidedFileModel.findByHackathonAndName(hackathonId, AUTO_REVIEW_FILE_NAME);
+
+    if (!scriptFile) {
+      return res.status(404).json({ error: 'No auto review script uploaded' });
+    }
+
+    await ProvidedFileModel.delete(scriptFile.id);
+    await deleteUploadedFile(PROVIDED_UPLOAD_DIR, scriptFile.fileUrl);
+
+    if (hackathon.autoScoringEnabled) {
+      await HackathonModel.update(hackathonId, { autoScoringEnabled: false });
+    }
+
+    return res.status(200).json({
+      message: 'Auto review script removed',
+      autoScoringDisabled: Boolean(hackathon.autoScoringEnabled),
+    });
+  } catch (error) {
+    console.error('Delete auto review script error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -1134,6 +1266,7 @@ export const createProvidedFile = async (req: AuthRequest, res: Response) => {
       title: data.title,
       fileUrl: buildProvidedFileUrl(req.file.filename),
       public: data.public ?? false,
+      name: req.file.originalname,
     });
 
     return res.status(201).json({
@@ -1495,7 +1628,13 @@ export const getHackathonLeaderboard = async (req: AuthRequest, res: Response) =
         },
         _count: {
           select: {
-            submissions: true,
+            submissions: {
+              where: {
+                sendAt: {
+                  not: null,
+                },
+              },
+            },
           },
         },
       },
@@ -1512,7 +1651,17 @@ export const getHackathonLeaderboard = async (req: AuthRequest, res: Response) =
         totalSubmissions: team._count.submissions,
         lastSubmissionAt: team.submissions[0].sendAt,
       }))
-      .sort((a, b) => b.bestScore - a.bestScore);
+      .sort((a, b) => {
+        if (b.bestScore !== a.bestScore) {
+          return b.bestScore - a.bestScore;
+        }
+        if (a.totalSubmissions !== b.totalSubmissions) {
+          return a.totalSubmissions - b.totalSubmissions;
+        }
+        const aTime = a.lastSubmissionAt ? new Date(a.lastSubmissionAt).getTime() : Infinity;
+        const bTime = b.lastSubmissionAt ? new Date(b.lastSubmissionAt).getTime() : Infinity;
+        return aTime - bTime;
+      });
 
     // Add rank to each team
     const rankedTeams = teamsWithScores.map((team, index) => ({
@@ -1542,6 +1691,7 @@ export const getHackathonLeaderboard = async (req: AuthRequest, res: Response) =
         total: rankedTeams.length,
         totalPages: Math.ceil(rankedTeams.length / limit),
       },
+      submissionLimit: hackathon.submissionLimit,
       currentUserTeamRank,
     });
   } catch (error) {

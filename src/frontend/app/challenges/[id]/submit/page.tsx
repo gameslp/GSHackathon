@@ -490,11 +490,19 @@ export default function SubmitPage({ params }: { params: Promise<{ id: string }>
 
                       <div className="flex flex-col gap-2">
                         <div className="flex flex-wrap items-center gap-3">
+                          <label
+                            htmlFor={`file-input-${format.id}`}
+                            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={isSubmitted || !draftReady ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                          >
+                            {uploadedFile ? 'Change file' : 'Select file'}
+                          </label>
                           <input
+                            id={`file-input-${format.id}`}
                             type="file"
                             accept={format.extension}
                             onChange={(e) => handleFileChange(format.id, e.target.files?.[0] || null)}
-                            className="w-full text-sm text-gray-600"
+                            className="sr-only"
                             disabled={isSubmitted || !draftReady}
                           />
                           {uploadedFile && (

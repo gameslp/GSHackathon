@@ -10,6 +10,8 @@ import {
   updateHackathon,
   deleteHackathon,
   getHackathonAutoTesting,
+  uploadAutoReviewScript,
+  deleteAutoReviewScript,
   getActiveHackathons,
   getUpcomingHackathons,
   getHackathonsByOrganizer,
@@ -979,10 +981,23 @@ hackathonRouter.get('/hackathons/:hackathonId/leaderboard', getHackathonLeaderbo
  *               properties:
  *                 autoScoringAvailable:
  *                   type: boolean
- *                   description: Whether auto-check.py file is provided
+ *                   description: Whether a test-auto.py file has been uploaded
  *                 autoScoringEnabled:
  *                   type: boolean
  *                   description: Whether auto-scoring is enabled for this hackathon
+ *                 script:
+ *                   type: object
+ *                   nullable: true
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     title:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     uploadedAt:
+ *                       type: string
+ *                       format: date-time
  *       400:
  *         description: Invalid hackathon ID
  *         content:
@@ -1009,6 +1024,88 @@ hackathonRouter.get('/hackathons/:hackathonId/leaderboard', getHackathonLeaderbo
  *               $ref: '#/components/schemas/Error'
  */
 hackathonRouter.get('/hackathons/:id/auto-testing', auth, getHackathonAutoTesting);
+
+/**
+ * @openapi
+ * /hackathons/{id}/auto-testing/script:
+ *   post:
+ *     tags:
+ *       - Hackathon Management
+ *     summary: Upload auto review script
+ *     description: Upload the test-auto.py script used for automatic scoring (organizer/admin only)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Hackathon ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *               title:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Script uploaded successfully
+ *       400:
+ *         description: Invalid hackathon ID or file
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Not authorized
+ *       404:
+ *         description: Hackathon not found
+ *       500:
+ *         description: Internal server error
+ */
+hackathonRouter.post(
+  '/hackathons/:id/auto-testing/script',
+  auth,
+  providedUpload.single('file'),
+  uploadAutoReviewScript
+);
+
+/**
+ * @openapi
+ * /hackathons/{id}/auto-testing/script:
+ *   delete:
+ *     tags:
+ *       - Hackathon Management
+ *     summary: Remove auto review script
+ *     description: Delete the uploaded auto review script and disable auto scoring
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Script removed successfully
+ *       400:
+ *         description: Invalid hackathon ID
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Not authorized
+ *       404:
+ *         description: Hackathon or script not found
+ *       500:
+ *         description: Internal server error
+ */
+hackathonRouter.delete('/hackathons/:id/auto-testing/script', auth, deleteAutoReviewScript);
 
 /**
  * @openapi

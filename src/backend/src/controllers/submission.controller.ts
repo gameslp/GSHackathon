@@ -5,6 +5,7 @@ import { SubmissionFileModel } from '../models/submissionFile';
 import { HackathonModel } from '../models/hackathon';
 import { TeamModel } from '../models/team';
 import { SubmissionFileFormatModel } from '../models/submissionFileFormat';
+import { HackathonJudgeModel } from '../models/hackathonJudge';
 import { AuthRequest } from '../middleware/auth';
 import OpenAI from 'openai';
 import fs from 'fs';
@@ -482,7 +483,7 @@ export const scoreSubmission = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Submission not found' });
     }
 
-    // Check authorization - only organizer, admin, or judges can score
+    // Check authorization - only organizer, admin, or assigned judges can score
     const hackathon = await HackathonModel.findById(submission.hackathonId);
 
     if (!hackathon) {
@@ -491,7 +492,8 @@ export const scoreSubmission = async (req: AuthRequest, res: Response) => {
 
     const isOrganizer = req.user.userId === hackathon.organizerId;
     const isAdmin = req.user.role === 'ADMIN';
-    const isJudge = req.user.role === 'JUDGE';
+    const isJudge =
+      req.user.role === 'JUDGE' && (await HackathonJudgeModel.isJudgeAssigned(hackathon.id, req.user.userId));
 
     if (!isOrganizer && !isAdmin && !isJudge) {
       return res.status(403).json({ error: 'Not authorized to score submissions' });

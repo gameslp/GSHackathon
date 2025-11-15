@@ -1,13 +1,13 @@
 import { DockerRunConfig, runDockerTest } from "src/docker/runner";
 import { SubmissionModel } from "./submission";
 import os from "os";
-import { SubmissionFile, SubmissionFileFormat, Submission as SubmissionType} from "@prisma/client";
+import { Submission as SubmissionType} from "@prisma/client";
 import path from "path";
-import { copyFile, copyFileSync } from "fs";
-import { SubmissionFileFormatInclude, SubmissionFileInclude } from "src/generated/prisma/models";
+import { copyFileSync } from "fs";
 import { ProvidedFileModel } from "./providedFile";
 import { HackathonModel } from "./hackathon";
-import { Session } from "inspector";
+
+const AUTO_REVIEW_FILE_NAME = 'test-auto.py';
 
 export class ScoringModel {
   public SubmissionId: number;
@@ -34,7 +34,10 @@ export class ScoringModel {
   public static async isAutoScoringEnabled(hackathonId: number) {
     const hackathon = await HackathonModel.findByIdWithFiles(hackathonId);
     if(!hackathon) throw new Error("Hackathon not found");
-    return hackathon.autoScoringEnabled && hackathon.providedFiles.find(f => f.name === "auto-check.py") !== undefined;
+    return Boolean(
+      hackathon.autoScoringEnabled &&
+      hackathon.providedFiles.find(file => file.name === AUTO_REVIEW_FILE_NAME)
+    );
   }
 
   public async runScoringSandbox() {
@@ -66,6 +69,7 @@ export class ScoringModel {
       cpuLimit: hackathon.threadLimit,
       memoryLimit: `${hackathon.ramLimit}m`,
       timeout: hackathon.submissionTimeout,
+      testerFileName: AUTO_REVIEW_FILE_NAME,
     };
 
     const result = await runDockerTest(payload);

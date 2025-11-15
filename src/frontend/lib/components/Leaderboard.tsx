@@ -1,15 +1,12 @@
-interface LeaderboardEntry {
-  rank: number;
-  teamName: string;
-  teamMembers: string[];
-  score: number;
-  submissions: number;
-  lastSubmission: string;
-}
+'use client';
+
+import { useState } from 'react';
+import { useHackathonLeaderboard } from '@/lib/hooks/useHackathons';
+import Button from './Button';
+import { useRouter } from 'next/navigation';
 
 interface LeaderboardProps {
   hackathonId: number;
-  currentTeamId?: number;
 }
 
 const getMedalIcon = (rank: number) => {
@@ -40,33 +37,16 @@ const getMedalIcon = (rank: number) => {
   }
 };
 
-// Mock data - replace with actual API call later
-const generateMockLeaderboard = (hackathonId: number): LeaderboardEntry[] => {
-  const teams = [
-    { name: 'Data Wizards', members: ['alice_ml', 'bob_stats'], score: 0.9847 },
-    { name: 'Neural Ninjas', members: ['charlie_ai', 'diana_cv', 'eve_nlp'], score: 0.9823 },
-    { name: 'Kaggle Masters', members: ['frank_ds', 'grace_ml'], score: 0.9801 },
-    { name: 'AI Avengers', members: ['henry_py', 'iris_r', 'jack_tf'], score: 0.9789 },
-    { name: 'Deep Learners', members: ['kate_nn', 'leo_cnn'], score: 0.9765 },
-    { name: 'Gradient Boosters', members: ['maya_xgb', 'noah_lgb', 'olivia_cat'], score: 0.9743 },
-    { name: 'Feature Engineers', members: ['paul_fe', 'quinn_ts'], score: 0.9721 },
-    { name: 'Model Ensemble', members: ['ruby_stack', 'sam_blend'], score: 0.9698 },
-    { name: 'Random Forests', members: ['tina_rf', 'uma_dt', 'vince_gb'], score: 0.9675 },
-    { name: 'Loss Minimizers', members: ['wendy_opt', 'xander_sgd'], score: 0.9654 },
-  ];
+const Leaderboard = ({ hackathonId }: LeaderboardProps) => {
+  const router = useRouter();
+  const [showAll, setShowAll] = useState(false);
+  const { data: leaderboardData, isLoading } = useHackathonLeaderboard(hackathonId, 1, {
+    enabled: !!hackathonId,
+  });
 
-  return teams.map((team, index) => ({
-    rank: index + 1,
-    teamName: team.name,
-    teamMembers: team.members,
-    score: team.score,
-    submissions: Math.floor(Math.random() * 50) + 10,
-    lastSubmission: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-  }));
-};
-
-const Leaderboard = ({ hackathonId, currentTeamId }: LeaderboardProps) => {
-  const leaderboard = generateMockLeaderboard(hackathonId);
+  const leaderboard = leaderboardData?.leaderboard ?? [];
+  const submissionLimit = leaderboardData?.submissionLimit;
+  const displayedLeaderboard = showAll ? leaderboard : leaderboard.slice(0, 10);
 
   const getRankColor = (rank: number) => {
     switch (rank) {
@@ -81,13 +61,26 @@ const Leaderboard = ({ hackathonId, currentTeamId }: LeaderboardProps) => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+        <p className="text-gray-600">Loading leaderboard...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-      <div className="p-6 border-b border-gray-200">
-        <h2 className="text-2xl font-bold text-black mb-2">Leaderboard</h2>
-        <p className="text-sm text-gray-600">
-          Top teams ranked by their best submission score
-        </p>
+      <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-black mb-2">Leaderboard</h2>
+          <p className="text-sm text-gray-600">
+            Top teams ranked by their best submission score
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => router.push(`/challenges/${hackathonId}/leaderboard`)}>
+          View Full Leaderboard
+        </Button>
       </div>
 
       <div className="overflow-x-auto">
@@ -107,67 +100,82 @@ const Leaderboard = ({ hackathonId, currentTeamId }: LeaderboardProps) => {
                 Submissions
               </th>
               <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Last Submission
+                Last Submitted
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {leaderboard.map((entry) => (
-              <tr
-                key={entry.rank}
-                className={`hover:bg-gray-50 transition-colors ${
-                  entry.rank <= 3 ? 'bg-gray-50/50' : ''
-                }`}
-              >
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    {getMedalIcon(entry.rank)}
-                    <span
-                      className={`inline-flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-bold ${getRankColor(
-                        entry.rank
-                      )}`}
-                    >
-                      {entry.rank}
-                    </span>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div>
-                    <p className="font-semibold text-black">{entry.teamName}</p>
-                    <p className="text-xs text-gray-500">
-                      {entry.teamMembers.join(', ')}
-                    </p>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <span className="font-mono text-sm font-semibold text-black">
-                    {entry.score.toFixed(4)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <span className="text-sm text-gray-600">{entry.submissions}</span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <span className="text-xs text-gray-500">
-                    {new Date(entry.lastSubmission).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
+            {displayedLeaderboard.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                  No teams have submitted yet
                 </td>
               </tr>
-            ))}
+            ) : (
+              displayedLeaderboard.map((entry) => (
+                <tr
+                  key={entry.teamId}
+                  className={`hover:bg-gray-50 transition-colors ${
+                    entry.rank <= 3 ? 'bg-gray-50/50' : ''
+                  }`}
+                >
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      {getMedalIcon(entry.rank)}
+                      <span
+                        className={`inline-flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-bold ${getRankColor(
+                          entry.rank
+                        )}`}
+                      >
+                        {entry.rank}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div>
+                      <p className="font-semibold text-black">{entry.teamName}</p>
+                      <p className="text-xs text-gray-500">
+                        {entry.members.map((m) => m.username).join(', ')}
+                      </p>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <span className="font-mono text-sm font-semibold text-black">
+                      {entry.bestScore.toFixed(4)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <span className="text-sm text-gray-600">
+                      {entry.totalSubmissions}
+                      {submissionLimit && ` / ${submissionLimit}`}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <span className="text-xs text-gray-500">
+                      {entry.lastSubmissionAt
+                        ? new Date(entry.lastSubmissionAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : 'N/A'}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
-      <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-        <p className="text-xs text-gray-500">
-          * Leaderboard updates in real-time after each submission evaluation
-        </p>
-      </div>
+      {leaderboard.length > 10 && !showAll && (
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 text-center">
+          <Button variant="outline" size="sm" onClick={() => setShowAll(true)}>
+            Show All {leaderboard.length} Teams
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

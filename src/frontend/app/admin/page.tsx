@@ -2,19 +2,22 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useMemo, useState, type ReactNode } from "react";
-import Header from "@/lib/components/Header";
-import Footer from "@/lib/components/Footer";
-import Button from "@/lib/components/Button";
-import { useAuth } from "@/lib/hooks/useAuth";
-import { useHackathonSurvey } from "@/lib/hooks/useTeams";
+import { useMemo, useState, type ReactNode, type FormEvent } from 'react';
+import Header from '@/lib/components/Header';
+import Footer from '@/lib/components/Footer';
+import Button from '@/lib/components/Button';
+import { useAuth } from '@/lib/hooks/useAuth';
+import { useHackathonSurvey } from '@/lib/hooks/useTeams';
 import {
   useHackathons,
   useHackathon,
   useCreateHackathon,
   useUpdateHackathon,
   useDeleteHackathon,
-} from "@/lib/hooks/useHackathons";
+  useHackathonAutoTesting,
+  useUploadAutoReviewScript,
+  useDeleteAutoReviewScript,
+} from '@/lib/hooks/useHackathons';
 import {
   useHackathonTeams,
   useTeamDetail,
@@ -29,7 +32,12 @@ import {
   useJudgeUsersList,
   useAssignJudgeToHackathon,
   useRemoveJudgeFromHackathon,
-} from "@/lib/hooks/useAdmin";
+} from '@/lib/hooks/useAdmin';
+import {
+  useHackathonSubmissions,
+  useSubmission,
+  useScoreSubmission,
+} from '@/lib/hooks/useSubmissions';
 import {
   useUploadHackathonResource,
   useDeleteHackathonResource,
@@ -164,10 +172,20 @@ export default function AdminDashboardPage() {
   const [providedError, setProvidedError] = useState<string | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailInputKey, setThumbnailInputKey] = useState(0);
-  const [thumbnailFeedback, setThumbnailFeedback] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
+  const [thumbnailFeedback, setThumbnailFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
+    null
+  );
+  const [selectedSubmissionReviewId, setSelectedSubmissionReviewId] = useState<number | null>(null);
+  const [manualScoreValue, setManualScoreValue] = useState('');
+  const [manualScoreComment, setManualScoreComment] = useState('');
+  const [manualReviewFeedback, setManualReviewFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
+    null
+  );
+  const [autoScriptFile, setAutoScriptFile] = useState<File | null>(null);
+  const [autoScriptInputKey, setAutoScriptInputKey] = useState(0);
+  const [autoScriptFeedback, setAutoScriptFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
+    null
+  );
 
   // File format management state
   const [formatFormData, setFormatFormData] = useState({
@@ -265,6 +283,7 @@ export default function AdminDashboardPage() {
   const isHackathonSelected = Boolean(activeHackathonId);
   const createMutation = useCreateHackathon();
   const updateMutation = useUpdateHackathon();
+  const autoReviewToggleMutation = useUpdateHackathon();
   const deleteMutation = useDeleteHackathon();
   const acceptTeam = useAcceptTeam();
   const rejectTeam = useRejectTeam();
@@ -307,6 +326,9 @@ export default function AdminDashboardPage() {
   const uploadProvided = useUploadProvidedFile();
   const deleteProvided = useDeleteProvidedFile();
   const toggleProvided = useToggleProvidedFileVisibility();
+  const uploadAutoScriptMutation = useUploadAutoReviewScript();
+  const deleteAutoScriptMutation = useDeleteAutoReviewScript();
+  const scoreSubmissionMutation = useScoreSubmission();
 
   // File format hooks
   const { data: fileFormats = [], isLoading: formatsLoading } = useFileFormats(
@@ -319,17 +341,32 @@ export default function AdminDashboardPage() {
   const updateFormatMutation = useUpdateFileFormat();
   const deleteFormatMutation = useDeleteFileFormat();
 
-  const [newQuestionText, setNewQuestionText] = useState("");
-  const [newQuestionOrder, setNewQuestionOrder] = useState("");
-  const [editingQuestion, setEditingQuestion] = useState<{
-    id: number;
-    text: string;
-    order: string;
-  } | null>(null);
-  const [surveyFeedback, setSurveyFeedback] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
+  const [newQuestionText, setNewQuestionText] = useState('');
+  const [newQuestionOrder, setNewQuestionOrder] = useState('');
+  const [editingQuestion, setEditingQuestion] = useState<{ id: number; text: string; order: string } | null>(null);
+  const [surveyFeedback, setSurveyFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const {
+    data: autoTestingData,
+    isLoading: autoTestingLoading,
+    error: autoTestingError,
+  } = useHackathonAutoTesting(activeHackathonId ?? 0, { enabled: Boolean(activeHackathonId) });
+  const {
+    data: hackathonSubmissions = [],
+    isLoading: hackathonSubmissionsLoading,
+    error: hackathonSubmissionsError,
+  } = useHackathonSubmissions(activeHackathonId ?? 0, { enabled: Boolean(activeHackathonId) });
+  const finalizedSubmissions = useMemo(
+    () => hackathonSubmissions.filter((submission) => Boolean(submission.sendAt)),
+    [hackathonSubmissions]
+  );
+  const {
+    data: reviewSubmissionDetail,
+    isLoading: reviewSubmissionLoading,
+  } = useSubmission(selectedSubmissionReviewId ?? 0, {
+    enabled: Boolean(selectedSubmissionReviewId),
+  });
+  const autoTesting = autoTestingData;
+
 
   const resetForm = () => {
     setIsCreating(false);
@@ -1033,6 +1070,101 @@ export default function AdminDashboardPage() {
         },
       }
     );
+  };
+
+  const handleManualScoreSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedSubmissionReviewId) {
+      setManualReviewFeedback({ type: 'error', message: 'Select a submission to review.' });
+      return;
+    }
+
+    const parsedScore = parseFloat(manualScoreValue);
+    if (Number.isNaN(parsedScore) || parsedScore < 0) {
+      setManualReviewFeedback({ type: 'error', message: 'Enter a valid non-negative score.' });
+      return;
+    }
+
+    try {
+      setManualReviewFeedback(null);
+      await scoreSubmissionMutation.mutateAsync({
+        submissionId: selectedSubmissionReviewId,
+        score: parsedScore,
+        scoreComment: manualScoreComment || undefined,
+      });
+      setManualReviewFeedback({ type: 'success', message: 'Review submitted successfully.' });
+      setManualScoreValue('');
+      setManualScoreComment('');
+      setSelectedSubmissionReviewId(null);
+    } catch (error) {
+      setManualReviewFeedback({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to submit review.',
+      });
+    }
+  };
+
+  const handleAutoScriptUpload = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!activeHackathonId) return;
+
+    if (!autoScriptFile) {
+      setAutoScriptFeedback({ type: 'error', message: 'Select a Python script to upload.' });
+      return;
+    }
+
+    try {
+      setAutoScriptFeedback(null);
+      await uploadAutoScriptMutation.mutateAsync({
+        hackathonId: activeHackathonId,
+        file: autoScriptFile,
+      });
+      setAutoScriptFeedback({ type: 'success', message: 'Auto review script uploaded successfully.' });
+      setAutoScriptFile(null);
+      setAutoScriptInputKey((key) => key + 1);
+    } catch (error) {
+      setAutoScriptFeedback({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to upload script.',
+      });
+    }
+  };
+
+  const handleAutoScriptDelete = async () => {
+    if (!activeHackathonId || !autoTesting?.script) return;
+    if (!confirm('Remove the current auto review script? This will disable auto scoring.')) return;
+
+    try {
+      setAutoScriptFeedback(null);
+      await deleteAutoScriptMutation.mutateAsync(activeHackathonId);
+      setAutoScriptFeedback({ type: 'success', message: 'Auto review script removed.' });
+    } catch (error) {
+      setAutoScriptFeedback({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to remove script.',
+      });
+    }
+  };
+
+  const handleAutoScoringToggle = async (enable: boolean) => {
+    if (!activeHackathonId) return;
+
+    try {
+      setAutoScriptFeedback(null);
+      await autoReviewToggleMutation.mutateAsync({
+        id: activeHackathonId,
+        data: { autoScoringEnabled: enable },
+      });
+      setAutoScriptFeedback({
+        type: 'success',
+        message: enable ? 'Auto review enabled.' : 'Auto review disabled.',
+      });
+    } catch (error) {
+      setAutoScriptFeedback({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to update auto review settings.',
+      });
+    }
   };
 
   if (loading || hackathonLoading) {
@@ -1873,6 +2005,183 @@ export default function AdminDashboardPage() {
                         </>
                       )}
                     </CollapsibleSection>
+                  <CollapsibleSection
+                    title="Manual reviews"
+                    description="Score submissions from teams and leave feedback."
+                    defaultOpen={false}
+                  >
+                    {!isHackathonSelected ? (
+                      <p className="text-sm text-gray-600">Select a hackathon to review submissions.</p>
+                    ) : hackathonSubmissionsLoading ? (
+                      <p className="text-sm text-gray-600">Loading submissions...</p>
+                    ) : hackathonSubmissionsError ? (
+                      <p className="text-sm text-red-600">
+                        {(hackathonSubmissionsError as Error).message ?? 'Failed to load submissions.'}
+                      </p>
+                    ) : finalizedSubmissions.length === 0 ? (
+                      <p className="text-sm text-gray-600">No submissions have been finalized yet.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                          {finalizedSubmissions.map((submission) => {
+                            const isSelected = submission.id === selectedSubmissionReviewId;
+                            const teamName = submission.team?.name ?? `Team #${submission.teamId}`;
+                            return (
+                              <button
+                                key={submission.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSubmissionReviewId(submission.id);
+                                  setManualReviewFeedback(null);
+                                  setManualScoreValue(
+                                    submission.score !== null && submission.score !== undefined
+                                      ? submission.score.toString()
+                                      : ''
+                                  );
+                                  setManualScoreComment(submission.scoreComment ?? '');
+                                }}
+                                className={`w-full text-left border rounded-lg p-4 transition ${
+                                  isSelected ? 'border-primary bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
+                                }`}
+                              >
+                                <p className="font-semibold text-black">{teamName}</p>
+                                <p className="text-xs text-gray-500">
+                                  Submitted:{' '}
+                                  {submission.sendAt ? new Date(submission.sendAt).toLocaleString() : 'Draft'}
+                                </p>
+                                <div className="flex items-center gap-2 mt-2 text-xs">
+                                  {submission.score !== null && submission.score !== undefined ? (
+                                    <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-semibold">
+                                      Scored ({submission.score})
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800 font-semibold">
+                                      Needs review
+                                    </span>
+                                  )}
+                                  {submission.scoreManual && (
+                                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                                      Manual
+                                    </span>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div className="border border-gray-200 rounded-lg p-4 space-y-4">
+                          {!selectedSubmissionReviewId ? (
+                            <p className="text-sm text-gray-600">Select a submission to start reviewing.</p>
+                          ) : reviewSubmissionLoading ? (
+                            <p className="text-sm text-gray-600">Loading submission details...</p>
+                          ) : !reviewSubmissionDetail ? (
+                            <p className="text-sm text-red-600">Unable to load the selected submission.</p>
+                          ) : (
+                            <>
+                              <div className="space-y-1 text-sm text-gray-700">
+                                <p className="font-semibold text-black">
+                                  {reviewSubmissionDetail.team?.name ?? `Team #${reviewSubmissionDetail.teamId}`}
+                                </p>
+                                <p>
+                                  Submitted:{' '}
+                                  {reviewSubmissionDetail.sendAt
+                                    ? new Date(reviewSubmissionDetail.sendAt).toLocaleString()
+                                    : 'Draft'}
+                                </p>
+                                <p>
+                                  Current status:{' '}
+                                  {reviewSubmissionDetail.score !== null &&
+                                  reviewSubmissionDetail.score !== undefined
+                                    ? `Scored (${reviewSubmissionDetail.score})`
+                                    : 'Awaiting review'}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-gray-500 mb-1">Files</p>
+                                {reviewSubmissionDetail.files && reviewSubmissionDetail.files.length > 0 ? (
+                                  <ul className="space-y-1 text-sm">
+                                    {reviewSubmissionDetail.files.map((file) => {
+                                      const label =
+                                        file.fileFormat?.name ??
+                                        file.fileUrl?.split('/').pop() ??
+                                        'File';
+                                      const href = file.fileUrl?.startsWith('http')
+                                        ? file.fileUrl
+                                        : `${API_BASE_URL}${file.fileUrl}`;
+                                      return (
+                                        <li key={file.id} className="flex items-center justify-between gap-3">
+                                          <span>{label}</span>
+                                          <a
+                                            href={href}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-primary hover:underline text-xs"
+                                          >
+                                            Download
+                                          </a>
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                ) : (
+                                  <p className="text-sm text-gray-500">No files uploaded.</p>
+                                )}
+                              </div>
+                              {manualReviewFeedback && (
+                                <div
+                                  className={`text-sm rounded-lg px-3 py-2 border ${
+                                    manualReviewFeedback.type === 'success'
+                                      ? 'text-green-700 bg-green-50 border-green-200'
+                                      : 'text-red-700 bg-red-50 border-red-200'
+                                  }`}
+                                >
+                                  {manualReviewFeedback.message}
+                                </div>
+                              )}
+                              {!reviewSubmissionDetail.sendAt ? (
+                                <p className="text-sm text-gray-600">
+                                  Draft submissions cannot be reviewed. Ask the team to finalize their upload.
+                                </p>
+                              ) : (
+                                <form className="space-y-3" onSubmit={handleManualScoreSubmit}>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Score</label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                                      value={manualScoreValue}
+                                      onChange={(event) => setManualScoreValue(event.target.value)}
+                                      required
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Comment</label>
+                                    <textarea
+                                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                                      rows={3}
+                                      value={manualScoreComment}
+                                      onChange={(event) => setManualScoreComment(event.target.value)}
+                                      placeholder="Share feedback for the team (optional)."
+                                    />
+                                  </div>
+                                  <Button
+                                    type="submit"
+                                    variant="primary"
+                                    size="sm"
+                                    disabled={scoreSubmissionMutation.isPending}
+                                  >
+                                    {scoreSubmissionMutation.isPending ? 'Saving...' : 'Save review'}
+                                  </Button>
+                                </form>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </CollapsibleSection>
 
                     <CollapsibleSection
                       title="Public resources"
@@ -1997,8 +2306,9 @@ export default function AdminDashboardPage() {
                         </p>
                       ) : providedFilesError ? (
                         <p className="text-sm text-red-600">
-                          {(providedFilesError as Error).message ??
-                            "Failed to load files"}
+                          {providedFilesError instanceof Error
+                            ? providedFilesError.message || "Failed to load files"
+                            : "Failed to load files"}
                         </p>
                       ) : providedFiles.length === 0 ? (
                         <p className="text-sm text-gray-600">
@@ -2121,6 +2431,139 @@ export default function AdminDashboardPage() {
                       </form>
                     </CollapsibleSection>
                     <CollapsibleSection
+                    title="Auto review"
+                    description="Upload and manage the automated grading script."
+                    defaultOpen={false}
+                  >
+                    {!isHackathonSelected ? (
+                      <p className="text-sm text-gray-600">Select a hackathon to configure auto review.</p>
+                    ) : autoTestingLoading ? (
+                      <p className="text-sm text-gray-600">Loading auto review settings...</p>
+                    ) : autoTestingError ? (
+                      <p className="text-sm text-red-600">
+                        {(autoTestingError as Error).message ?? 'Failed to load auto review settings.'}
+                      </p>
+                    ) : (
+                      <>
+                        {autoScriptFeedback && (
+                          <div
+                            className={`text-sm rounded-lg px-3 py-2 border ${
+                              autoScriptFeedback.type === 'success'
+                                ? 'text-green-700 bg-green-50 border-green-200'
+                                : 'text-red-700 bg-red-50 border-red-200'
+                            }`}
+                          >
+                            {autoScriptFeedback.message}
+                          </div>
+                        )}
+                        <div className="flex flex-wrap items-center justify-between gap-4 border border-gray-200 rounded-lg p-4">
+                          <div>
+                            <p className="text-sm font-semibold text-black">Status</p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              <span
+                                className={`px-2 py-1 text-xs font-semibold rounded-full border ${
+                                  autoTesting?.autoScoringAvailable
+                                    ? 'bg-green-50 text-green-700 border-green-200'
+                                    : 'bg-red-50 text-red-700 border-red-200'
+                                }`}
+                              >
+                                Script {autoTesting?.autoScoringAvailable ? 'uploaded' : 'missing'}
+                              </span>
+                              <span
+                                className={`px-2 py-1 text-xs font-semibold rounded-full border ${
+                                  autoTesting?.autoScoringEnabled
+                                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                    : 'bg-gray-50 text-gray-600 border-gray-200'
+                                }`}
+                              >
+                                Auto review {autoTesting?.autoScoringEnabled ? 'enabled' : 'disabled'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleAutoScoringToggle(true)}
+                              disabled={
+                                !autoTesting?.autoScoringAvailable ||
+                                autoTesting?.autoScoringEnabled ||
+                                autoReviewToggleMutation.isPending
+                              }
+                            >
+                              {autoReviewToggleMutation.isPending ? 'Saving...' : 'Enable auto review'}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleAutoScoringToggle(false)}
+                              disabled={!autoTesting?.autoScoringEnabled || autoReviewToggleMutation.isPending}
+                            >
+                              Disable auto review
+                            </Button>
+                          </div>
+                        </div>
+                        {autoTesting?.script ? (
+                          <div className="border border-gray-200 rounded-lg p-4 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-black">{autoTesting.script.title}</p>
+                              <p className="text-xs text-gray-500">
+                                Uploaded {new Date(autoTesting.script.uploadedAt).toLocaleString()}
+                              </p>
+                              <p className="text-xs text-gray-500 font-mono">Runs as /problem/test-auto.py</p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleAutoScriptDelete}
+                              disabled={deleteAutoScriptMutation.isPending}
+                            >
+                              {deleteAutoScriptMutation.isPending ? 'Removing...' : 'Remove script'}
+                            </Button>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-600">
+                            Upload a <code className="font-mono text-xs">test-auto.py</code> script. It runs inside a
+                            sandbox after every submission and has access to submissions plus private provided files.
+                          </p>
+                        )}
+                        <form className="border border-gray-200 rounded-lg p-4 space-y-3" onSubmit={handleAutoScriptUpload}>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Upload script (.py)
+                            </label>
+                            <input
+                              key={autoScriptInputKey}
+                              type="file"
+                              accept=".py"
+                              className="w-full text-sm text-gray-600"
+                              onChange={(event) => setAutoScriptFile(event.target.files?.[0] ?? null)}
+                            />
+                            {autoScriptFile && (
+                              <p className="text-xs text-gray-500 mt-1">Selected: {autoScriptFile.name}</p>
+                            )}
+                          </div>
+                          <Button
+                            type="submit"
+                            variant="primary"
+                            size="sm"
+                            disabled={uploadAutoScriptMutation.isPending}
+                          >
+                            {uploadAutoScriptMutation.isPending
+                              ? 'Uploading...'
+                              : autoTesting?.script
+                              ? 'Replace script'
+                              : 'Upload script'}
+                          </Button>
+                          <p className="text-xs text-gray-500">
+                            The tester receives all uploaded submission files in <code className="font-mono">/submission</code>{' '}
+                            and private provided files in <code className="font-mono">/problem</code>.
+                          </p>
+                        </form>
+                      </>
+                    )}
+                  </CollapsibleSection>
+                  <CollapsibleSection
                       title="Survey questions"
                       description="Configure questions users must answer when joining."
                       defaultOpen={false}
