@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import cors, { CorsOptions } from 'cors';
 import { setupRoutes } from './router';
+import { RESOURCE_UPLOAD_DIR } from './lib/uploads';
 
 dotenv.config();
 const PORT = process.env.PORT || 3000;
@@ -34,6 +35,7 @@ export const createApp = () => {
       app.use(express.json());
       app.use(express.urlencoded({ extended: true }));
       app.use(cookieParser());
+      app.use('/uploads/resources', express.static(RESOURCE_UPLOAD_DIR));
 
       setupRoutes(app);
 

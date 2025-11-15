@@ -9,7 +9,6 @@ export interface CreateProvidedFileData {
 
 export interface UpdateProvidedFileData {
   title?: string;
-  fileUrl?: string;
   public?: boolean;
 }
 
@@ -22,6 +21,7 @@ export class ProvidedFileModel {
           select: {
             id: true,
             title: true,
+            organizerId: true,
           },
         },
       },
@@ -36,6 +36,7 @@ export class ProvidedFileModel {
           select: {
             id: true,
             title: true,
+            organizerId: true,
           },
         },
       },
@@ -49,6 +50,7 @@ export class ProvidedFileModel {
           select: {
             id: true,
             title: true,
+            organizerId: true,
           },
         },
       },
@@ -97,6 +99,21 @@ export class ProvidedFileModel {
   static async delete(id: number) {
     return await prisma.providedFile.delete({
       where: { id },
+    });
+  }
+
+  static async findByFileUrl(fileUrl: string) {
+    return await prisma.providedFile.findFirst({
+      where: { fileUrl },
+      include: {
+        hackathon: {
+          select: {
+            id: true,
+            title: true,
+            organizerId: true,
+          },
+        },
+      },
     });
   }
 

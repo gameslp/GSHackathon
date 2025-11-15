@@ -248,6 +248,10 @@ const options: swaggerJsdoc.Options = {
               type: 'integer',
               description: 'Team captain user ID',
             },
+            isAccepted: {
+              type: 'boolean',
+              description: 'Whether team has been accepted by admins',
+            },
             hackathon: {
               type: 'object',
               properties: {

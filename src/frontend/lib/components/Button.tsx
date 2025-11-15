@@ -10,6 +10,7 @@ interface ButtonProps {
   className?: string;
   disabled?: boolean;
   type?: 'button' | 'submit' | 'reset';
+  asChild?: boolean;
 }
 
 const Button = ({
@@ -21,6 +22,7 @@ const Button = ({
   className = '',
   disabled = false,
   type = 'button',
+  asChild = false,
 }: ButtonProps) => {
   const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
   
@@ -47,13 +49,12 @@ secondary: 'bg-black text-white border-2 border-black hover:bg-white hover:text-
     );
   }
   
+  if (asChild) {
+    return <span className={combinedClassName}>{children}</span>;
+  }
+
   return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className={combinedClassName}
-    >
+    <button type={type} onClick={onClick} disabled={disabled} className={combinedClassName}>
       {children}
     </button>
   );

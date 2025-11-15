@@ -23,6 +23,8 @@ export default function ProfilePage() {
     return Math.round((filled.length / fields.length) * 100);
   }, [user]);
 
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
   const handleSubmit = (values: { name?: string; surname?: string; email?: string }) => {
     setFormError(null);
     setSuccessMessage(null);
@@ -62,16 +64,29 @@ export default function ProfilePage() {
         ) : (
           <div className="space-y-8">
             <div className="bg-white border border-gray-200 rounded-lg p-8 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-6">
                 <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white text-3xl font-bold">
                   {user.username?.charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-black">{user.username}</h1>
-                  <p className="text-gray-600 capitalize">{user.role?.toLowerCase()} account</p>
-                  <p className="text-sm text-gray-500">
-                    Two-factor auth: {user.totpConfirmed ? 'Enabled' : 'Pending setup'}
-                  </p>
+                <div className="space-y-3">
+                  <div>
+                    <h1 className="text-3xl font-bold text-black">{user.username}</h1>
+                    <p className="text-sm text-gray-500">
+                      Two-factor auth: {user.totpConfirmed ? 'Enabled' : 'Pending setup'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">
+                      Profile completion
+                    </p>
+                    <p className="text-2xl font-bold text-black">{profileCompletion}%</p>
+                    <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden w-64 max-w-full">
+                      <div
+                        className="h-2 bg-primary rounded-full transition-all"
+                        style={{ width: `${profileCompletion}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -89,73 +104,39 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <p className="text-gray-600 mb-2">Profile completion</p>
-                <p className="text-4xl font-bold text-black">{profileCompletion}%</p>
-                <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-2 bg-primary rounded-full"
-                    style={{ width: `${profileCompletion}%` }}
-                  />
-                </div>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <p className="text-gray-600 mb-2">Account role</p>
-                <p className="text-3xl font-bold text-black capitalize">{user.role?.toLowerCase()}</p>
-                <p className="text-sm text-gray-500">Contact admin to update your role</p>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <p className="text-gray-600 mb-2">Team status</p>
-                <p className="text-3xl font-bold text-black">Join from challenge</p>
-                <p className="text-sm text-gray-500">
-                  Head to any challenge page to create or join a team.
-                </p>
-              </div>
-            </div>
-
             <div className="bg-white border border-gray-200 rounded-lg p-8">
-              <div className="flex items-center justify-between mb-6">
-                <div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
                   <h2 className="text-2xl font-bold text-black">Account details</h2>
                   <p className="text-gray-600">Keep your profile information up to date.</p>
                 </div>
-                {successMessage && (
-                  <span className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-1">
-                    {successMessage}
-                  </span>
-                )}
+                <div className="flex items-center gap-3">
+                  {successMessage && (
+                    <span className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-1">
+                      {successMessage}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="text-sm font-medium text-primary hover:underline"
+                    onClick={() => setIsDetailsOpen((prev) => !prev)}
+                  >
+                    {isDetailsOpen ? 'Hide' : 'Edit'}
+                  </button>
+                </div>
               </div>
 
-              <ProfileDetailsForm
-                key={user.id}
-                user={user}
-                isSubmitting={updateProfile.isPending}
-                errorMessage={formError}
-                onSubmit={handleSubmit}
-              />
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-lg p-8">
-              <h2 className="text-2xl font-bold text-black mb-4">Security & teams</h2>
-              <div className="space-y-3 text-sm text-gray-600">
-                <p>
-                  • Two-factor authentication is {user.totpConfirmed ? 'enabled' : 'pending'} for this account.
-                </p>
-                <p>
-                  • To participate in challenges, open the challenge page and create or join a team directly from there.
-                </p>
-                <p>
-                  • Need admin access? Reach out to an administrator from your organization.
-                </p>
-                <p>
-                  • View submitted teams and manage participants from the{' '}
-                  <Link href="/admin/applications" className="text-primary hover:underline">
-                    admin panel
-                  </Link>{' '}
-                  if you have the required permissions.
-                </p>
-              </div>
+              {isDetailsOpen && (
+                <div className="mt-6">
+                  <ProfileDetailsForm
+                    key={user.id}
+                    user={user}
+                    isSubmitting={updateProfile.isPending}
+                    errorMessage={formError}
+                    onSubmit={handleSubmit}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="bg-white border border-gray-200 rounded-lg p-8">

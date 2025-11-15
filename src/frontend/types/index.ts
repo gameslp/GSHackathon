@@ -44,6 +44,16 @@ export interface HackathonResource {
   updatedAt: string;
 }
 
+export interface ProvidedFile {
+  id: number;
+  hackathonId: number;
+  title: string;
+  fileUrl: string;
+  public: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Team {
   id: number;
   name: string;

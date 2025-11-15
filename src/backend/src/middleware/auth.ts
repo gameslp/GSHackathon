@@ -18,6 +18,8 @@ export interface JwtPayload {
 
 export interface AuthRequest extends Request {
   user?: JwtPayload;
+  file?: Express.Multer.File;
+  files?: Express.Multer.File[];
 }
 
 export const auth = (req: AuthRequest, res: Response, next: NextFunction) => {

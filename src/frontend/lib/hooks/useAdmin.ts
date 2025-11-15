@@ -24,6 +24,8 @@ export const adminKeys = {
   usersList: (filters: GetAdminUsersData) => [...adminKeys.users(), filters] as const,
   hackathonTeams: (hackathonId: number, filters?: unknown) =>
     [...adminKeys.all, 'hackathon', hackathonId, 'teams', filters] as const,
+  hackathonTeamsBase: (hackathonId: number) =>
+    [...adminKeys.all, 'hackathon', hackathonId, 'teams'] as const,
   teamDetail: (teamId: number) => [...adminKeys.all, 'team', teamId] as const,
 };
 
@@ -164,8 +166,13 @@ export function useAcceptTeam() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: adminKeys.teamDetail(variables.teamId) });
       if (variables.hackathonId) {
-        queryClient.invalidateQueries({ queryKey: adminKeys.hackathonTeams(variables.hackathonId) });
+        queryClient.invalidateQueries({
+          queryKey: adminKeys.hackathonTeamsBase(variables.hackathonId),
+          exact: false,
+        });
+        queryClient.invalidateQueries({ queryKey: teamKeys.myTeam(variables.hackathonId) });
       }
+      queryClient.invalidateQueries({ queryKey: teamKeys.myTeamsList() });
     },
   });
 }
@@ -187,8 +194,13 @@ export function useRejectTeam() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: adminKeys.teamDetail(variables.teamId) });
       if (variables.hackathonId) {
-        queryClient.invalidateQueries({ queryKey: adminKeys.hackathonTeams(variables.hackathonId) });
+        queryClient.invalidateQueries({
+          queryKey: adminKeys.hackathonTeamsBase(variables.hackathonId),
+          exact: false,
+        });
+        queryClient.invalidateQueries({ queryKey: teamKeys.myTeam(variables.hackathonId) });
       }
+      queryClient.invalidateQueries({ queryKey: teamKeys.myTeamsList() });
     },
   });
 }

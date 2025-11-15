@@ -12,10 +12,18 @@ import {
   getActiveHackathons,
   getUpcomingHackathons,
   getHackathonsByOrganizer,
+  createHackathonResource,
+  deleteHackathonResource,
+  getProvidedFiles,
+  createProvidedFile,
+  updateProvidedFile,
+  deleteProvidedFile,
+  toggleProvidedFileVisibility,
 } from '../controllers/hackathon.controller';
 import { auth } from '../middleware/auth';
 import { requireRole } from '../middleware/requireRole';
 import { Role } from '../generated/prisma/enums';
+import { resourceUpload, providedUpload } from '../lib/uploads';
 
 const hackathonRouter = Router();
 
@@ -795,5 +803,32 @@ hackathonRouter.put('/hackathons/:id', auth, updateHackathon);
  *               $ref: '#/components/schemas/Error'
  */
 hackathonRouter.delete('/hackathons/:id', auth, deleteHackathon);
+
+hackathonRouter.post(
+  '/hackathons/:hackathonId/resources',
+  ...adminAuth,
+  resourceUpload.single('file'),
+  createHackathonResource
+);
+hackathonRouter.delete(
+  '/hackathons/:hackathonId/resources/:resourceId',
+  ...adminAuth,
+  deleteHackathonResource
+);
+
+hackathonRouter.get('/hackathons/:hackathonId/provided-files', auth, getProvidedFiles);
+hackathonRouter.post(
+  '/hackathons/:hackathonId/provided-files',
+  ...adminAuth,
+  providedUpload.single('file'),
+  createProvidedFile
+);
+hackathonRouter.patch('/hackathons/provided-files/:fileId', ...adminAuth, updateProvidedFile);
+hackathonRouter.delete('/hackathons/provided-files/:fileId', ...adminAuth, deleteProvidedFile);
+hackathonRouter.post(
+  '/hackathons/provided-files/:fileId/toggle',
+  ...adminAuth,
+  toggleProvidedFileVisibility
+);
 
 export default hackathonRouter;

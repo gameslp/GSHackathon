@@ -68,6 +68,7 @@ model Hackathon {
   providedFiles  ProvidedFile[]
 
   registrationOpen  DateTime
+  registrationClose DateTime
   startDate         DateTime
   endDate           DateTime
 
@@ -76,6 +77,13 @@ model Hackathon {
 
   organizer   User     @relation(fields: [organizerId], references: [id])
   resources   HackathonResource[]
+
+  threadLimit Int?
+  ramLimit     Int?
+  submissionTimeout Int? // in seconds
+  submissionLimit   Int?
+
+
 }
 
 model HackathonResource {

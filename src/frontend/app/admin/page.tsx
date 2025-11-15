@@ -22,6 +22,14 @@ import {
   useUpdateSurveyQuestion,
   useDeleteSurveyQuestion,
 } from '@/lib/hooks/useAdmin';
+import {
+  useUploadHackathonResource,
+  useDeleteHackathonResource,
+  useProvidedFiles,
+  useUploadProvidedFile,
+  useDeleteProvidedFile,
+  useToggleProvidedFileVisibility,
+} from '@/lib/hooks/useHackathonFiles';
 import type { Hackathon } from '@/lib/api/client';
 
 const HACKATHON_LIMIT = 5;
@@ -36,8 +44,13 @@ type HackathonFormState = {
   teamMin: string;
   teamMax: string;
   registrationOpen: string;
+  registrationClose: string;
   startDate: string;
   endDate: string;
+  threadLimit: string;
+  ramLimit: string;
+  submissionTimeout: string;
+  submissionLimit: string;
 };
 
 type SurveyQuestionListItem = {
@@ -64,8 +77,13 @@ const emptyForm: HackathonFormState = {
   teamMin: '',
   teamMax: '',
   registrationOpen: '',
+  registrationClose: '',
   startDate: '',
   endDate: '',
+  threadLimit: '',
+  ramLimit: '',
+  submissionTimeout: '',
+  submissionLimit: '',
 };
 
 const toDateTimeLocal = (value?: string | null) => {
@@ -87,6 +105,16 @@ export default function AdminDashboardPage() {
   const [formState, setFormState] = useState<HackathonFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  const [resourceTitle, setResourceTitle] = useState('');
+  const [resourceFile, setResourceFile] = useState<File | null>(null);
+  const [resourceFileKey, setResourceFileKey] = useState(0);
+  const [resourceError, setResourceError] = useState<string | null>(null);
+  const [providedTitle, setProvidedTitle] = useState('');
+  const [providedFile, setProvidedFile] = useState<File | null>(null);
+  const [providedFileKey, setProvidedFileKey] = useState(0);
+  const [providedPublic, setProvidedPublic] = useState(false);
+  const [providedError, setProvidedError] = useState<string | null>(null);
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
   const hackathonQueryParams = useMemo(
     () => ({ query: { page: hackathonPage, limit: HACKATHON_LIMIT } }),
@@ -145,6 +173,16 @@ export default function AdminDashboardPage() {
   const createSurveyQuestionMutation = useCreateSurveyQuestion();
   const updateSurveyQuestionMutation = useUpdateSurveyQuestion();
   const deleteSurveyQuestionMutation = useDeleteSurveyQuestion();
+  const uploadResource = useUploadHackathonResource();
+  const deleteResource = useDeleteHackathonResource();
+  const {
+    data: providedFiles = [],
+    isLoading: providedFilesLoading,
+    error: providedFilesError,
+  } = useProvidedFiles(activeHackathonId ?? undefined, { enabled: Boolean(activeHackathonId) });
+  const uploadProvided = useUploadProvidedFile();
+  const deleteProvided = useDeleteProvidedFile();
+  const toggleProvided = useToggleProvidedFileVisibility();
   const [newQuestionText, setNewQuestionText] = useState('');
   const [newQuestionOrder, setNewQuestionOrder] = useState('');
   const [editingQuestion, setEditingQuestion] = useState<{ id: number; text: string; order: string } | null>(null);
@@ -182,8 +220,13 @@ export default function AdminDashboardPage() {
       teamMin: hackathonDetail.teamMin?.toString() ?? '',
       teamMax: hackathonDetail.teamMax?.toString() ?? '',
       registrationOpen: toDateTimeLocal(hackathonDetail.registrationOpen),
+      registrationClose: toDateTimeLocal(hackathonDetail.registrationClose),
       startDate: toDateTimeLocal(hackathonDetail.startDate),
       endDate: toDateTimeLocal(hackathonDetail.endDate),
+      threadLimit: hackathonDetail.threadLimit?.toString() ?? '',
+      ramLimit: hackathonDetail.ramLimit?.toString() ?? '',
+      submissionTimeout: hackathonDetail.submissionTimeout?.toString() ?? '',
+      submissionLimit: hackathonDetail.submissionLimit?.toString() ?? '',
     });
     setFormError(null);
     setFormSuccess(null);
@@ -206,6 +249,10 @@ export default function AdminDashboardPage() {
     const prize = Number(formState.prize);
     const teamMin = Number(formState.teamMin);
     const teamMax = Number(formState.teamMax);
+    const threadLimit = formState.threadLimit ? Number(formState.threadLimit) : undefined;
+    const ramLimit = formState.ramLimit ? Number(formState.ramLimit) : undefined;
+    const submissionTimeout = formState.submissionTimeout ? Number(formState.submissionTimeout) : undefined;
+    const submissionLimit = formState.submissionLimit ? Number(formState.submissionLimit) : undefined;
 
     if (!formState.title.trim() || !formState.description.trim() || !formState.rules.trim()) {
       setFormError('Title, description, and rules are required.');
@@ -214,6 +261,12 @@ export default function AdminDashboardPage() {
 
     if ([prize, teamMin, teamMax].some((value) => Number.isNaN(value))) {
       setFormError('Prize and team sizes must be valid numbers.');
+      return null;
+    }
+
+    const numericExtras = [threadLimit, ramLimit, submissionTimeout, submissionLimit];
+    if (numericExtras.some((value) => value !== undefined && Number.isNaN(value))) {
+      setFormError('Performance limits must be valid numbers.');
       return null;
     }
 
@@ -226,8 +279,13 @@ export default function AdminDashboardPage() {
       teamMin,
       teamMax,
       registrationOpen: toIso(formState.registrationOpen) ?? new Date().toISOString(),
+      registrationClose: toIso(formState.registrationClose) ?? toIso(formState.startDate) ?? new Date().toISOString(),
       startDate: toIso(formState.startDate) ?? new Date().toISOString(),
       endDate: toIso(formState.endDate) ?? new Date().toISOString(),
+      threadLimit,
+      ramLimit,
+      submissionTimeout,
+      submissionLimit,
     };
   };
 
@@ -399,6 +457,126 @@ export default function AdminDashboardPage() {
             type: 'error',
             message: mutationError instanceof Error ? mutationError.message : 'Failed to delete question',
           });
+        },
+      }
+    );
+  };
+
+  const handleResourceUpload = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!activeHackathonId) {
+      setResourceError('Select a hackathon to upload files.');
+      return;
+    }
+    if (!resourceFile) {
+      setResourceError('Choose a file to upload.');
+      return;
+    }
+    setResourceError(null);
+    uploadResource.mutate(
+      {
+        hackathonId: activeHackathonId,
+        title: resourceTitle.trim() || resourceFile.name,
+        file: resourceFile,
+      },
+      {
+        onSuccess: () => {
+          setResourceTitle('');
+          setResourceFile(null);
+          setResourceFileKey((key) => key + 1);
+        },
+        onError: (mutationError) => {
+          setResourceError(
+            mutationError instanceof Error ? mutationError.message : 'Failed to upload resource'
+          );
+        },
+      }
+    );
+  };
+
+  const handleResourceDelete = (resourceId: number) => {
+    if (!activeHackathonId) {
+      setResourceError('Select a hackathon to manage resources.');
+      return;
+    }
+    setResourceError(null);
+    deleteResource.mutate(
+      { hackathonId: activeHackathonId, resourceId },
+      {
+        onError: (mutationError) => {
+          setResourceError(
+            mutationError instanceof Error ? mutationError.message : 'Failed to delete resource'
+          );
+        },
+      }
+    );
+  };
+
+  const handleProvidedUpload = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!activeHackathonId) {
+      setProvidedError('Select a hackathon to upload files.');
+      return;
+    }
+    if (!providedFile) {
+      setProvidedError('Choose a file to upload.');
+      return;
+    }
+    setProvidedError(null);
+    uploadProvided.mutate(
+      {
+        hackathonId: activeHackathonId,
+        title: providedTitle.trim() || providedFile.name,
+        file: providedFile,
+        isPublic: providedPublic,
+      },
+      {
+        onSuccess: () => {
+          setProvidedTitle('');
+          setProvidedFile(null);
+          setProvidedFileKey((key) => key + 1);
+          setProvidedPublic(false);
+        },
+        onError: (mutationError) => {
+          setProvidedError(
+            mutationError instanceof Error ? mutationError.message : 'Failed to upload file'
+          );
+        },
+      }
+    );
+  };
+
+  const handleProvidedDelete = (fileId: number) => {
+    if (!activeHackathonId) {
+      setProvidedError('Select a hackathon to manage files.');
+      return;
+    }
+    setProvidedError(null);
+    deleteProvided.mutate(
+      { hackathonId: activeHackathonId, fileId },
+      {
+        onError: (mutationError) => {
+          setProvidedError(
+            mutationError instanceof Error ? mutationError.message : 'Failed to delete file'
+          );
+        },
+      }
+    );
+  };
+
+  const handleProvidedToggle = (fileId: number) => {
+    if (!activeHackathonId) {
+      setProvidedError('Select a hackathon to manage files.');
+      return;
+    }
+    setProvidedError(null);
+    toggleProvided.mutate(
+      { hackathonId: activeHackathonId, fileId },
+      {
+        onError: (mutationError) => {
+          setProvidedError(
+            mutationError instanceof Error ? mutationError.message : 'Failed to update visibility'
+          );
         },
       }
     );
@@ -696,6 +874,71 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Registration closes
+                        </label>
+                        <input
+                          type="datetime-local"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                          value={formState.registrationClose}
+                          onChange={(event) => handleChange('registrationClose', event.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Submission timeout (s)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                          value={formState.submissionTimeout}
+                          onChange={(event) => handleChange('submissionTimeout', event.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Submission limit
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                          value={formState.submissionLimit}
+                          onChange={(event) => handleChange('submissionLimit', event.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Thread limit
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                          value={formState.threadLimit}
+                          onChange={(event) => handleChange('threadLimit', event.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          RAM limit (GB)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                          value={formState.ramLimit}
+                          onChange={(event) => handleChange('ramLimit', event.target.value)}
+                        />
+                      </div>
+                    </div>
+
                     {formError && (
                       <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
                         {formError}
@@ -762,6 +1005,42 @@ export default function AdminDashboardPage() {
                             </p>
                           </div>
                         </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-xs text-gray-500">Registration closes</p>
+                            <p className="text-sm text-black">
+                              {hackathonDetail.registrationClose
+                                ? new Date(hackathonDetail.registrationClose).toLocaleString()
+                                : 'TBD'}
+                            </p>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-xs text-gray-500">Submission limit</p>
+                            <p className="text-2xl font-bold text-black">
+                              {hackathonDetail.submissionLimit ?? 'Unlimited'}
+                            </p>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-xs text-gray-500">Submission timeout (s)</p>
+                            <p className="text-2xl font-bold text-black">
+                              {hackathonDetail.submissionTimeout ?? 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-xs text-gray-500">Thread limit</p>
+                            <p className="text-2xl font-bold text-black">
+                              {hackathonDetail.threadLimit ?? 'N/A'}
+                            </p>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-xs text-gray-500">RAM limit (GB)</p>
+                            <p className="text-2xl font-bold text-black">
+                              {hackathonDetail.ramLimit ?? 'N/A'}
+                            </p>
+                          </div>
+                        </div>
                         <div className="mt-4 space-y-2 text-sm text-gray-700">
                           <div>
                             <p className="font-semibold text-black mb-1">Description</p>
@@ -774,6 +1053,181 @@ export default function AdminDashboardPage() {
                         </div>
                       </>
                     )}
+                  </div>
+
+                  <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-xl font-semibold text-black">Public resources</h3>
+                        <p className="text-sm text-gray-500">Files visible to everyone on the challenge page.</p>
+                      </div>
+                    </div>
+                    {!isHackathonSelected ? (
+                      <p className="text-sm text-gray-600">Select a hackathon to manage resources.</p>
+                    ) : hackathonDetail?.resources && hackathonDetail.resources.length > 0 ? (
+                      <ul className="divide-y divide-gray-100">
+                        {hackathonDetail.resources.map((resource) => (
+                          <li
+                            key={resource.id}
+                            className="flex flex-wrap items-center justify-between gap-3 py-3"
+                          >
+                            <div>
+                              <p className="font-semibold text-black">{resource.title}</p>
+                              <a
+                                href={`${API_BASE_URL}${resource.url}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs text-primary hover:underline"
+                              >
+                                {resource.url}
+                              </a>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleResourceDelete(resource.id)}
+                            >
+                              Delete
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-gray-600">No resources uploaded yet.</p>
+                    )}
+                    <form className="border border-gray-200 rounded-lg p-4 space-y-3" onSubmit={handleResourceUpload}>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                        <input
+                          type="text"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                          value={resourceTitle}
+                          onChange={(event) => setResourceTitle(event.target.value)}
+                          placeholder="Dataset documentation"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">File</label>
+                        <input
+                          key={resourceFileKey}
+                          type="file"
+                          className="w-full text-sm text-gray-600"
+                          onChange={(event) => setResourceFile(event.target.files?.[0] ?? null)}
+                        />
+                        {resourceFile && (
+                          <p className="text-xs text-gray-500 mt-1">Selected: {resourceFile.name}</p>
+                        )}
+                      </div>
+                      {resourceError && (
+                        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                          {resourceError}
+                        </div>
+                      )}
+                      <Button type="submit" variant="primary" size="sm" disabled={uploadResource.isPending}>
+                        {uploadResource.isPending ? 'Uploading...' : 'Upload resource'}
+                      </Button>
+                    </form>
+                  </div>
+
+                  <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-xl font-semibold text-black">Participant files</h3>
+                        <p className="text-sm text-gray-500">
+                          Files visible only to accepted teams when marked as public.
+                        </p>
+                      </div>
+                    </div>
+                    {!isHackathonSelected ? (
+                      <p className="text-sm text-gray-600">Select a hackathon to manage files.</p>
+                    ) : providedFilesLoading ? (
+                      <p className="text-sm text-gray-600">Loading files...</p>
+                    ) : providedFilesError ? (
+                      <p className="text-sm text-red-600">
+                        {(providedFilesError as Error).message ?? 'Failed to load files'}
+                      </p>
+                    ) : providedFiles.length === 0 ? (
+                      <p className="text-sm text-gray-600">No files uploaded yet.</p>
+                    ) : (
+                      <ul className="divide-y divide-gray-100">
+                        {providedFiles.map((file) => (
+                          <li
+                            key={file.id}
+                            className="py-3 flex flex-wrap items-center gap-3 justify-between text-sm"
+                          >
+                            <div>
+                              <p className="font-semibold text-black">{file.title}</p>
+                              <p className="text-xs text-gray-500">
+                                {file.public ? 'Visible to teams' : 'Hidden from teams'}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleProvidedToggle(file.id)}
+                              >
+                                {file.public ? 'Hide' : 'Publish'}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleProvidedDelete(file.id)}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <form className="border border-gray-200 rounded-lg p-4 space-y-3" onSubmit={handleProvidedUpload}>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                          <input
+                            type="text"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                            value={providedTitle}
+                            onChange={(event) => setProvidedTitle(event.target.value)}
+                            placeholder="Baseline notebook"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Visibility
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={providedPublic}
+                              onChange={(event) => setProvidedPublic(event.target.checked)}
+                            />
+                            <span className="text-sm text-gray-600">Published to accepted teams</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">File</label>
+                        <input
+                          key={providedFileKey}
+                          type="file"
+                          className="w-full text-sm text-gray-600"
+                          onChange={(event) => setProvidedFile(event.target.files?.[0] ?? null)}
+                        />
+                        {providedFile && (
+                          <p className="text-xs text-gray-500 mt-1">Selected: {providedFile.name}</p>
+                        )}
+                      </div>
+                      {providedError && (
+                        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                          {providedError}
+                        </div>
+                      )}
+                      <Button type="submit" variant="primary" size="sm" disabled={uploadProvided.isPending}>
+                        {uploadProvided.isPending ? 'Uploading...' : 'Upload file'}
+                      </Button>
+                    </form>
                   </div>
 
                   <div className="bg-white border border-gray-200 rounded-lg p-6">

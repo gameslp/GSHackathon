@@ -258,7 +258,7 @@ export default function FaultyTerminal({
   tint = '#ffffff',
   mouseReact = true,
   mouseStrength = 0.2,
-  dpr = Math.min(window.devicePixelRatio || 1, 2),
+  dpr = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 2),
   pageLoadAnimation = true,
   brightness = 1,
   className,
@@ -292,7 +292,13 @@ export default function FaultyTerminal({
     const ctn = containerRef.current;
     if (!ctn) return;
 
-    const renderer = new Renderer({ dpr });
+    let renderer: Renderer | null = null;
+    try {
+      renderer = new Renderer({ dpr });
+    } catch (renderError) {
+      console.error('Failed to initialize renderer:', renderError);
+      return () => undefined;
+    }
     rendererRef.current = renderer;
     const gl = renderer.gl;
     gl.clearColor(0, 0, 0, 1);

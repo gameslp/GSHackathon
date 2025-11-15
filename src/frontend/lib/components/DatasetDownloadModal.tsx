@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { HackathonResource } from '@/types';
 
 interface DatasetDownloadModalProps {
@@ -16,10 +16,58 @@ export default function DatasetDownloadModal({
   resources,
   challengeTitle,
 }: DatasetDownloadModalProps) {
-  const [selectedFiles, setSelectedFiles] = useState<Set<number>>(
-    new Set(resources.map(r => r.id))
-  );
+  const [selectedFiles, setSelectedFiles] = useState<Set<number>>(new Set(resources.map((resource) => resource.id)));
   const [isDownloading, setIsDownloading] = useState(false);
+  const [fileSizes, setFileSizes] = useState<Record<number, number | null>>({});
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+  useEffect(() => {
+    setSelectedFiles(new Set(resources.map((resource) => resource.id)));
+  }, [resources]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let cancelled = false;
+
+    const toBytes = (length: string | null) => {
+      if (!length) return null;
+      const parsed = Number(length);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    const fetchSizes = async () => {
+      const entries = await Promise.all(
+        resources.map(async (resource) => {
+          const downloadUrl = resource.url.startsWith('http')
+            ? resource.url
+            : `${API_BASE_URL}${resource.url}`;
+
+          try {
+            const response = await fetch(downloadUrl, {
+              method: 'HEAD',
+              credentials: 'include',
+            });
+            const bytes = toBytes(response.headers.get('content-length'));
+            return [resource.id, bytes] as const;
+          } catch (error) {
+            console.warn('Unable to determine size for resource', resource.id, error);
+            return [resource.id, null] as const;
+          }
+        })
+      );
+
+      if (!cancelled) {
+        setFileSizes(Object.fromEntries(entries));
+      }
+    };
+
+    void fetchSizes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [API_BASE_URL, isOpen, resources]);
 
   if (!isOpen) return null;
 
@@ -41,37 +89,35 @@ export default function DatasetDownloadModal({
     }
   };
 
-  const getFileSize = (filename: string): string => {
-    // Mock file sizes based on extension
-    if (filename.endsWith('.zip')) return '2.3 GB';
-    if (filename.endsWith('.csv')) return '45 MB';
-    if (filename.endsWith('.parquet')) return '128 MB';
-    if (filename.endsWith('.json')) return '89 MB';
-    if (filename.endsWith('.txt')) return '2.1 KB';
-    if (filename.endsWith('.pdf')) return '1.5 MB';
-    if (filename.endsWith('.h5')) return '512 MB';
-    return '10 MB';
+  const formatBytes = (bytes?: number | null) => {
+    if (bytes == null) return 'Unknown';
+    if (bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const exponent = Math.min(
+      Math.floor(Math.log(bytes) / Math.log(1024)),
+      units.length - 1
+    );
+    const value = bytes / Math.pow(1024, exponent);
+    return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[exponent]}`;
   };
 
   const getTotalSize = (): string => {
-    const selectedResources = resources.filter(r => selectedFiles.has(r.id));
-    let totalMB = 0;
-    
-    selectedResources.forEach(resource => {
-      const size = getFileSize(resource.title);
-      if (size.includes('GB')) {
-        totalMB += parseFloat(size) * 1024;
-      } else if (size.includes('MB')) {
-        totalMB += parseFloat(size);
-      } else if (size.includes('KB')) {
-        totalMB += parseFloat(size) / 1024;
+    const totalBytes = resources.reduce((sum, resource) => {
+      if (!selectedFiles.has(resource.id)) {
+        return sum;
       }
-    });
+      const size = fileSizes[resource.id];
+      return typeof size === 'number' ? sum + size : sum;
+    }, 0);
 
-    if (totalMB >= 1024) {
-      return `${(totalMB / 1024).toFixed(2)} GB`;
+    if (totalBytes === 0) {
+      const hasUnknown = resources.some(
+        (resource) => selectedFiles.has(resource.id) && fileSizes[resource.id] == null
+      );
+      return hasUnknown ? 'Unknown' : '0 B';
     }
-    return `${totalMB.toFixed(1)} MB`;
+
+    return formatBytes(totalBytes);
   };
 
   const handleDownload = async () => {
@@ -88,15 +134,29 @@ export default function DatasetDownloadModal({
     try {
       // In real app, this would be actual file downloads
       for (const resource of selectedResources) {
-        // Mock download delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Create a mock download link
+        const downloadUrl = resource.url.startsWith('http')
+          ? resource.url
+          : `${API_BASE_URL}${resource.url}`;
+
+        const response = await fetch(downloadUrl, {
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to download ${resource.title}`);
+        }
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = resource.url;
-        link.download = resource.title;
-        // In production, this would trigger actual file download
-        console.log(`Downloading: ${resource.title} from ${resource.url}`);
+        const safeName =
+          resource.title.replace(/[\\/:*?"<>|]/g, '_') || `resource-${resource.id}`;
+        link.href = objectUrl;
+        link.download = safeName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(objectUrl);
       }
 
       alert(`Pobrano ${selectedFiles.size} plików!`);
@@ -145,8 +205,10 @@ export default function DatasetDownloadModal({
           <div className="space-y-2">
             {resources.map((resource) => {
               const isSelected = selectedFiles.has(resource.id);
-              const fileSize = getFileSize(resource.title);
-              
+              const trackedSize = fileSizes[resource.id];
+              const fileSizeLabel =
+                trackedSize === undefined ? 'Loading…' : formatBytes(trackedSize);
+
               return (
                 <label
                   key={resource.id}
@@ -168,7 +230,7 @@ export default function DatasetDownloadModal({
                         {resource.title}
                       </span>
                       <span className="text-sm text-gray-500 whitespace-nowrap">
-                        {fileSize}
+                        {fileSizeLabel}
                       </span>
                     </div>
                     {resource.title.includes('train') && (

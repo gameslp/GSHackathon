@@ -1,33 +1,66 @@
 import { Request, Response } from 'express';
 import { prisma } from '@prisma';
 import { HackathonModel } from '../models/hackathon';
+import { HackathonResourceModel } from '../models/hackathonResource';
 import { ProvidedFileModel } from '../models/providedFile';
 import { TeamModel } from '../models/team';
 import { AuthRequest } from '../middleware/auth';
 import { z } from 'zod';
 import { HackathonType } from '../generated/prisma/enums';
+import {
+  RESOURCE_UPLOAD_DIR,
+  PROVIDED_UPLOAD_DIR,
+  buildResourceUrl,
+  buildProvidedFileUrl,
+  deleteUploadedFile,
+} from '../lib/uploads';
 
 // Zod validation schemas
+const nonNegativeInt = z.coerce.number().int().min(0);
+const positiveInt = z.coerce.number().int().positive();
+
+const booleanish = z
+  .union([z.boolean(), z.string()])
+  .transform((value) => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+      return ['true', '1', 'on', 'yes'].includes(value.toLowerCase());
+    }
+    return false;
+  });
+
 const createHackathonSchema = z.object({
   title: z.string().min(3).max(200),
   description: z.string().min(10).max(5000),
   rules: z.string().min(10).max(10000),
   type: z.nativeEnum(HackathonType),
-  prize: z.number().int().min(0),
-  teamMax: z.number().int().min(1).max(50),
-  teamMin: z.number().int().min(1).max(50),
+  prize: nonNegativeInt,
+  teamMax: positiveInt.max(50),
+  teamMin: positiveInt.max(50),
   registrationOpen: z.string().datetime().or(z.date()),
+  registrationClose: z.string().datetime().or(z.date()),
   startDate: z.string().datetime().or(z.date()),
   endDate: z.string().datetime().or(z.date()),
+  threadLimit: positiveInt.max(2048).optional(),
+  ramLimit: positiveInt.max(2048).optional(),
+  submissionTimeout: positiveInt.optional(),
+  submissionLimit: positiveInt.optional(),
 }).refine(data => data.teamMax >= data.teamMin, {
   message: 'Team maximum must be greater than or equal to team minimum',
   path: ['teamMax'],
 }).refine(data => {
   const regOpen = new Date(data.registrationOpen);
-  const start = new Date(data.startDate);
-  return start > regOpen;
+  const regClose = new Date(data.registrationClose);
+  return regClose > regOpen;
 }, {
-  message: 'Start date must be after registration open date',
+  message: 'Registration close must be after registration open date',
+  path: ['registrationClose'],
+}).refine(data => {
+  const regClose = new Date(data.registrationClose);
+  const start = new Date(data.startDate);
+  return start > regClose;
+}, {
+  message: 'Start date must be after registration close date',
   path: ['startDate'],
 }).refine(data => {
   const start = new Date(data.startDate);
@@ -40,14 +73,12 @@ const createHackathonSchema = z.object({
 
 const createProvidedFileSchema = z.object({
   title: z.string().min(1).max(200),
-  fileUrl: z.string().url(),
-  public: z.boolean().optional().default(false),
+  public: booleanish.optional(),
 });
 
 const updateProvidedFileSchema = z.object({
   title: z.string().min(1).max(200).optional(),
-  fileUrl: z.string().url().optional(),
-  public: z.boolean().optional(),
+  public: booleanish.optional(),
 });
 
 const updateHackathonSchema = z.object({
@@ -55,12 +86,17 @@ const updateHackathonSchema = z.object({
   description: z.string().min(10).max(5000).optional(),
   rules: z.string().min(10).max(10000).optional(),
   type: z.nativeEnum(HackathonType).optional(),
-  prize: z.number().int().min(0).optional(),
-  teamMax: z.number().int().min(1).max(50).optional(),
-  teamMin: z.number().int().min(1).max(50).optional(),
+  prize: nonNegativeInt.optional(),
+  teamMax: positiveInt.max(50).optional(),
+  teamMin: positiveInt.max(50).optional(),
   registrationOpen: z.string().datetime().or(z.date()).optional(),
+  registrationClose: z.string().datetime().or(z.date()).optional(),
   startDate: z.string().datetime().or(z.date()).optional(),
   endDate: z.string().datetime().or(z.date()).optional(),
+  threadLimit: positiveInt.max(2048).optional(),
+  ramLimit: positiveInt.max(2048).optional(),
+  submissionTimeout: positiveInt.optional(),
+  submissionLimit: positiveInt.optional(),
 }).refine(data => {
   if (data.teamMax !== undefined && data.teamMin !== undefined) {
     return data.teamMax >= data.teamMin;
@@ -69,6 +105,10 @@ const updateHackathonSchema = z.object({
 }, {
   message: 'Team maximum must be greater than or equal to team minimum',
   path: ['teamMax'],
+});
+
+const createResourceSchema = z.object({
+  title: z.string().min(1).max(200),
 });
 
 const surveyQuestionSchema = z.object({
@@ -457,8 +497,13 @@ export const createHackathon = async (req: AuthRequest, res: Response) => {
       teamMax: data.teamMax,
       teamMin: data.teamMin,
       registrationOpen: new Date(data.registrationOpen),
+      registrationClose: new Date(data.registrationClose),
       startDate: new Date(data.startDate),
       endDate: new Date(data.endDate),
+      threadLimit: data.threadLimit,
+      ramLimit: data.ramLimit,
+      submissionTimeout: data.submissionTimeout,
+      submissionLimit: data.submissionLimit,
     });
 
     return res.status(201).json({
@@ -519,8 +564,13 @@ export const updateHackathon = async (req: AuthRequest, res: Response) => {
     if (data.teamMax !== undefined) updateData.teamMax = data.teamMax;
     if (data.teamMin !== undefined) updateData.teamMin = data.teamMin;
     if (data.registrationOpen !== undefined) updateData.registrationOpen = new Date(data.registrationOpen);
+    if (data.registrationClose !== undefined) updateData.registrationClose = new Date(data.registrationClose);
     if (data.startDate !== undefined) updateData.startDate = new Date(data.startDate);
     if (data.endDate !== undefined) updateData.endDate = new Date(data.endDate);
+    if (data.threadLimit !== undefined) updateData.threadLimit = data.threadLimit;
+    if (data.ramLimit !== undefined) updateData.ramLimit = data.ramLimit;
+    if (data.submissionTimeout !== undefined) updateData.submissionTimeout = data.submissionTimeout;
+    if (data.submissionLimit !== undefined) updateData.submissionLimit = data.submissionLimit;
 
     const hackathon = await HackathonModel.update(hackathonId, updateData);
 
@@ -611,6 +661,102 @@ export const getHackathonsByOrganizer = async (req: Request, res: Response) => {
   }
 };
 
+// ===== Hackathon Resource Endpoints =====
+
+export const createHackathonResource = async (req: AuthRequest, res: Response) => {
+  try {
+    const hackathonId = parseInt(req.params.hackathonId);
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const validationResult = createResourceSchema.safeParse({
+      title: req.body.title,
+    });
+
+    if (!validationResult.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: validationResult.error.issues,
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'File is required' });
+    }
+
+    const hackathon = await HackathonModel.findById(hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    if (hackathon.organizerId !== req.user.userId && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized to modify this hackathon' });
+    }
+
+    const resource = await HackathonResourceModel.create({
+      hackathonId,
+      title: validationResult.data.title,
+      url: buildResourceUrl(req.file.filename),
+    });
+
+    return res.status(201).json({
+      message: 'Resource created successfully',
+      resource,
+    });
+  } catch (error) {
+    console.error('Create hackathon resource error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const deleteHackathonResource = async (req: AuthRequest, res: Response) => {
+  try {
+    const resourceId = parseInt(req.params.resourceId);
+
+    if (!resourceId || isNaN(resourceId)) {
+      return res.status(400).json({ error: 'Invalid resource ID' });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const resource = await HackathonResourceModel.findById(resourceId);
+
+    if (!resource) {
+      return res.status(404).json({ error: 'Resource not found' });
+    }
+
+    const hackathon = await HackathonModel.findById(resource.hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    if (hackathon.organizerId !== req.user.userId && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized to delete this resource' });
+    }
+
+    await HackathonResourceModel.delete(resourceId);
+    await deleteUploadedFile(RESOURCE_UPLOAD_DIR, resource.url);
+
+    return res.status(200).json({
+      message: 'Resource deleted successfully',
+      resourceId,
+    });
+  } catch (error) {
+    console.error('Delete hackathon resource error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // ===== Provided Files Endpoints =====
 
 // Get provided files for a hackathon
@@ -620,6 +766,10 @@ export const getProvidedFiles = async (req: AuthRequest, res: Response) => {
 
     if (!hackathonId || isNaN(hackathonId)) {
       return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
     }
 
     // Check if hackathon exists
@@ -634,14 +784,14 @@ export const getProvidedFiles = async (req: AuthRequest, res: Response) => {
     const isAdmin = req.user.role === 'ADMIN';
     const isParticipant = await TeamModel.isUserInHackathon(req.user.userId, hackathonId);
 
-    // Show all files if user is organizer, admin, or participant
-    // Otherwise, show only public files
-    let files;
-    if (isOrganizer || isAdmin || isParticipant) {
-      files = await ProvidedFileModel.findByHackathon(hackathonId);
-    } else {
-      files = await ProvidedFileModel.findPublicByHackathon(hackathonId);
+    if (!isOrganizer && !isAdmin && !isParticipant) {
+      return res.status(403).json({ error: 'You must be part of an accepted team to view files' });
     }
+
+    const files =
+      isOrganizer || isAdmin
+        ? await ProvidedFileModel.findByHackathon(hackathonId)
+        : await ProvidedFileModel.findPublicByHackathon(hackathonId);
 
     return res.status(200).json(files);
   } catch (error) {
@@ -659,14 +809,25 @@ export const createProvidedFile = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Invalid hackathon ID' });
     }
 
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
     // Validate request body
-    const validationResult = createProvidedFileSchema.safeParse(req.body);
+    const validationResult = createProvidedFileSchema.safeParse({
+      title: req.body.title,
+      public: req.body.public,
+    });
 
     if (!validationResult.success) {
       return res.status(400).json({
         error: 'Validation failed',
         details: validationResult.error.issues,
       });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'File is required' });
     }
 
     // Check if hackathon exists
@@ -686,8 +847,8 @@ export const createProvidedFile = async (req: AuthRequest, res: Response) => {
     const providedFile = await ProvidedFileModel.create({
       hackathonId,
       title: data.title,
-      fileUrl: data.fileUrl,
-      public: data.public,
+      fileUrl: buildProvidedFileUrl(req.file.filename),
+      public: data.public ?? false,
     });
 
     return res.status(201).json({
@@ -709,8 +870,15 @@ export const updateProvidedFile = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Invalid file ID' });
     }
 
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
     // Validate request body
-    const validationResult = updateProvidedFileSchema.safeParse(req.body);
+    const validationResult = updateProvidedFileSchema.safeParse({
+      title: req.body.title,
+      public: req.body.public,
+    });
 
     if (!validationResult.success) {
       return res.status(400).json({
@@ -781,6 +949,7 @@ export const deleteProvidedFile = async (req: AuthRequest, res: Response) => {
     }
 
     await ProvidedFileModel.delete(fileId);
+    await deleteUploadedFile(PROVIDED_UPLOAD_DIR, existingFile.fileUrl);
 
     return res.status(200).json({
       message: 'Provided file deleted successfully',
@@ -799,6 +968,10 @@ export const toggleProvidedFileVisibility = async (req: AuthRequest, res: Respon
 
     if (!fileId || isNaN(fileId)) {
       return res.status(400).json({ error: 'Invalid file ID' });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
     }
 
     // Check if file exists

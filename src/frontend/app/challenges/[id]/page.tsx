@@ -8,6 +8,7 @@ import Button from '@/lib/components/Button';
 import DatasetDownloadModal from '@/lib/components/DatasetDownloadModal';
 import { useHackathon } from '@/lib/hooks/useHackathons';
 import { useHackathonSurvey, useMyTeam, useCreateTeam, useJoinTeam } from '@/lib/hooks/useTeams';
+import { useProvidedFiles } from '@/lib/hooks/useHackathonFiles';
 import { useAuth } from '@/lib/hooks/useAuth';
 import type { HackathonResource } from '@/types';
 
@@ -46,9 +47,18 @@ function ChallengePageContent({ hackathonId }: { hackathonId: number }) {
     isLoading: myTeamLoading,
     error: myTeamError,
   } = useMyTeam(hackathonId, { enabled: Boolean(user) });
+  const canViewProvidedFiles = Boolean(myTeam?.isAccepted);
+  const {
+    data: providedFiles = [],
+    isLoading: providedFilesLoading,
+    error: providedFilesError,
+  } = useProvidedFiles(hackathonId, {
+    enabled: Boolean(user && canViewProvidedFiles),
+  });
 
   const createTeam = useCreateTeam();
   const joinTeam = useJoinTeam();
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
   const [showDatasetModal, setShowDatasetModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -67,11 +77,15 @@ function ChallengePageContent({ hackathonId }: { hackathonId: number }) {
       return { label: 'Unknown', status: 'closed' as const };
     }
     const regOpen = hackathon.registrationOpen ? new Date(hackathon.registrationOpen) : null;
+    const regClose = hackathon.registrationClose ? new Date(hackathon.registrationClose) : null;
     const start = hackathon.startDate ? new Date(hackathon.startDate) : null;
     const now = new Date();
 
     if (regOpen && now < regOpen) {
       return { label: `Opens on ${regOpen.toLocaleString()}`, status: 'upcoming' as const };
+    }
+    if (regClose && now > regClose) {
+      return { label: 'Registration closed', status: 'closed' as const };
     }
     if (start && now > start) {
       return { label: 'Registration closed', status: 'closed' as const };
@@ -283,20 +297,44 @@ function ChallengePageContent({ hackathonId }: { hackathonId: number }) {
               </Button>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 text-sm text-gray-600">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6 text-sm text-gray-600">
+          <div>
+            <p className="font-semibold text-black">Team size</p>
+            <p>
+              {hackathon.teamMin} - {hackathon.teamMax} members
+            </p>
+          </div>
+          <div>
+            <p className="font-semibold text-black">Registration opens</p>
+            <p>{hackathon.registrationOpen ? new Date(hackathon.registrationOpen).toLocaleString() : 'TBD'}</p>
+          </div>
+          <div>
+            <p className="font-semibold text-black">Starts</p>
+            <p>{hackathon.startDate ? new Date(hackathon.startDate).toLocaleString() : 'TBD'}</p>
+          </div>
+          <div>
+            <p className="font-semibold text-black">Ends</p>
+            <p>{hackathon.endDate ? new Date(hackathon.endDate).toLocaleString() : 'TBD'}</p>
+          </div>
+        </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-4 text-sm text-gray-600">
             <div>
-              <p className="font-semibold text-black">Team size</p>
+              <p className="font-semibold text-black">Registration closes</p>
+              <p>{hackathon.registrationClose ? new Date(hackathon.registrationClose).toLocaleString() : 'TBD'}</p>
+            </div>
+            <div>
+              <p className="font-semibold text-black">Submission limit</p>
+              <p>{hackathon.submissionLimit ?? 'Unlimited'}</p>
+            </div>
+            <div>
+              <p className="font-semibold text-black">Submission timeout (s)</p>
+              <p>{hackathon.submissionTimeout ?? 'N/A'}</p>
+            </div>
+            <div>
+              <p className="font-semibold text-black">Thread limit / RAM</p>
               <p>
-                {hackathon.teamMin} - {hackathon.teamMax} members
+                {hackathon.threadLimit ?? 'N/A'} threads / {hackathon.ramLimit ?? 'N/A'} GB
               </p>
-            </div>
-            <div>
-              <p className="font-semibold text-black">Starts</p>
-              <p>{hackathon.startDate ? new Date(hackathon.startDate).toLocaleString() : 'TBD'}</p>
-            </div>
-            <div>
-              <p className="font-semibold text-black">Ends</p>
-              <p>{hackathon.endDate ? new Date(hackathon.endDate).toLocaleString() : 'TBD'}</p>
             </div>
           </div>
         </div>
@@ -305,7 +343,7 @@ function ChallengePageContent({ hackathonId }: { hackathonId: number }) {
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-black">Team status</h2>
-              {registrationStatus.status === 'open' && (
+              {registrationStatus.status === 'open' && !myTeam && (
                 <Button variant="primary" onClick={openJoinModal}>
                   {user ? 'Join Hackathon' : 'Sign in to join'}
                 </Button>
@@ -379,6 +417,56 @@ function ChallengePageContent({ hackathonId }: { hackathonId: number }) {
             )}
           </div>
         </div>
+
+        {myTeam && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-black">Hackathon files</h2>
+                <p className="text-sm text-gray-500">
+                  Organizers can share benchmarks and data with accepted teams.
+                </p>
+              </div>
+            </div>
+            {!myTeam.isAccepted ? (
+              <p className="text-sm text-gray-600">
+                Files will be unlocked once your team is accepted to this hackathon.
+              </p>
+            ) : providedFilesLoading ? (
+              <p className="text-sm text-gray-600">Loading provided files...</p>
+            ) : providedFilesError ? (
+              <p className="text-sm text-red-600">
+                {(providedFilesError as Error).message ?? 'Failed to load provided files'}
+              </p>
+            ) : providedFiles.length === 0 ? (
+              <p className="text-sm text-gray-600">Organizers have not published any files yet.</p>
+            ) : (
+              <ul className="divide-y divide-gray-100">
+                {providedFiles.map((file) => (
+                  <li
+                    key={file.id}
+                    className="flex flex-wrap items-center justify-between gap-3 py-3"
+                  >
+                    <div>
+                      <p className="font-semibold text-black">{file.title}</p>
+                      <p className="text-xs text-gray-500">
+                        Updated {new Date(file.updatedAt ?? file.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <a
+                      href={`${API_BASE_URL}${file.fileUrl}`}
+                      className="text-sm font-semibold text-primary hover:underline"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Download
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </main>
 
       {hackathon && (

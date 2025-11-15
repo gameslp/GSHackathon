@@ -11,8 +11,13 @@ export interface CreateHackathonData {
   teamMax: number;
   teamMin: number;
   registrationOpen: Date;
+  registrationClose: Date;
   startDate: Date;
   endDate: Date;
+  threadLimit?: number | null;
+  ramLimit?: number | null;
+  submissionTimeout?: number | null;
+  submissionLimit?: number | null;
 }
 
 export interface UpdateHackathonData {
@@ -24,8 +29,13 @@ export interface UpdateHackathonData {
   teamMax?: number;
   teamMin?: number;
   registrationOpen?: Date;
+  registrationClose?: Date;
   startDate?: Date;
   endDate?: Date;
+  threadLimit?: number | null;
+  ramLimit?: number | null;
+  submissionTimeout?: number | null;
+  submissionLimit?: number | null;
 }
 
 export class HackathonModel {
@@ -40,8 +50,13 @@ export class HackathonModel {
         teamMax: data.teamMax,
         teamMin: data.teamMin,
         registrationOpen: data.registrationOpen,
+        registrationClose: data.registrationClose,
         startDate: data.startDate,
         endDate: data.endDate,
+        threadLimit: data.threadLimit ?? null,
+        ramLimit: data.ramLimit ?? null,
+        submissionTimeout: data.submissionTimeout ?? null,
+        submissionLimit: data.submissionLimit ?? null,
         organizer: {
           connect: { id: data.organizerId },
         },
