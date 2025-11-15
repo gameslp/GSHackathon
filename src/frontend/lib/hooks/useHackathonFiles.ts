@@ -7,6 +7,7 @@ export type ProvidedFileRecord = {
   id: number;
   hackathonId: number;
   title: string;
+  name: string;
   fileUrl: string;
   public: boolean;
   createdAt: string;
@@ -122,11 +123,13 @@ export function useUploadProvidedFile() {
   return useMutation({
     mutationFn: async ({
       hackathonId,
+      name,
       title,
       file,
       isPublic,
     }: {
       hackathonId: number;
+      name: string;
       title: string;
       file: File;
       isPublic: boolean;
@@ -135,6 +138,7 @@ export function useUploadProvidedFile() {
       formData.append('title', title);
       formData.append('file', file);
       formData.append('public', String(isPublic));
+      formData.append('name', name);
 
       const response = await fetch(`${API_BASE_URL}/hackathons/${hackathonId}/provided-files`, {
         method: 'POST',

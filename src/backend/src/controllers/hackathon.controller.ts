@@ -77,6 +77,7 @@ const createHackathonSchema = z.object({
 });
 
 const createProvidedFileSchema = z.object({
+  name: z.string().min(1).max(255),
   title: z.string().min(1).max(200),
   public: booleanish.optional(),
 });
@@ -1234,7 +1235,10 @@ export const createProvidedFile = async (req: AuthRequest, res: Response) => {
     const validationResult = createProvidedFileSchema.safeParse({
       title: req.body.title,
       public: req.body.public,
+      name: req.body.name,
     });
+
+    console.log('Validation Result:', validationResult);
 
     if (!validationResult.success) {
       return res.status(400).json({
@@ -1266,7 +1270,7 @@ export const createProvidedFile = async (req: AuthRequest, res: Response) => {
       title: data.title,
       fileUrl: buildProvidedFileUrl(req.file.filename),
       public: data.public ?? false,
-      name: req.file.originalname,
+      name: data.name ?? req.file.originalname,
     });
 
     return res.status(201).json({

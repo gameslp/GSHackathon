@@ -166,6 +166,7 @@ export default function AdminDashboardPage() {
   const [resourceFileKey, setResourceFileKey] = useState(0);
   const [resourceError, setResourceError] = useState<string | null>(null);
   const [providedTitle, setProvidedTitle] = useState("");
+  const [providedFileName, setProvidedFileName] = useState("");
   const [providedFile, setProvidedFile] = useState<File | null>(null);
   const [providedFileKey, setProvidedFileKey] = useState(0);
   const [providedPublic, setProvidedPublic] = useState(false);
@@ -965,17 +966,23 @@ export default function AdminDashboardPage() {
       setProvidedError("Choose a file to upload.");
       return;
     }
+    if (!providedFileName.trim()) {
+      setProvidedError("Enter a file name (e.g., train.csv, test.csv).");
+      return;
+    }
     setProvidedError(null);
     uploadProvided.mutate(
       {
         hackathonId: activeHackathonId,
-        title: providedTitle.trim() || providedFile.name,
+        title: providedTitle.trim(),
         file: providedFile,
+        name: providedFileName.trim(),
         isPublic: providedPublic,
       },
       {
         onSuccess: () => {
           setProvidedTitle("");
+          setProvidedFileName("");
           setProvidedFile(null);
           setProvidedFileKey((key) => key + 1);
           setProvidedPublic(false);
@@ -2325,6 +2332,9 @@ export default function AdminDashboardPage() {
                                 <p className="font-semibold text-black">
                                   {file.title}
                                 </p>
+                                <p className="text-sm text-black mt-0.5">
+                                  File name: <span className="font-semibold">{file.name}</span>
+                                </p>
                                 <p className="text-xs text-gray-500">
                                   {file.public
                                     ? "Visible to teams"
@@ -2369,6 +2379,24 @@ export default function AdminDashboardPage() {
                               }
                               placeholder="Baseline notebook"
                             />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              File Name <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                              value={providedFileName}
+                              onChange={(event) =>
+                                setProvidedFileName(event.target.value)
+                              }
+                              placeholder="train.csv"
+                              required
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Name as it will appear to participants
+                            </p>
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -1993,6 +1993,342 @@ export type PutHackathonsByIdResponses = {
 
 export type PutHackathonsByIdResponse = PutHackathonsByIdResponses[keyof PutHackathonsByIdResponses];
 
+export type GetHackathonsByHackathonIdLeaderboardData = {
+    body?: never;
+    path: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+    };
+    query?: {
+        /**
+         * Page number
+         */
+        page?: number;
+        /**
+         * Number of teams per page
+         */
+        limit?: number;
+    };
+    url: '/hackathons/{hackathonId}/leaderboard';
+};
+
+export type GetHackathonsByHackathonIdLeaderboardErrors = {
+    /**
+     * Invalid hackathon ID
+     */
+    400: _Error;
+    /**
+     * Hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type GetHackathonsByHackathonIdLeaderboardError = GetHackathonsByHackathonIdLeaderboardErrors[keyof GetHackathonsByHackathonIdLeaderboardErrors];
+
+export type GetHackathonsByHackathonIdLeaderboardResponses = {
+    /**
+     * Leaderboard retrieved successfully
+     */
+    200: {
+        leaderboard?: Array<{
+            rank?: number;
+            teamId?: number;
+            teamName?: string;
+            members?: Array<{
+                id?: number;
+                username?: string;
+            }>;
+            bestScore?: number;
+            totalSubmissions?: number;
+            lastSubmissionAt?: string;
+        }>;
+        pagination?: {
+            page?: number;
+            limit?: number;
+            total?: number;
+            totalPages?: number;
+        };
+        /**
+         * Rank of the current user's team (if authenticated)
+         */
+        currentUserTeamRank?: number | null;
+    };
+};
+
+export type GetHackathonsByHackathonIdLeaderboardResponse = GetHackathonsByHackathonIdLeaderboardResponses[keyof GetHackathonsByHackathonIdLeaderboardResponses];
+
+export type GetHackathonsByIdAutoTestingData = {
+    body?: never;
+    path: {
+        /**
+         * Hackathon ID
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/hackathons/{id}/auto-testing';
+};
+
+export type GetHackathonsByIdAutoTestingErrors = {
+    /**
+     * Invalid hackathon ID
+     */
+    400: _Error;
+    /**
+     * Not authorized
+     */
+    403: _Error;
+    /**
+     * Hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type GetHackathonsByIdAutoTestingError = GetHackathonsByIdAutoTestingErrors[keyof GetHackathonsByIdAutoTestingErrors];
+
+export type GetHackathonsByIdAutoTestingResponses = {
+    /**
+     * Auto-testing configuration retrieved
+     */
+    200: {
+        /**
+         * Whether auto-check.py file is provided
+         */
+        autoScoringAvailable?: boolean;
+        /**
+         * Whether auto-scoring is enabled for this hackathon
+         */
+        autoScoringEnabled?: boolean;
+    };
+};
+
+export type GetHackathonsByIdAutoTestingResponse = GetHackathonsByIdAutoTestingResponses[keyof GetHackathonsByIdAutoTestingResponses];
+
+export type GetHackathonsByHackathonIdMyTeamData = {
+    body?: never;
+    path: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+    };
+    query?: never;
+    url: '/hackathons/{hackathonId}/my-team';
+};
+
+export type GetHackathonsByHackathonIdMyTeamErrors = {
+    /**
+     * Hackathon not found or user not in any team
+     */
+    404: {
+        error?: string;
+        inHackathon?: boolean;
+    };
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type GetHackathonsByHackathonIdMyTeamError = GetHackathonsByHackathonIdMyTeamErrors[keyof GetHackathonsByHackathonIdMyTeamErrors];
+
+export type GetHackathonsByHackathonIdMyTeamResponses = {
+    /**
+     * Team retrieved successfully
+     */
+    200: {
+        inHackathon?: boolean;
+        team?: {
+            [key: string]: unknown;
+        };
+    };
+};
+
+export type GetHackathonsByHackathonIdMyTeamResponse = GetHackathonsByHackathonIdMyTeamResponses[keyof GetHackathonsByHackathonIdMyTeamResponses];
+
+export type GetHackathonsByHackathonIdSurveyQuestionsData = {
+    body?: never;
+    path: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+    };
+    query?: never;
+    url: '/hackathons/{hackathonId}/survey-questions';
+};
+
+export type GetHackathonsByHackathonIdSurveyQuestionsErrors = {
+    /**
+     * Invalid hackathon ID
+     */
+    400: _Error;
+    /**
+     * Hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type GetHackathonsByHackathonIdSurveyQuestionsError = GetHackathonsByHackathonIdSurveyQuestionsErrors[keyof GetHackathonsByHackathonIdSurveyQuestionsErrors];
+
+export type GetHackathonsByHackathonIdSurveyQuestionsResponses = {
+    /**
+     * Survey questions retrieved
+     */
+    200: {
+        questions?: Array<{
+            [key: string]: unknown;
+        }>;
+    };
+};
+
+export type GetHackathonsByHackathonIdSurveyQuestionsResponse = GetHackathonsByHackathonIdSurveyQuestionsResponses[keyof GetHackathonsByHackathonIdSurveyQuestionsResponses];
+
+export type PostHackathonsByHackathonIdSurveyQuestionsData = {
+    body: {
+        question: string;
+        order?: number;
+    };
+    path: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+    };
+    query?: never;
+    url: '/hackathons/{hackathonId}/survey-questions';
+};
+
+export type PostHackathonsByHackathonIdSurveyQuestionsErrors = {
+    /**
+     * Validation failed
+     */
+    400: _Error;
+    /**
+     * Hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type PostHackathonsByHackathonIdSurveyQuestionsError = PostHackathonsByHackathonIdSurveyQuestionsErrors[keyof PostHackathonsByHackathonIdSurveyQuestionsErrors];
+
+export type PostHackathonsByHackathonIdSurveyQuestionsResponses = {
+    /**
+     * Survey question created
+     */
+    201: {
+        question?: {
+            [key: string]: unknown;
+        };
+    };
+};
+
+export type PostHackathonsByHackathonIdSurveyQuestionsResponse = PostHackathonsByHackathonIdSurveyQuestionsResponses[keyof PostHackathonsByHackathonIdSurveyQuestionsResponses];
+
+export type DeleteSurveyQuestionsByQuestionIdData = {
+    body?: never;
+    path: {
+        /**
+         * Question ID
+         */
+        questionId: number;
+    };
+    query?: never;
+    url: '/survey-questions/{questionId}';
+};
+
+export type DeleteSurveyQuestionsByQuestionIdErrors = {
+    /**
+     * Invalid question ID
+     */
+    400: _Error;
+    /**
+     * Survey question not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type DeleteSurveyQuestionsByQuestionIdError = DeleteSurveyQuestionsByQuestionIdErrors[keyof DeleteSurveyQuestionsByQuestionIdErrors];
+
+export type DeleteSurveyQuestionsByQuestionIdResponses = {
+    /**
+     * Survey question deleted
+     */
+    200: {
+        message?: string;
+        questionId?: number;
+    };
+};
+
+export type DeleteSurveyQuestionsByQuestionIdResponse = DeleteSurveyQuestionsByQuestionIdResponses[keyof DeleteSurveyQuestionsByQuestionIdResponses];
+
+export type PutSurveyQuestionsByQuestionIdData = {
+    body: {
+        question?: string;
+        order?: number;
+    };
+    path: {
+        /**
+         * Question ID
+         */
+        questionId: number;
+    };
+    query?: never;
+    url: '/survey-questions/{questionId}';
+};
+
+export type PutSurveyQuestionsByQuestionIdErrors = {
+    /**
+     * Invalid question ID or validation failed
+     */
+    400: _Error;
+    /**
+     * Survey question not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type PutSurveyQuestionsByQuestionIdError = PutSurveyQuestionsByQuestionIdErrors[keyof PutSurveyQuestionsByQuestionIdErrors];
+
+export type PutSurveyQuestionsByQuestionIdResponses = {
+    /**
+     * Survey question updated
+     */
+    200: {
+        question?: {
+            [key: string]: unknown;
+        };
+    };
+};
+
+export type PutSurveyQuestionsByQuestionIdResponse = PutSurveyQuestionsByQuestionIdResponses[keyof PutSurveyQuestionsByQuestionIdResponses];
+
 export type GetHealthData = {
     body?: never;
     path?: never;
@@ -2008,6 +2344,104 @@ export type GetHealthResponses = {
 };
 
 export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
+
+export type GetStatsPlatformData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/stats/platform';
+};
+
+export type GetStatsPlatformErrors = {
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type GetStatsPlatformError = GetStatsPlatformErrors[keyof GetStatsPlatformErrors];
+
+export type GetStatsPlatformResponses = {
+    /**
+     * Platform statistics retrieved successfully
+     */
+    200: {
+        stats?: {
+            activeChallenges?: {
+                /**
+                 * Current number of active hackathons
+                 */
+                value?: number;
+                /**
+                 * Percentage change compared to last month
+                 */
+                trend?: number;
+            };
+            dataScientists?: {
+                /**
+                 * Total number of registered users
+                 */
+                value?: number;
+                /**
+                 * Percentage change compared to last month
+                 */
+                trend?: number;
+            };
+            totalPrizePool?: {
+                /**
+                 * Sum of prizes from active and upcoming hackathons (in dollars)
+                 */
+                value?: number;
+                /**
+                 * Percentage change compared to last month
+                 */
+                trend?: number;
+            };
+            submissionsToday?: {
+                /**
+                 * Number of submissions today
+                 */
+                value?: number;
+                /**
+                 * Percentage change compared to yesterday
+                 */
+                trend?: number;
+            };
+            categoryBreakdown?: {
+                /**
+                 * Number of Classification hackathons
+                 */
+                CLASSIFICATION?: number;
+                /**
+                 * Number of Regression hackathons
+                 */
+                REGRESSION?: number;
+                /**
+                 * Number of NLP hackathons
+                 */
+                NLP?: number;
+                /**
+                 * Number of Computer Vision hackathons
+                 */
+                COMPUTER_VISION?: number;
+                /**
+                 * Number of Time Series hackathons
+                 */
+                TIME_SERIES?: number;
+                /**
+                 * Number of Other hackathons
+                 */
+                OTHER?: number;
+            };
+        };
+        /**
+         * Timestamp when statistics were generated
+         */
+        generatedAt?: string;
+    };
+};
+
+export type GetStatsPlatformResponse = GetStatsPlatformResponses[keyof GetStatsPlatformResponses];
 
 export type GetHackathonsByHackathonIdSubmissionsData = {
     body?: never;
@@ -2154,6 +2588,49 @@ export type PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitResponses 
 
 export type PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitResponse = PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitResponses[keyof PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitResponses];
 
+export type PutSubmissionsBySubmissionIdFilesData = {
+    body: {
+        files?: Array<{
+            fileFormatId?: number;
+            fileUrl?: string;
+        }>;
+    };
+    path: {
+        /**
+         * Submission ID
+         */
+        submissionId: number;
+    };
+    query?: never;
+    url: '/submissions/{submissionId}/files';
+};
+
+export type PutSubmissionsBySubmissionIdFilesErrors = {
+    /**
+     * Invalid submission ID or payload
+     */
+    400: unknown;
+    /**
+     * Not authorized to edit this submission
+     */
+    403: unknown;
+    /**
+     * Submission not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type PutSubmissionsBySubmissionIdFilesResponses = {
+    /**
+     * Draft files saved successfully
+     */
+    200: unknown;
+};
+
 export type GetSubmissionsBySubmissionIdData = {
     body?: never;
     path: {
@@ -2256,6 +2733,46 @@ export type GetHackathonsByHackathonIdMySubmissionResponses = {
 
 export type GetHackathonsByHackathonIdMySubmissionResponse = GetHackathonsByHackathonIdMySubmissionResponses[keyof GetHackathonsByHackathonIdMySubmissionResponses];
 
+export type GetHackathonsByHackathonIdMySubmissionsData = {
+    body?: never;
+    path: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+    };
+    query?: never;
+    url: '/hackathons/{hackathonId}/my-submissions';
+};
+
+export type GetHackathonsByHackathonIdMySubmissionsErrors = {
+    /**
+     * Invalid hackathon ID
+     */
+    400: _Error;
+    /**
+     * Hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type GetHackathonsByHackathonIdMySubmissionsError = GetHackathonsByHackathonIdMySubmissionsErrors[keyof GetHackathonsByHackathonIdMySubmissionsErrors];
+
+export type GetHackathonsByHackathonIdMySubmissionsResponses = {
+    /**
+     * Team submissions retrieved successfully
+     */
+    200: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+export type GetHackathonsByHackathonIdMySubmissionsResponse = GetHackathonsByHackathonIdMySubmissionsResponses[keyof GetHackathonsByHackathonIdMySubmissionsResponses];
+
 export type PostSubmissionsBySubmissionIdScoreData = {
     body: {
         /**
@@ -2311,6 +2828,154 @@ export type PostSubmissionsBySubmissionIdScoreResponses = {
 };
 
 export type PostSubmissionsBySubmissionIdScoreResponse = PostSubmissionsBySubmissionIdScoreResponses[keyof PostSubmissionsBySubmissionIdScoreResponses];
+
+export type PostSubmissionsBySubmissionIdRejudgeData = {
+    body?: never;
+    path: {
+        /**
+         * Submission ID
+         */
+        submissionId: number;
+    };
+    query?: never;
+    url: '/submissions/{submissionId}/rejudge';
+};
+
+export type PostSubmissionsBySubmissionIdRejudgeErrors = {
+    /**
+     * Invalid submission ID
+     */
+    400: _Error;
+    /**
+     * Not authorized to trigger rejudge
+     */
+    403: _Error;
+    /**
+     * Submission or hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type PostSubmissionsBySubmissionIdRejudgeError = PostSubmissionsBySubmissionIdRejudgeErrors[keyof PostSubmissionsBySubmissionIdRejudgeErrors];
+
+export type PostSubmissionsBySubmissionIdRejudgeResponses = {
+    /**
+     * Rejudge scoring triggered successfully
+     */
+    200: {
+        message?: string;
+    };
+};
+
+export type PostSubmissionsBySubmissionIdRejudgeResponse = PostSubmissionsBySubmissionIdRejudgeResponses[keyof PostSubmissionsBySubmissionIdRejudgeResponses];
+
+export type PostHackathonsByHackathonIdSubmissionsRejudgeAllData = {
+    body?: never;
+    path: {
+        /**
+         * Hackathon ID
+         */
+        hackathonId: number;
+    };
+    query?: never;
+    url: '/hackathons/{hackathonId}/submissions/rejudge-all';
+};
+
+export type PostHackathonsByHackathonIdSubmissionsRejudgeAllErrors = {
+    /**
+     * Not authorized to trigger rejudge
+     */
+    403: _Error;
+    /**
+     * Hackathon not found
+     */
+    404: _Error;
+    /**
+     * Internal server error
+     */
+    500: _Error;
+};
+
+export type PostHackathonsByHackathonIdSubmissionsRejudgeAllError = PostHackathonsByHackathonIdSubmissionsRejudgeAllErrors[keyof PostHackathonsByHackathonIdSubmissionsRejudgeAllErrors];
+
+export type PostHackathonsByHackathonIdSubmissionsRejudgeAllResponses = {
+    /**
+     * Rejudge scoring triggered for all submissions
+     */
+    200: {
+        message?: string;
+    };
+};
+
+export type PostHackathonsByHackathonIdSubmissionsRejudgeAllResponse = PostHackathonsByHackathonIdSubmissionsRejudgeAllResponses[keyof PostHackathonsByHackathonIdSubmissionsRejudgeAllResponses];
+
+export type PostSubmissionsBySubmissionIdAiAssistanceData = {
+    body: {
+        /**
+         * Path to the Python file to analyze (must end with .py)
+         */
+        pythonFile: string;
+    };
+    path: {
+        /**
+         * Submission ID
+         */
+        submissionId: number;
+    };
+    query?: never;
+    url: '/submissions/{submissionId}/ai-assistance';
+};
+
+export type PostSubmissionsBySubmissionIdAiAssistanceErrors = {
+    /**
+     * Invalid submission ID, pythonFile not provided, or file too large (>10KB)
+     */
+    400: _Error;
+    /**
+     * Not authorized to get assistance for this submission
+     */
+    403: _Error;
+    /**
+     * Submission not found
+     */
+    404: _Error;
+    /**
+     * Internal server error or OpenAI API not configured
+     */
+    500: _Error;
+};
+
+export type PostSubmissionsBySubmissionIdAiAssistanceError = PostSubmissionsBySubmissionIdAiAssistanceErrors[keyof PostSubmissionsBySubmissionIdAiAssistanceErrors];
+
+export type PostSubmissionsBySubmissionIdAiAssistanceResponses = {
+    /**
+     * AI assistance generated successfully
+     */
+    200: {
+        message?: string;
+        assistance?: {
+            /**
+             * Array of AI-generated hints with line numbers
+             */
+            hints?: Array<{
+                /**
+                 * Hint or suggestion message
+                 */
+                message?: string;
+                /**
+                 * Line number where the issue occurs
+                 */
+                line?: number;
+            }>;
+        };
+    };
+};
+
+export type PostSubmissionsBySubmissionIdAiAssistanceResponse = PostSubmissionsBySubmissionIdAiAssistanceResponses[keyof PostSubmissionsBySubmissionIdAiAssistanceResponses];
 
 export type GetHackathonsByHackathonIdFileFormatsData = {
     body?: never;

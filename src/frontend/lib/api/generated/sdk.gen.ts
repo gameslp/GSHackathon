@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteAdminHackathonsByIdData, DeleteAdminHackathonsByIdErrors, DeleteAdminHackathonsByIdResponses, DeleteAdminSurveyQuestionsByQuestionIdData, DeleteAdminSurveyQuestionsByQuestionIdErrors, DeleteAdminSurveyQuestionsByQuestionIdResponses, DeleteAdminUsersByIdData, DeleteAdminUsersByIdErrors, DeleteAdminUsersByIdResponses, DeleteFileFormatsByFormatIdData, DeleteFileFormatsByFormatIdErrors, DeleteFileFormatsByFormatIdResponses, DeleteHackathonsByIdData, DeleteHackathonsByIdErrors, DeleteHackathonsByIdResponses, GetAdminHackathonsByHackathonIdSurveyQuestionsData, GetAdminHackathonsByHackathonIdSurveyQuestionsErrors, GetAdminHackathonsByHackathonIdSurveyQuestionsResponses, GetAdminHackathonsByHackathonIdTeamsData, GetAdminHackathonsByHackathonIdTeamsErrors, GetAdminHackathonsByHackathonIdTeamsResponses, GetAdminHackathonsByIdData, GetAdminHackathonsByIdErrors, GetAdminHackathonsByIdResponses, GetAdminHackathonsData, GetAdminHackathonsErrors, GetAdminHackathonsResponses, GetAdminTeamsByTeamIdData, GetAdminTeamsByTeamIdErrors, GetAdminTeamsByTeamIdResponses, GetAdminUsersData, GetAdminUsersErrors, GetAdminUsersResponses, GetAuthMeData, GetAuthMeErrors, GetAuthMeResponses, GetHackathonsActiveData, GetHackathonsActiveErrors, GetHackathonsActiveResponses, GetHackathonsByHackathonIdFileFormatsData, GetHackathonsByHackathonIdFileFormatsErrors, GetHackathonsByHackathonIdFileFormatsResponses, GetHackathonsByHackathonIdMySubmissionData, GetHackathonsByHackathonIdMySubmissionErrors, GetHackathonsByHackathonIdMySubmissionResponses, GetHackathonsByHackathonIdSubmissionsData, GetHackathonsByHackathonIdSubmissionsErrors, GetHackathonsByHackathonIdSubmissionsResponses, GetHackathonsByHackathonIdTeamsData, GetHackathonsByHackathonIdTeamsErrors, GetHackathonsByHackathonIdTeamsResponses, GetHackathonsByIdData, GetHackathonsByIdErrors, GetHackathonsByIdResponses, GetHackathonsData, GetHackathonsErrors, GetHackathonsOrganizerByOrganizerIdData, GetHackathonsOrganizerByOrganizerIdErrors, GetHackathonsOrganizerByOrganizerIdResponses, GetHackathonsResponses, GetHackathonsTeamsByTeamIdData, GetHackathonsTeamsByTeamIdErrors, GetHackathonsTeamsByTeamIdResponses, GetHackathonsUpcomingData, GetHackathonsUpcomingErrors, GetHackathonsUpcomingResponses, GetHealthData, GetHealthResponses, GetSubmissionsBySubmissionIdData, GetSubmissionsBySubmissionIdErrors, GetSubmissionsBySubmissionIdResponses, GetTeamsHackathonByHackathonIdData, GetTeamsHackathonByHackathonIdErrors, GetTeamsHackathonByHackathonIdResponses, GetTeamsHackathonByHackathonIdSurveyData, GetTeamsHackathonByHackathonIdSurveyErrors, GetTeamsHackathonByHackathonIdSurveyResponses, GetTeamsMyData, GetTeamsMyErrors, GetTeamsMyResponses, PatchAdminSurveyQuestionsByQuestionIdData, PatchAdminSurveyQuestionsByQuestionIdErrors, PatchAdminSurveyQuestionsByQuestionIdResponses, PatchAdminUsersByIdRoleData, PatchAdminUsersByIdRoleErrors, PatchAdminUsersByIdRoleResponses, PatchAuthProfileData, PatchAuthProfileErrors, PatchAuthProfileResponses, PostAdminHackathonsByHackathonIdSurveyQuestionsData, PostAdminHackathonsByHackathonIdSurveyQuestionsErrors, PostAdminHackathonsByHackathonIdSurveyQuestionsResponses, PostAdminHackathonsData, PostAdminHackathonsErrors, PostAdminHackathonsResponses, PostAdminTeamsByTeamIdAcceptData, PostAdminTeamsByTeamIdAcceptErrors, PostAdminTeamsByTeamIdAcceptResponses, PostAdminTeamsByTeamIdRejectData, PostAdminTeamsByTeamIdRejectErrors, PostAdminTeamsByTeamIdRejectResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutErrors, PostAuthLogoutResponses, PostAuthRegisterConfirmData, PostAuthRegisterConfirmErrors, PostAuthRegisterConfirmResponses, PostAuthRegisterStartData, PostAuthRegisterStartErrors, PostAuthRegisterStartResponses, PostFileFormatsByFormatIdValidateData, PostFileFormatsByFormatIdValidateErrors, PostFileFormatsByFormatIdValidateResponses, PostHackathonsByHackathonIdFileFormatsData, PostHackathonsByHackathonIdFileFormatsErrors, PostHackathonsByHackathonIdFileFormatsResponses, PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitData, PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitErrors, PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitResponses, PostHackathonsByHackathonIdSubmissionsData, PostHackathonsByHackathonIdSubmissionsErrors, PostHackathonsByHackathonIdSubmissionsResponses, PostHackathonsData, PostHackathonsErrors, PostHackathonsProvidedFilesUploadData, PostHackathonsProvidedFilesUploadErrors, PostHackathonsProvidedFilesUploadResponses, PostHackathonsResourcesUploadData, PostHackathonsResourcesUploadErrors, PostHackathonsResourcesUploadResponses, PostHackathonsResponses, PostHackathonsSubmissionsUploadData, PostHackathonsSubmissionsUploadErrors, PostHackathonsSubmissionsUploadResponses, PostHackathonsTeamsByTeamIdAcceptData, PostHackathonsTeamsByTeamIdAcceptErrors, PostHackathonsTeamsByTeamIdAcceptResponses, PostHackathonsTeamsByTeamIdRejectData, PostHackathonsTeamsByTeamIdRejectErrors, PostHackathonsTeamsByTeamIdRejectResponses, PostSubmissionsBySubmissionIdScoreData, PostSubmissionsBySubmissionIdScoreErrors, PostSubmissionsBySubmissionIdScoreResponses, PostTeamsCreateData, PostTeamsCreateErrors, PostTeamsCreateResponses, PostTeamsJoinData, PostTeamsJoinErrors, PostTeamsJoinResponses, PutAdminHackathonsByIdData, PutAdminHackathonsByIdErrors, PutAdminHackathonsByIdResponses, PutFileFormatsByFormatIdData, PutFileFormatsByFormatIdErrors, PutFileFormatsByFormatIdResponses, PutHackathonsByIdData, PutHackathonsByIdErrors, PutHackathonsByIdResponses } from './types.gen';
+import type { DeleteAdminHackathonsByIdData, DeleteAdminHackathonsByIdErrors, DeleteAdminHackathonsByIdResponses, DeleteAdminSurveyQuestionsByQuestionIdData, DeleteAdminSurveyQuestionsByQuestionIdErrors, DeleteAdminSurveyQuestionsByQuestionIdResponses, DeleteAdminUsersByIdData, DeleteAdminUsersByIdErrors, DeleteAdminUsersByIdResponses, DeleteFileFormatsByFormatIdData, DeleteFileFormatsByFormatIdErrors, DeleteFileFormatsByFormatIdResponses, DeleteHackathonsByIdData, DeleteHackathonsByIdErrors, DeleteHackathonsByIdResponses, DeleteSurveyQuestionsByQuestionIdData, DeleteSurveyQuestionsByQuestionIdErrors, DeleteSurveyQuestionsByQuestionIdResponses, GetAdminHackathonsByHackathonIdSurveyQuestionsData, GetAdminHackathonsByHackathonIdSurveyQuestionsErrors, GetAdminHackathonsByHackathonIdSurveyQuestionsResponses, GetAdminHackathonsByHackathonIdTeamsData, GetAdminHackathonsByHackathonIdTeamsErrors, GetAdminHackathonsByHackathonIdTeamsResponses, GetAdminHackathonsByIdData, GetAdminHackathonsByIdErrors, GetAdminHackathonsByIdResponses, GetAdminHackathonsData, GetAdminHackathonsErrors, GetAdminHackathonsResponses, GetAdminTeamsByTeamIdData, GetAdminTeamsByTeamIdErrors, GetAdminTeamsByTeamIdResponses, GetAdminUsersData, GetAdminUsersErrors, GetAdminUsersResponses, GetAuthMeData, GetAuthMeErrors, GetAuthMeResponses, GetHackathonsActiveData, GetHackathonsActiveErrors, GetHackathonsActiveResponses, GetHackathonsByHackathonIdFileFormatsData, GetHackathonsByHackathonIdFileFormatsErrors, GetHackathonsByHackathonIdFileFormatsResponses, GetHackathonsByHackathonIdLeaderboardData, GetHackathonsByHackathonIdLeaderboardErrors, GetHackathonsByHackathonIdLeaderboardResponses, GetHackathonsByHackathonIdMySubmissionData, GetHackathonsByHackathonIdMySubmissionErrors, GetHackathonsByHackathonIdMySubmissionResponses, GetHackathonsByHackathonIdMySubmissionsData, GetHackathonsByHackathonIdMySubmissionsErrors, GetHackathonsByHackathonIdMySubmissionsResponses, GetHackathonsByHackathonIdMyTeamData, GetHackathonsByHackathonIdMyTeamErrors, GetHackathonsByHackathonIdMyTeamResponses, GetHackathonsByHackathonIdSubmissionsData, GetHackathonsByHackathonIdSubmissionsErrors, GetHackathonsByHackathonIdSubmissionsResponses, GetHackathonsByHackathonIdSurveyQuestionsData, GetHackathonsByHackathonIdSurveyQuestionsErrors, GetHackathonsByHackathonIdSurveyQuestionsResponses, GetHackathonsByHackathonIdTeamsData, GetHackathonsByHackathonIdTeamsErrors, GetHackathonsByHackathonIdTeamsResponses, GetHackathonsByIdAutoTestingData, GetHackathonsByIdAutoTestingErrors, GetHackathonsByIdAutoTestingResponses, GetHackathonsByIdData, GetHackathonsByIdErrors, GetHackathonsByIdResponses, GetHackathonsData, GetHackathonsErrors, GetHackathonsOrganizerByOrganizerIdData, GetHackathonsOrganizerByOrganizerIdErrors, GetHackathonsOrganizerByOrganizerIdResponses, GetHackathonsResponses, GetHackathonsTeamsByTeamIdData, GetHackathonsTeamsByTeamIdErrors, GetHackathonsTeamsByTeamIdResponses, GetHackathonsUpcomingData, GetHackathonsUpcomingErrors, GetHackathonsUpcomingResponses, GetHealthData, GetHealthResponses, GetStatsPlatformData, GetStatsPlatformErrors, GetStatsPlatformResponses, GetSubmissionsBySubmissionIdData, GetSubmissionsBySubmissionIdErrors, GetSubmissionsBySubmissionIdResponses, GetTeamsHackathonByHackathonIdData, GetTeamsHackathonByHackathonIdErrors, GetTeamsHackathonByHackathonIdResponses, GetTeamsHackathonByHackathonIdSurveyData, GetTeamsHackathonByHackathonIdSurveyErrors, GetTeamsHackathonByHackathonIdSurveyResponses, GetTeamsMyData, GetTeamsMyErrors, GetTeamsMyResponses, PatchAdminSurveyQuestionsByQuestionIdData, PatchAdminSurveyQuestionsByQuestionIdErrors, PatchAdminSurveyQuestionsByQuestionIdResponses, PatchAdminUsersByIdRoleData, PatchAdminUsersByIdRoleErrors, PatchAdminUsersByIdRoleResponses, PatchAuthProfileData, PatchAuthProfileErrors, PatchAuthProfileResponses, PostAdminHackathonsByHackathonIdSurveyQuestionsData, PostAdminHackathonsByHackathonIdSurveyQuestionsErrors, PostAdminHackathonsByHackathonIdSurveyQuestionsResponses, PostAdminHackathonsData, PostAdminHackathonsErrors, PostAdminHackathonsResponses, PostAdminTeamsByTeamIdAcceptData, PostAdminTeamsByTeamIdAcceptErrors, PostAdminTeamsByTeamIdAcceptResponses, PostAdminTeamsByTeamIdRejectData, PostAdminTeamsByTeamIdRejectErrors, PostAdminTeamsByTeamIdRejectResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutErrors, PostAuthLogoutResponses, PostAuthRegisterConfirmData, PostAuthRegisterConfirmErrors, PostAuthRegisterConfirmResponses, PostAuthRegisterStartData, PostAuthRegisterStartErrors, PostAuthRegisterStartResponses, PostFileFormatsByFormatIdValidateData, PostFileFormatsByFormatIdValidateErrors, PostFileFormatsByFormatIdValidateResponses, PostHackathonsByHackathonIdFileFormatsData, PostHackathonsByHackathonIdFileFormatsErrors, PostHackathonsByHackathonIdFileFormatsResponses, PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitData, PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitErrors, PostHackathonsByHackathonIdSubmissionsBySubmissionIdSubmitResponses, PostHackathonsByHackathonIdSubmissionsData, PostHackathonsByHackathonIdSubmissionsErrors, PostHackathonsByHackathonIdSubmissionsRejudgeAllData, PostHackathonsByHackathonIdSubmissionsRejudgeAllErrors, PostHackathonsByHackathonIdSubmissionsRejudgeAllResponses, PostHackathonsByHackathonIdSubmissionsResponses, PostHackathonsByHackathonIdSurveyQuestionsData, PostHackathonsByHackathonIdSurveyQuestionsErrors, PostHackathonsByHackathonIdSurveyQuestionsResponses, PostHackathonsData, PostHackathonsErrors, PostHackathonsProvidedFilesUploadData, PostHackathonsProvidedFilesUploadErrors, PostHackathonsProvidedFilesUploadResponses, PostHackathonsResourcesUploadData, PostHackathonsResourcesUploadErrors, PostHackathonsResourcesUploadResponses, PostHackathonsResponses, PostHackathonsSubmissionsUploadData, PostHackathonsSubmissionsUploadErrors, PostHackathonsSubmissionsUploadResponses, PostHackathonsTeamsByTeamIdAcceptData, PostHackathonsTeamsByTeamIdAcceptErrors, PostHackathonsTeamsByTeamIdAcceptResponses, PostHackathonsTeamsByTeamIdRejectData, PostHackathonsTeamsByTeamIdRejectErrors, PostHackathonsTeamsByTeamIdRejectResponses, PostSubmissionsBySubmissionIdAiAssistanceData, PostSubmissionsBySubmissionIdAiAssistanceErrors, PostSubmissionsBySubmissionIdAiAssistanceResponses, PostSubmissionsBySubmissionIdRejudgeData, PostSubmissionsBySubmissionIdRejudgeErrors, PostSubmissionsBySubmissionIdRejudgeResponses, PostSubmissionsBySubmissionIdScoreData, PostSubmissionsBySubmissionIdScoreErrors, PostSubmissionsBySubmissionIdScoreResponses, PostTeamsCreateData, PostTeamsCreateErrors, PostTeamsCreateResponses, PostTeamsJoinData, PostTeamsJoinErrors, PostTeamsJoinResponses, PutAdminHackathonsByIdData, PutAdminHackathonsByIdErrors, PutAdminHackathonsByIdResponses, PutFileFormatsByFormatIdData, PutFileFormatsByFormatIdErrors, PutFileFormatsByFormatIdResponses, PutHackathonsByIdData, PutHackathonsByIdErrors, PutHackathonsByIdResponses, PutSubmissionsBySubmissionIdFilesData, PutSubmissionsBySubmissionIdFilesErrors, PutSubmissionsBySubmissionIdFilesResponses, PutSurveyQuestionsByQuestionIdData, PutSurveyQuestionsByQuestionIdErrors, PutSurveyQuestionsByQuestionIdResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -725,6 +725,112 @@ export const putHackathonsById = <ThrowOnError extends boolean = false>(options:
 };
 
 /**
+ * Get leaderboard for a hackathon
+ *
+ * Retrieve paginated leaderboard showing team rankings based on best submission scores
+ */
+export const getHackathonsByHackathonIdLeaderboard = <ThrowOnError extends boolean = false>(options: Options<GetHackathonsByHackathonIdLeaderboardData, ThrowOnError>) => {
+    return (options.client ?? client).get<GetHackathonsByHackathonIdLeaderboardResponses, GetHackathonsByHackathonIdLeaderboardErrors, ThrowOnError>({
+        url: '/hackathons/{hackathonId}/leaderboard',
+        ...options
+    });
+};
+
+/**
+ * Get auto-testing configuration
+ *
+ * Check if auto-scoring is available and enabled (organizer/admin only)
+ */
+export const getHackathonsByIdAutoTesting = <ThrowOnError extends boolean = false>(options: Options<GetHackathonsByIdAutoTestingData, ThrowOnError>) => {
+    return (options.client ?? client).get<GetHackathonsByIdAutoTestingResponses, GetHackathonsByIdAutoTestingErrors, ThrowOnError>({
+        security: [
+            {
+                in: 'cookie',
+                name: 'auth_token',
+                type: 'apiKey'
+            }
+        ],
+        url: '/hackathons/{id}/auto-testing',
+        ...options
+    });
+};
+
+/**
+ * Get current user's team in hackathon
+ *
+ * Retrieve the team the current user belongs to in a specific hackathon
+ */
+export const getHackathonsByHackathonIdMyTeam = <ThrowOnError extends boolean = false>(options: Options<GetHackathonsByHackathonIdMyTeamData, ThrowOnError>) => {
+    return (options.client ?? client).get<GetHackathonsByHackathonIdMyTeamResponses, GetHackathonsByHackathonIdMyTeamErrors, ThrowOnError>({
+        security: [
+            {
+                in: 'cookie',
+                name: 'auth_token',
+                type: 'apiKey'
+            }
+        ],
+        url: '/hackathons/{hackathonId}/my-team',
+        ...options
+    });
+};
+
+/**
+ * Get survey questions for a hackathon
+ *
+ * Retrieve all survey questions (admin view)
+ */
+export const getHackathonsByHackathonIdSurveyQuestions = <ThrowOnError extends boolean = false>(options: Options<GetHackathonsByHackathonIdSurveyQuestionsData, ThrowOnError>) => {
+    return (options.client ?? client).get<GetHackathonsByHackathonIdSurveyQuestionsResponses, GetHackathonsByHackathonIdSurveyQuestionsErrors, ThrowOnError>({
+        url: '/hackathons/{hackathonId}/survey-questions',
+        ...options
+    });
+};
+
+/**
+ * Create a survey question
+ *
+ * Add a new survey question to the hackathon
+ */
+export const postHackathonsByHackathonIdSurveyQuestions = <ThrowOnError extends boolean = false>(options: Options<PostHackathonsByHackathonIdSurveyQuestionsData, ThrowOnError>) => {
+    return (options.client ?? client).post<PostHackathonsByHackathonIdSurveyQuestionsResponses, PostHackathonsByHackathonIdSurveyQuestionsErrors, ThrowOnError>({
+        url: '/hackathons/{hackathonId}/survey-questions',
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+        }
+    });
+};
+
+/**
+ * Delete a survey question
+ *
+ * Remove a survey question from the hackathon
+ */
+export const deleteSurveyQuestionsByQuestionId = <ThrowOnError extends boolean = false>(options: Options<DeleteSurveyQuestionsByQuestionIdData, ThrowOnError>) => {
+    return (options.client ?? client).delete<DeleteSurveyQuestionsByQuestionIdResponses, DeleteSurveyQuestionsByQuestionIdErrors, ThrowOnError>({
+        url: '/survey-questions/{questionId}',
+        ...options
+    });
+};
+
+/**
+ * Update a survey question
+ *
+ * Modify an existing survey question
+ */
+export const putSurveyQuestionsByQuestionId = <ThrowOnError extends boolean = false>(options: Options<PutSurveyQuestionsByQuestionIdData, ThrowOnError>) => {
+    return (options.client ?? client).put<PutSurveyQuestionsByQuestionIdResponses, PutSurveyQuestionsByQuestionIdErrors, ThrowOnError>({
+        url: '/survey-questions/{questionId}',
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+        }
+    });
+};
+
+/**
  * Health check
  *
  * Check if the API is running
@@ -732,6 +838,18 @@ export const putHackathonsById = <ThrowOnError extends boolean = false>(options:
 export const getHealth = <ThrowOnError extends boolean = false>(options?: Options<GetHealthData, ThrowOnError>) => {
     return (options?.client ?? client).get<GetHealthResponses, unknown, ThrowOnError>({
         url: '/health',
+        ...options
+    });
+};
+
+/**
+ * Get platform statistics
+ *
+ * Returns general platform statistics including active challenges, registered users, total prize pool, daily submissions, and category breakdown
+ */
+export const getStatsPlatform = <ThrowOnError extends boolean = false>(options?: Options<GetStatsPlatformData, ThrowOnError>) => {
+    return (options?.client ?? client).get<GetStatsPlatformResponses, GetStatsPlatformErrors, ThrowOnError>({
+        url: '/stats/platform',
         ...options
     });
 };
@@ -798,6 +916,29 @@ export const postHackathonsByHackathonIdSubmissionsBySubmissionIdSubmit = <Throw
 };
 
 /**
+ * Save draft submission files
+ *
+ * Persist draft submission files so the team can return later
+ */
+export const putSubmissionsBySubmissionIdFiles = <ThrowOnError extends boolean = false>(options: Options<PutSubmissionsBySubmissionIdFilesData, ThrowOnError>) => {
+    return (options.client ?? client).put<PutSubmissionsBySubmissionIdFilesResponses, PutSubmissionsBySubmissionIdFilesErrors, ThrowOnError>({
+        security: [
+            {
+                in: 'cookie',
+                name: 'auth_token',
+                type: 'apiKey'
+            }
+        ],
+        url: '/submissions/{submissionId}/files',
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+        }
+    });
+};
+
+/**
  * Get submission by ID
  *
  * Retrieve submission details with files (organizer/admin/judge/participant)
@@ -836,6 +977,25 @@ export const getHackathonsByHackathonIdMySubmission = <ThrowOnError extends bool
 };
 
 /**
+ * Get all current user's team submissions
+ *
+ * Retrieve all submissions for the current user's team in a hackathon
+ */
+export const getHackathonsByHackathonIdMySubmissions = <ThrowOnError extends boolean = false>(options: Options<GetHackathonsByHackathonIdMySubmissionsData, ThrowOnError>) => {
+    return (options.client ?? client).get<GetHackathonsByHackathonIdMySubmissionsResponses, GetHackathonsByHackathonIdMySubmissionsErrors, ThrowOnError>({
+        security: [
+            {
+                in: 'cookie',
+                name: 'auth_token',
+                type: 'apiKey'
+            }
+        ],
+        url: '/hackathons/{hackathonId}/my-submissions',
+        ...options
+    });
+};
+
+/**
  * Score a submission
  *
  * Assign a score to a submission (organizer/admin/judge only)
@@ -850,6 +1010,67 @@ export const postSubmissionsBySubmissionIdScore = <ThrowOnError extends boolean 
             }
         ],
         url: '/submissions/{submissionId}/score',
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+        }
+    });
+};
+
+/**
+ * Trigger rejudge scoring for a submission
+ *
+ * Re-run automatic scoring for a specific submission (organizer/admin/judge only)
+ */
+export const postSubmissionsBySubmissionIdRejudge = <ThrowOnError extends boolean = false>(options: Options<PostSubmissionsBySubmissionIdRejudgeData, ThrowOnError>) => {
+    return (options.client ?? client).post<PostSubmissionsBySubmissionIdRejudgeResponses, PostSubmissionsBySubmissionIdRejudgeErrors, ThrowOnError>({
+        security: [
+            {
+                in: 'cookie',
+                name: 'auth_token',
+                type: 'apiKey'
+            }
+        ],
+        url: '/submissions/{submissionId}/rejudge',
+        ...options
+    });
+};
+
+/**
+ * Trigger rejudge scoring for all submissions
+ *
+ * Re-run automatic scoring for all submissions in a hackathon (organizer/admin/judge only)
+ */
+export const postHackathonsByHackathonIdSubmissionsRejudgeAll = <ThrowOnError extends boolean = false>(options: Options<PostHackathonsByHackathonIdSubmissionsRejudgeAllData, ThrowOnError>) => {
+    return (options.client ?? client).post<PostHackathonsByHackathonIdSubmissionsRejudgeAllResponses, PostHackathonsByHackathonIdSubmissionsRejudgeAllErrors, ThrowOnError>({
+        security: [
+            {
+                in: 'cookie',
+                name: 'auth_token',
+                type: 'apiKey'
+            }
+        ],
+        url: '/hackathons/{hackathonId}/submissions/rejudge-all',
+        ...options
+    });
+};
+
+/**
+ * Get AI code assistance
+ *
+ * Analyze a specific Python file in submission and get AI-generated hints from ChatGPT (team member only)
+ */
+export const postSubmissionsBySubmissionIdAiAssistance = <ThrowOnError extends boolean = false>(options: Options<PostSubmissionsBySubmissionIdAiAssistanceData, ThrowOnError>) => {
+    return (options.client ?? client).post<PostSubmissionsBySubmissionIdAiAssistanceResponses, PostSubmissionsBySubmissionIdAiAssistanceErrors, ThrowOnError>({
+        security: [
+            {
+                in: 'cookie',
+                name: 'auth_token',
+                type: 'apiKey'
+            }
+        ],
+        url: '/submissions/{submissionId}/ai-assistance',
         ...options,
         headers: {
             'Content-Type': 'application/json',

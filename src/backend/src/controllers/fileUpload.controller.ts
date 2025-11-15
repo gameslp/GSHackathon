@@ -92,9 +92,14 @@ export const uploadHackathonResource = async (req: AuthRequest, res: Response) =
 export const uploadProvidedFile = async (req: AuthRequest, res: Response) => {
   try {
     const hackathonId = parseInt(req.body.hackathonId);
+    const name = req.body.name as string | undefined;
 
     if (!hackathonId || isNaN(hackathonId)) {
       return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    if (!name || name.trim().length === 0) {
+      return res.status(400).json({ error: 'File name is required' });
     }
 
     if (!req.file) {
@@ -126,6 +131,7 @@ export const uploadProvidedFile = async (req: AuthRequest, res: Response) => {
       message: 'Provided file uploaded successfully',
       fileUrl,
       fileName: req.file.originalname,
+      name: name.trim(),
       fileSize: Math.round(req.file.size / 1024),
     });
   } catch (error) {
