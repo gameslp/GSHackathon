@@ -1,8 +1,16 @@
 import { StatisticCard } from '@/types';
+import { TrophyIcon, UsersIcon, DollarIcon, ChartIcon } from './icons/StatsIcons';
 
 interface StatsCardProps {
   stat: StatisticCard;
 }
+
+const iconMap: Record<string, React.ReactNode> = {
+  'trophy': <TrophyIcon />,
+  'users': <UsersIcon />,
+  'dollar': <DollarIcon />,
+  'chart': <ChartIcon />,
+};
 
 const StatsCard = ({ stat }: StatsCardProps) => {
   return (
@@ -21,8 +29,8 @@ const StatsCard = ({ stat }: StatsCardProps) => {
           )}
         </div>
         {stat.icon && (
-          <div className="text-4xl opacity-50">
-            {stat.icon}
+          <div className="opacity-50">
+            {iconMap[stat.icon as string] || null}
           </div>
         )}
       </div>
