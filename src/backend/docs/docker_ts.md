@@ -1,19 +1,19 @@
-# Docker Runner - Uruchamianie testerek ML/AI
+# Docker Runner - ML/AI Testing Execution
 
-## 📋 Opis
+## 📋 Description
 
-Prosty moduł TypeScript do uruchamiania Dockera z testerkami. Organizator ustawia ograniczenia zasobów (CPU, RAM, timeout) dla każdego zadania.
+Simple TypeScript module for running Docker with testing scripts. Organizers set resource limits (CPU, RAM, timeout) for each task.
 
-## 📁 Struktura
+## 📁 Structure
 
 ```
 src/docker/
-├── runner.ts       # Główny plik - funkcja runDockerTest()
-├── examples.ts     # Przykłady użycia
-└── README.md       # Ta dokumentacja
+├── runner.ts       # Main file - runDockerTest() function
+├── examples.ts     # Usage examples
+└── README.md       # This documentation
 ```
 
-## 🚀 Użycie
+## 🚀 Usage
 
 ### Import
 
@@ -21,124 +21,124 @@ src/docker/
 import { runDockerTest } from "./docker/runner";
 ```
 
-### Podstawowy przykład
+### Basic Example
 
 ```typescript
 const result = await runDockerTest({
-	userSolutionDir: "/var/submissions/user_123", // Folder użytkownika
-	organizerFilesDir: "/var/tasks/task_001", // Folder organizatora (z testerką)
-	outputDir: "/var/results/user_123", // Folder na wyniki
+	userSolutionDir: "/var/submissions/user_123", // User's folder
+	organizerFilesDir: "/var/tasks/task_001", // Organizer's folder (with tester)
+	outputDir: "/var/results/user_123", // Output folder
 
-	// OGRANICZENIA OD ORGANIZATORA
-	cpuLimit: 2, // 2 rdzenie CPU
+	// ORGANIZER-DEFINED LIMITS
+	cpuLimit: 2, // 2 CPU cores
 	memoryLimit: "4g", // 4GB RAM
-	timeout: 300, // 5 minut
+	timeout: 300, // 5 minutes
 });
 
-console.log("Sukces:", result.success);
-console.log("Score:", result.score); // null lub liczba (np. 85.5)
-console.log("Komentarz:", result.scoreComment); // Pełny output
-console.log("Czas:", result.executionTime, "s");
+console.log("Success:", result.success);
+console.log("Score:", result.score); // null or number (e.g., 85.5)
+console.log("Comment:", result.scoreComment); // Full output
+console.log("Time:", result.executionTime, "s");
 ```
 
-## 🎯 Parametry konfiguracji (od organizatora)
+## 🎯 Configuration Parameters (from organizer)
 
 ```typescript
 interface DockerRunConfig {
-	// ŚCIEŻKI (wymagane)
-	userSolutionDir: string; // Folder z plikami użytkownika
-	organizerFilesDir: string; // Folder z testerką i danymi testowymi
-	outputDir: string; // Folder na wyniki
+	// PATHS (required)
+	userSolutionDir: string; // Folder with user's files
+	organizerFilesDir: string; // Folder with tester and test data
+	outputDir: string; // Output folder
 
-	// OGRANICZENIA (wymagane - USTAWIA ORGANIZATOR)
-	cpuLimit: number; // Liczba rdzeni CPU (np. 1, 2, 4, 8)
-	memoryLimit: string; // Limit RAM (np. '512m', '1g', '4g', '16g')
-	timeout: number; // Timeout w sekundach (np. 30, 300, 1800)
+	// LIMITS (required - SET BY ORGANIZER)
+	cpuLimit: number; // Number of CPU cores (e.g., 1, 2, 4, 8)
+	memoryLimit: string; // RAM limit (e.g., '512m', '1g', '4g', '16g')
+	timeout: number; // Timeout in seconds (e.g., 30, 300, 1800)
 
-	// OPCJONALNE
-	testerFileName?: string; // Nazwa testerki (domyślnie: 'tester.py')
-	imageName?: string; // Obraz Docker (domyślnie: 'ml-sandbox')
-	containerName?: string; // Nazwa kontenera (domyślnie: generowana)
+	// OPTIONAL
+	testerFileName?: string; // Tester filename (default: 'tester.py')
+	imageName?: string; // Docker image (default: 'ml-sandbox')
+	containerName?: string; // Container name (default: auto-generated)
 }
 ```
 
-## 📊 Wynik
+## 📊 Result
 
 ```typescript
 interface DockerRunResult {
-	success: boolean; // Czy test zakończył się sukcesem (exitCode === 0)
-	exitCode: number; // Kod wyjścia procesu
-	error?: string; // Stderr jeśli wystąpił
-	timedOut: boolean; // Czy przekroczono timeout
-	executionTime: number; // Czas wykonania w sekundach
+	success: boolean; // Whether test succeeded (exitCode === 0)
+	exitCode: number; // Process exit code
+	error?: string; // Stderr if occurred
+	timedOut: boolean; // Whether timeout was exceeded
+	executionTime: number; // Execution time in seconds
 
-	// Pola gotowe do zapisu w Submission
-	score: number | null; // Wynik sparsowany z outputu (null jeśli błąd)
-	scoreComment: string; // Sformatowany komentarz z pełnym outputem
+	// Fields ready for Submission model
+	score: number | null; // Score parsed from output (null if error)
+	scoreComment: string; // Formatted comment with full output
 }
 ```
 
-**UWAGA**: Program organizatora (testerka) powinien po prostu wypisać liczbę (score), np. `"85.5"` lub `"100"`. Ta liczba zostanie sparsowana i zapisana w polu `score`. Cały output wraz z dodatkową informacją trafia do pola `scoreComment`.
+**NOTE**: The organizer's program (tester) should simply print a number (score), e.g., `"85.5"` or `"100"`. This number will be parsed and saved in the `score` field. The complete output with additional information goes to the `scoreComment` field.
 
-## 🔒 Bezpieczeństwo (automatyczne)
+## 🔒 Security (automatic)
 
-Wszystkie te zabezpieczenia są **zawsze aktywne**:
+All these protections are **always active**:
 
-- ✅ `--network=none` - Brak dostępu do internetu
-- ✅ `--read-only` - System plików tylko do odczytu
-- ✅ `--user 1000:1000` - Użytkownik non-root
-- ✅ `--cap-drop=ALL` - Brak capabilities
-- ✅ `--security-opt=no-new-privileges` - Brak eskalacji uprawnień
-- ✅ Mounty read-only dla folderów użytkownika i organizatora
-- ✅ Mount read-write tylko dla outputDir
+- ✅ `--network=none` - No internet access
+- ✅ `--read-only` - Read-only filesystem
+- ✅ `--user 1000:1000` - Non-root user
+- ✅ `--cap-drop=ALL` - No capabilities
+- ✅ `--security-opt=no-new-privileges` - No privilege escalation
+- ✅ Read-only mounts for user and organizer folders
+- ✅ Read-write mount only for outputDir
 
-## 📝 Przykłady różnych limitów
+## 📝 Examples with Different Limits
 
-### Proste zadanie (algorytm sortowania)
+### Simple Task (sorting algorithm)
 
 ```typescript
-// Organizator ustawia małe limity dla prostego zadania
+// Organizer sets small limits for simple task
 const result = await runDockerTest({
 	userSolutionDir: "/var/submissions/user_123",
 	organizerFilesDir: "/var/tasks/sorting",
 	outputDir: "/var/results/user_123",
-	cpuLimit: 1, // 1 rdzeń
+	cpuLimit: 1, // 1 core
 	memoryLimit: "512m", // 512MB
-	timeout: 30, // 30 sekund
+	timeout: 30, // 30 seconds
 });
 ```
 
-### Zadanie Machine Learning
+### Machine Learning Task
 
 ```typescript
-// Organizator ustawia średnie limity
+// Organizer sets medium limits
 const result = await runDockerTest({
 	userSolutionDir: "/var/submissions/user_456",
 	organizerFilesDir: "/var/tasks/ml_classification",
 	outputDir: "/var/results/user_456",
-	cpuLimit: 4, // 4 rdzenie
+	cpuLimit: 4, // 4 cores
 	memoryLimit: "8g", // 8GB
-	timeout: 600, // 10 minut
+	timeout: 600, // 10 minutes
 });
 ```
 
-### Zadanie Deep Learning
+### Deep Learning Task
 
 ```typescript
-// Organizator ustawia duże limity dla ciężkiego zadania
+// Organizer sets large limits for heavy task
 const result = await runDockerTest({
 	userSolutionDir: "/var/submissions/user_789",
 	organizerFilesDir: "/var/tasks/deep_learning",
 	outputDir: "/var/results/user_789",
-	cpuLimit: 8, // 8 rdzeni
+	cpuLimit: 8, // 8 cores
 	memoryLimit: "16g", // 16GB
-	timeout: 1800, // 30 minut
+	timeout: 1800, // 30 minutes
 });
 ```
 
-## 🎓 Integracja z backendem
+## 🎓 Backend Integration
 
-### W kontrolerze
+### In Controller
 
 ```typescript
 import { runDockerTest } from "../docker/runner";
@@ -147,7 +147,7 @@ import { prisma } from "@prisma";
 async function submitSolution(req: Request, res: Response) {
 	const { taskId, userId } = req.body;
 
-	// 1. Pobierz limity ustawione przez organizatora z bazy danych
+	// 1. Fetch organizer-set limits from database
 	const task = await prisma.task.findUnique({
 		where: { id: taskId },
 		select: {
@@ -157,23 +157,23 @@ async function submitSolution(req: Request, res: Response) {
 		},
 	});
 
-	// 2. Uruchom test z limitami od organizatora
+	// 2. Run test with organizer's limits
 	const result = await runDockerTest({
 		userSolutionDir: `/var/submissions/${userId}`,
 		organizerFilesDir: `/var/tasks/${taskId}`,
 		outputDir: `/var/results/${userId}_${taskId}`,
-		cpuLimit: task.cpuLimit, // Z bazy danych
-		memoryLimit: task.memoryLimit, // Z bazy danych
-		timeout: task.timeout, // Z bazy danych
+		cpuLimit: task.cpuLimit, // From database
+		memoryLimit: task.memoryLimit, // From database
+		timeout: task.timeout, // From database
 	});
 
-	// 3. Zapisz wynik
+	// 3. Save result
 	await prisma.submission.create({
 		data: {
 			userId,
 			taskId,
 			score: result.score, // Float | null
-			scoreComment: result.scoreComment, // String z pełnym outputem
+			scoreComment: result.scoreComment, // String with full output
 			executionTime: result.executionTime,
 			success: result.success,
 		},
@@ -186,9 +186,9 @@ async function submitSolution(req: Request, res: Response) {
 }
 ```
 
-## 🗄️ Schemat bazy danych (przykład)
+## 🗄️ Database Schema (example)
 
-Organizator ustawia limity przy tworzeniu zadania:
+Organizer sets limits when creating task:
 
 ```prisma
 model Task {
@@ -196,10 +196,10 @@ model Task {
   name          String
   description   String
 
-  // LIMITY USTAWIANE PRZEZ ORGANIZATORA
-  cpuLimit      Int      @default(2)        // Liczba rdzeni
-  memoryLimit   String   @default("4g")     // Limit RAM
-  timeout       Int      @default(300)      // Timeout w sekundach
+  // ORGANIZER-SET LIMITS
+  cpuLimit      Int      @default(2)        // Number of cores
+  memoryLimit   String   @default("4g")     // RAM limit
+  timeout       Int      @default(300)      // Timeout in seconds
 
   createdAt     DateTime @default(now())
   organizerId   String
@@ -208,11 +208,11 @@ model Task {
 }
 ```
 
-## 🔧 Format testerki (w folderze organizatora)
+## 🔧 Tester Format (in organizer's folder)
 
-Testerka to plik Python w `organizerFilesDir/tester.py`:
+Tester is a Python file at `organizerFilesDir/tester.py`:
 
-**WAŻNE**: Testerka powinna po prostu wypisać liczbę (score) na stdout. Ta liczba zostanie automatycznie sparsowana.
+**IMPORTANT**: The tester should simply print a number (score) to stdout. This number will be automatically parsed.
 
 ```python
 import sys
@@ -222,17 +222,17 @@ def main():
     submission_dir = sys.argv[1]  # /submission
     output_dir = sys.argv[2]      # /output
 
-    # Załaduj rozwiązanie użytkownika
+    # Load user's solution
     sys.path.insert(0, submission_dir)
     from solution import solve
 
-    # Wykonaj testy i oblicz score
+    # Run tests and calculate score
     score = evaluate_solution(solve)
 
-    # WYPISZ SCORE NA STDOUT (to zostanie sparsowane)
-    print(score)  # np. "85.5" lub "100"
+    # PRINT SCORE TO STDOUT (this will be parsed)
+    print(score)  # e.g., "85.5" or "100"
 
-    # Opcjonalnie: zapisz szczegóły do /output/result.json
+    # Optionally: save details to /output/result.json
     with open(f'{output_dir}/result.json', 'w') as f:
         json.dump({
             "score": score,
@@ -242,25 +242,25 @@ def main():
     sys.exit(0)
 
 def evaluate_solution(solve_fn):
-    # Twoja logika testów
+    # Your testing logic
     # ...
-    return 85.5  # Przykładowy wynik
+    return 85.5  # Example result
 
 if __name__ == "__main__":
     main()
 ```
 
-**Przykład prostszej testerki:**
+**Example of simpler tester:**
 
 ```python
 #!/usr/bin/env python3
 import sys
 
-# Załaduj rozwiązanie użytkownika
+# Load user's solution
 sys.path.insert(0, sys.argv[1])
 from solution import solve
 
-# Testy
+# Tests
 test_cases = [
     ([1, 2, 3], 6),
     ([4, 5], 9),
@@ -273,74 +273,74 @@ for input_data, expected in test_cases:
     if result == expected:
         correct += 1
 
-# Wypisz score (procent poprawnych)
+# Print score (percentage correct)
 score = (correct / len(test_cases)) * 100
-print(score)  # np. "100" lub "66.66666666666667"
+print(score)  # e.g., "100" or "66.66666666666667"
 ```
 
-## 📂 Struktura folderów
+## 📂 Folder Structure
 
 ```
-/var/tasks/task_001/              # Folder organizatora
-├── tester.py                     # Testerka (WYMAGANE)
-├── test_data.csv                 # Dane testowe (opcjonalne)
-└── expected_output.txt           # Oczekiwane wyniki (opcjonalne)
+/var/tasks/task_001/              # Organizer's folder
+├── tester.py                     # Tester (REQUIRED)
+├── test_data.csv                 # Test data (optional)
+└── expected_output.txt           # Expected results (optional)
 
-/var/submissions/user_123/        # Folder użytkownika
-└── solution.py                   # Rozwiązanie użytkownika
+/var/submissions/user_123/        # User's folder
+└── solution.py                   # User's solution
 
-/var/results/user_123/            # Folder wyjściowy
-├── result.json                   # Wynik z testerki
-└── output.log                    # Logi (opcjonalne)
+/var/results/user_123/            # Output folder
+├── result.json                   # Result from tester
+└── output.log                    # Logs (optional)
 ```
 
-## ⚙️ Wymagania
+## ⚙️ Requirements
 
-1. **Docker zainstalowany i uruchomiony**
+1. **Docker installed and running**
 
    ```bash
    docker --version
    ```
 
-2. **Obraz ml-sandbox zbudowany**
+2. **ml-sandbox image built**
 
    ```bash
    docker build -f Dockerfile.ai -t ml-sandbox .
    ```
 
-3. **Katalogi utworzone z odpowiednimi uprawnieniami**
+3. **Directories created with proper permissions**
    ```bash
    mkdir -p /var/tasks /var/submissions /var/results
    chown -R 1000:1000 /var/tasks /var/submissions /var/results
    ```
 
-## 🐛 Obsługa błędów
+## 🐛 Error Handling
 
 ```typescript
 const result = await runDockerTest({...});
 
 if (result.timedOut) {
-  console.log('Przekroczono timeout!');
+  console.log('Timeout exceeded!');
   console.log('Score:', null);
-  console.log('Komentarz:', result.scoreComment);
+  console.log('Comment:', result.scoreComment);
 } else if (!result.success) {
-  console.log('Test zakończony błędem:', result.error);
-  console.log('Score:', result.score);  // Prawdopodobnie null
+  console.log('Test failed with error:', result.error);
+  console.log('Score:', result.score);  // Probably null
 } else {
   console.log('Test OK!');
-  console.log('Score:', result.score);  // np. 85.5
-  console.log('Czas:', result.executionTime, 's');
+  console.log('Score:', result.score);  // e.g., 85.5
+  console.log('Time:', result.executionTime, 's');
 }
 ```
 
-### Przykładowe wartości `scoreComment`:
+### Example `scoreComment` Values:
 
-**Sukces:**
+**Success:**
 
 ```
-Status: SUKCES
+Status: SUCCESS
 Exit code: 0
-Czas wykonania: 2.34s
+Execution time: 2.34s
 
 OUTPUT:
 85.5
@@ -349,23 +349,23 @@ OUTPUT:
 **Timeout:**
 
 ```
-Status: BŁĄD
+Status: ERROR
 Exit code: 124
-Czas wykonania: 300.00s
-⚠️ PRZEKROCZONO LIMIT CZASU
+Execution time: 300.00s
+⚠️ TIMEOUT EXCEEDED
 
-BŁĘDY:
-Test przekroczył limit czasu 300s
+ERRORS:
+Test exceeded time limit of 300s
 ```
 
-**Błąd:**
+**Error:**
 
 ```
-Status: BŁĄD
+Status: ERROR
 Exit code: 1
-Czas wykonania: 0.45s
+Execution time: 0.45s
 
-BŁĘDY:
+ERRORS:
 ModuleNotFoundError: No module named 'solution'
 
 OUTPUT:
@@ -373,58 +373,58 @@ Traceback (most recent call last):
 ...
 ```
 
-## 💡 Najlepsze praktyki
+## 💡 Best Practices
 
-1. **Zawsze pobieraj limity z bazy danych** (organizator je ustawia)
-2. **Waliduj ścieżki** przed przekazaniem do funkcji
-3. **Loguj wszystkie uruchomienia** dla audytu
-4. **Obsługuj timeouty** gracefully
-5. **Czyść stare wyniki** regularnie
-6. **Testerka powinna wypisać tylko liczbę** (score) na stdout
-7. **Dodatkowe informacje** zapisuj do plików w `/output`
-8. **Zapisuj `score` i `scoreComment`** w bazie danych dla każdego submission
+1. **Always fetch limits from database** (organizer sets them)
+2. **Validate paths** before passing to function
+3. **Log all runs** for auditing
+4. **Handle timeouts** gracefully
+5. **Clean old results** regularly
+6. **Tester should print only the number** (score) to stdout
+7. **Additional information** save to files in `/output`
+8. **Save `score` and `scoreComment`** in database for each submission
 
-## 📞 Błędy i rozwiązania
+## 📞 Errors and Solutions
 
 ### "Failed to start Docker"
 
-- Sprawdź czy Docker działa: `docker ps`
-- Sprawdź uprawnienia użytkownika
+- Check if Docker is running: `docker ps`
+- Check user permissions
 
 ### "Timeout"
 
-- Organizator może zwiększyć timeout w bazie danych
-- Lub zoptymalizować testerę
+- Organizer can increase timeout in database
+- Or optimize tester
 
 ### "Permission denied"
 
-- Sprawdź uprawnienia folderów: `ls -la /var/tasks`
-- Upewnij się że user 1000:1000 ma dostęp
+- Check folder permissions: `ls -la /var/tasks`
+- Ensure user 1000:1000 has access
 
-## 🕐 Jak działa timeout?
+## 🕐 How Timeout Works
 
-Runner.ts implementuje dwuetapowe zabijanie procesu:
+Runner.ts implements two-stage process killing:
 
-1. **Po upływie timeout** (np. 300s):
-   - Ustawia flagę `timedOut = true`
-   - Wysyła `SIGTERM` do procesu Docker (grzeczne zamknięcie)
-   - Ustawia dodatkowy timer na 5 sekund
+1. **After timeout expires** (e.g., 300s):
+   - Sets `timedOut = true` flag
+   - Sends `SIGTERM` to Docker process (graceful shutdown)
+   - Sets additional 5-second timer
 
-2. **Po 5 sekundach** (jeśli proces wciąż działa):
-   - Wysyła `SIGKILL` do procesu (siłowe zabicie)
+2. **After 5 seconds** (if process still running):
+   - Sends `SIGKILL` to process (forced kill)
 
-3. **Gdy proces się kończy normalnie** (przed timeoutem):
-   - `clearTimeout()` anuluje timer
-   - Zwraca normalny wynik z `timedOut = false`
+3. **When process ends normally** (before timeout):
+   - `clearTimeout()` cancels timer
+   - Returns normal result with `timedOut = false`
 
-**Przykład:**
+**Example:**
 
-- Timeout ustawiony: 300s
-- Proces kończy się po 350s
-- Po 300s: wysłany `SIGTERM`, `timedOut = true`
-- Proces się kończy w ciągu 5s
-- Wynik: `success = false`, `timedOut = true`, `score = null`
+- Timeout set: 300s
+- Process ends after 350s
+- After 300s: `SIGTERM` sent, `timedOut = true`
+- Process ends within 5s
+- Result: `success = false`, `timedOut = true`, `score = null`
 
 ---
 
-**To wszystko!** Jeden prosty plik TypeScript do uruchamiania Dockera z parametrami od organizatora 🚀
+**That's it!** One simple TypeScript file for running Docker with organizer-defined parameters 🚀
