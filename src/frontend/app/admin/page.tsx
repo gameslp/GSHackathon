@@ -1997,8 +1997,9 @@ export default function AdminDashboardPage() {
                         </p>
                       ) : providedFilesError ? (
                         <p className="text-sm text-red-600">
-                          {(providedFilesError as Error).message ??
-                            "Failed to load files"}
+                          {providedFilesError instanceof Error
+                            ? providedFilesError.message || "Failed to load files"
+                            : "Failed to load files"}
                         </p>
                       ) : providedFiles.length === 0 ? (
                         <p className="text-sm text-gray-600">
