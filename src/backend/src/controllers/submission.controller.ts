@@ -623,13 +623,15 @@ export const getAICodeAssistance = async (req: AuthRequest, res: Response) => {
     // }
 
     // Get all submission files
+    var file = "submissions/" + pythonFile;
     const files = await SubmissionFileModel.findBySubmission(submissionId);
+
+    files.find(f => f.fileUrl === file || f.fileUrl === '/' + file);
 
     if (!files || files.length === 0) {
       return res.status(400).json({ error: 'No files found in this submission' });
     }
 
-    files.find(f => f.fileUrl === pythonFile);
 
     // Initialize OpenAI client
     const openai = new OpenAI({
@@ -637,7 +639,7 @@ export const getAICodeAssistance = async (req: AuthRequest, res: Response) => {
     });
 
     // const filePath = path.join(__dirname, uploadDir, pythonFile!);
-    const filePath = ProvidedFileModel.getUploadsDir(`${pythonFile!}`);
+    const filePath = ProvidedFileModel.getUploadsDir(`${file!}`);
     const fileSize = fs.statSync(filePath).size;
     
     if (fileSize > 10000) {
