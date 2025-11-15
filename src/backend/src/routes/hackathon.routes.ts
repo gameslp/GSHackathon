@@ -9,6 +9,7 @@ import {
   createHackathon,
   updateHackathon,
   deleteHackathon,
+  getHackathonAutoTesting,
   getActiveHackathons,
   getUpcomingHackathons,
   getHackathonsByOrganizer,
@@ -24,6 +25,12 @@ import {
   updateProvidedFile,
   deleteProvidedFile,
   toggleProvidedFileVisibility,
+  getMyTeamInHackathon,
+  getHackathonSurveyQuestionsAdmin,
+  createSurveyQuestion,
+  updateSurveyQuestion,
+  deleteSurveyQuestion,
+  getHackathonLeaderboard,
 } from '../controllers/hackathon.controller';
 import { auth } from '../middleware/auth';
 import { requireRole } from '../middleware/requireRole';
@@ -846,6 +853,423 @@ hackathonRouter.post(
   ...adminAuth,
   toggleProvidedFileVisibility
 );
+
+/**
+ * @openapi
+ * /hackathons/{hackathonId}/leaderboard:
+ *   get:
+ *     tags:
+ *       - Hackathons
+ *     summary: Get leaderboard for a hackathon
+ *     description: Retrieve paginated leaderboard showing team rankings based on best submission scores
+ *     parameters:
+ *       - in: path
+ *         name: hackathonId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Hackathon ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Number of teams per page
+ *     responses:
+ *       200:
+ *         description: Leaderboard retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 leaderboard:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       rank:
+ *                         type: integer
+ *                       teamId:
+ *                         type: integer
+ *                       teamName:
+ *                         type: string
+ *                       members:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: integer
+ *                             username:
+ *                               type: string
+ *                       bestScore:
+ *                         type: number
+ *                       totalSubmissions:
+ *                         type: integer
+ *                       lastSubmissionAt:
+ *                         type: string
+ *                         format: date-time
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                 currentUserTeamRank:
+ *                   type: integer
+ *                   nullable: true
+ *                   description: Rank of the current user's team (if authenticated)
+ *       400:
+ *         description: Invalid hackathon ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Hackathon not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+hackathonRouter.get('/hackathons/:hackathonId/leaderboard', getHackathonLeaderboard);
+
+/**
+ * @openapi
+ * /hackathons/{id}/auto-testing:
+ *   get:
+ *     tags:
+ *       - Hackathon Management
+ *     summary: Get auto-testing configuration
+ *     description: Check if auto-scoring is available and enabled (organizer/admin only)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Hackathon ID
+ *     responses:
+ *       200:
+ *         description: Auto-testing configuration retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 autoScoringAvailable:
+ *                   type: boolean
+ *                   description: Whether auto-check.py file is provided
+ *                 autoScoringEnabled:
+ *                   type: boolean
+ *                   description: Whether auto-scoring is enabled for this hackathon
+ *       400:
+ *         description: Invalid hackathon ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Not authorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Hackathon not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+hackathonRouter.get('/hackathons/:id/auto-testing', auth, getHackathonAutoTesting);
+
+/**
+ * @openapi
+ * /hackathons/{hackathonId}/my-team:
+ *   get:
+ *     tags:
+ *       - Hackathon Management
+ *     summary: Get current user's team in hackathon
+ *     description: Retrieve the team the current user belongs to in a specific hackathon
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: hackathonId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Hackathon ID
+ *     responses:
+ *       200:
+ *         description: Team retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 inHackathon:
+ *                   type: boolean
+ *                 team:
+ *                   type: object
+ *       404:
+ *         description: Hackathon not found or user not in any team
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                 inHackathon:
+ *                   type: boolean
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+hackathonRouter.get('/hackathons/:hackathonId/my-team', auth, getMyTeamInHackathon);
+
+/**
+ * @openapi
+ * /hackathons/{hackathonId}/survey-questions:
+ *   get:
+ *     tags:
+ *       - Hackathon Management
+ *     summary: Get survey questions for a hackathon
+ *     description: Retrieve all survey questions (admin view)
+ *     parameters:
+ *       - in: path
+ *         name: hackathonId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Hackathon ID
+ *     responses:
+ *       200:
+ *         description: Survey questions retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 questions:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       400:
+ *         description: Invalid hackathon ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Hackathon not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+hackathonRouter.get('/hackathons/:hackathonId/survey-questions', getHackathonSurveyQuestionsAdmin);
+
+/**
+ * @openapi
+ * /hackathons/{hackathonId}/survey-questions:
+ *   post:
+ *     tags:
+ *       - Hackathon Management
+ *     summary: Create a survey question
+ *     description: Add a new survey question to the hackathon
+ *     parameters:
+ *       - in: path
+ *         name: hackathonId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Hackathon ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - question
+ *             properties:
+ *               question:
+ *                 type: string
+ *               order:
+ *                 type: integer
+ *     responses:
+ *       201:
+ *         description: Survey question created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 question:
+ *                   type: object
+ *       400:
+ *         description: Validation failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Hackathon not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+hackathonRouter.post('/hackathons/:hackathonId/survey-questions', createSurveyQuestion);
+
+/**
+ * @openapi
+ * /survey-questions/{questionId}:
+ *   put:
+ *     tags:
+ *       - Hackathon Management
+ *     summary: Update a survey question
+ *     description: Modify an existing survey question
+ *     parameters:
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Question ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               question:
+ *                 type: string
+ *               order:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Survey question updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 question:
+ *                   type: object
+ *       400:
+ *         description: Invalid question ID or validation failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Survey question not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+hackathonRouter.put('/survey-questions/:questionId', updateSurveyQuestion);
+
+/**
+ * @openapi
+ * /survey-questions/{questionId}:
+ *   delete:
+ *     tags:
+ *       - Hackathon Management
+ *     summary: Delete a survey question
+ *     description: Remove a survey question from the hackathon
+ *     parameters:
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Question ID
+ *     responses:
+ *       200:
+ *         description: Survey question deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 questionId:
+ *                   type: integer
+ *       400:
+ *         description: Invalid question ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Survey question not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+hackathonRouter.delete('/survey-questions/:questionId', deleteSurveyQuestion);
 
 hackathonRouter.get('/judges/hackathons', auth, getJudgeHackathons);
 

@@ -100,6 +100,7 @@ const updateHackathonSchema = z.object({
   ramLimit: positiveInt.max(2048).optional(),
   submissionTimeout: positiveInt.optional(),
   submissionLimit: positiveInt.optional(),
+  autoScoringEnabled: booleanish.optional(),
 }).refine(data => {
   if (data.teamMax !== undefined && data.teamMin !== undefined) {
     return data.teamMax >= data.teamMin;
@@ -592,7 +593,7 @@ export const updateHackathon = async (req: AuthRequest, res: Response) => {
     }
 
     // Check if hackathon exists
-    const existingHackathon = await HackathonModel.findById(hackathonId);
+    const existingHackathon = await HackathonModel.findByIdWithFiles(hackathonId);
 
     if (!existingHackathon) {
       return res.status(404).json({ error: 'Hackathon not found' });
@@ -622,6 +623,14 @@ export const updateHackathon = async (req: AuthRequest, res: Response) => {
     if (data.ramLimit !== undefined) updateData.ramLimit = data.ramLimit;
     if (data.submissionTimeout !== undefined) updateData.submissionTimeout = data.submissionTimeout;
     if (data.submissionLimit !== undefined) updateData.submissionLimit = data.submissionLimit;
+    if (data.autoScoringEnabled !== undefined) updateData.autoScoringEnabled = data.autoScoringEnabled;
+
+    if (data.autoScoringEnabled === true) {
+      const hasAutoCheckFile = existingHackathon.providedFiles.some(f => f.name === "auto-check.py");
+      if (!hasAutoCheckFile) {
+        return res.status(400).json({ error: 'Auto-scoring cannot be enabled without the "auto-check.py" file provided by the organizer.' });
+      }
+    }
 
     const hackathon = await HackathonModel.update(hackathonId, updateData);
 
@@ -669,6 +678,36 @@ export const deleteHackathon = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error('Delete hackathon error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getHackathonAutoTesting = async (req: AuthRequest, res: Response) => {
+  try {
+    const hackathonId = parseInt(req.params.id);
+    const currentUser = req.user;
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    const hackathon = await HackathonModel.findByIdWithFiles(hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    if (hackathon.organizerId !== currentUser.userId && currentUser.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized to delete this hackathon' });
+    }
+
+    return res.status(200).json({
+      autoScoringAvailable: hackathon.providedFiles.some(f => f.name === "auto-check.py"),
+      autoScoringEnabled: hackathon.autoScoringEnabled || false,
+    });
+  }
+  catch (error) {
+    console.error('Get hackathon auto-testing error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -1401,6 +1440,112 @@ export const deleteSurveyQuestion = async (req: Request, res: Response) => {
     return res.status(200).json({ message: 'Survey question deleted', questionId });
   } catch (error) {
     console.error('Delete survey question error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get leaderboard for a hackathon
+export const getHackathonLeaderboard = async (req: AuthRequest, res: Response) => {
+  try {
+    const hackathonId = parseInt(req.params.hackathonId);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const skip = (page - 1) * limit;
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    // Check if hackathon exists
+    const hackathon = await prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    // Get all accepted teams with their best submission scores
+    const teams = await prisma.team.findMany({
+      where: {
+        hackathonId,
+        isAccepted: true,
+      },
+      include: {
+        members: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+        submissions: {
+          where: {
+            score: {
+              not: null,
+            },
+          },
+          orderBy: {
+            score: 'desc',
+          },
+          take: 1,
+          select: {
+            score: true,
+            sendAt: true,
+          },
+        },
+        _count: {
+          select: {
+            submissions: true,
+          },
+        },
+      },
+    });
+
+    // Filter teams that have at least one scored submission and sort by best score
+    const teamsWithScores = teams
+      .filter((team) => team.submissions.length > 0 && team.submissions[0].score !== null)
+      .map((team) => ({
+        teamId: team.id,
+        teamName: team.name,
+        members: team.members,
+        bestScore: team.submissions[0].score as number,
+        totalSubmissions: team._count.submissions,
+        lastSubmissionAt: team.submissions[0].sendAt,
+      }))
+      .sort((a, b) => b.bestScore - a.bestScore);
+
+    // Add rank to each team
+    const rankedTeams = teamsWithScores.map((team, index) => ({
+      rank: index + 1,
+      ...team,
+    }));
+
+    // Apply pagination
+    const paginatedTeams = rankedTeams.slice(skip, skip + limit);
+
+    // If user is authenticated, find their team's rank
+    let currentUserTeamRank = null;
+    if (req.user) {
+      const userTeam = rankedTeams.find((team) =>
+        team.members.some((member) => member.id === req.user?.userId)
+      );
+      if (userTeam) {
+        currentUserTeamRank = userTeam.rank;
+      }
+    }
+
+    return res.status(200).json({
+      leaderboard: paginatedTeams,
+      pagination: {
+        page,
+        limit,
+        total: rankedTeams.length,
+        totalPages: Math.ceil(rankedTeams.length / limit),
+      },
+      currentUserTeamRank,
+    });
+  } catch (error) {
+    console.error('Get hackathon leaderboard error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };

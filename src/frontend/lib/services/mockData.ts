@@ -181,75 +181,49 @@ export const getCategories = (): Category[] => {
       id: '1',
       name: 'Classification',
       description: 'Categorize data into predefined classes',
-      icon: '🎯',
+      icon: 'classification',
       challengeCount: 42,
     },
     {
       id: '2',
       name: 'Regression',
       description: 'Predict continuous numerical values',
-      icon: '📈',
+      icon: 'regression',
       challengeCount: 38,
     },
     {
       id: '3',
       name: 'NLP',
       description: 'Process and understand human language',
-      icon: '💬',
+      icon: 'nlp',
       challengeCount: 29,
     },
     {
       id: '4',
       name: 'Computer Vision',
       description: 'Analyze and interpret visual information',
-      icon: '👁️',
+      icon: 'vision',
       challengeCount: 51,
     },
     {
       id: '5',
       name: 'Time Series',
       description: 'Forecast trends from sequential data',
-      icon: '⏱️',
+      icon: 'timeseries',
       challengeCount: 24,
     },
     {
       id: '6',
       name: 'Other',
       description: 'Diverse machine learning challenges',
-      icon: '🔬',
+      icon: 'other',
       challengeCount: 16,
     },
   ];
 };
 
-export const getPlatformStats = (): StatisticCard[] => {
-  return [
-    {
-      label: 'Active Challenges',
-      value: 127,
-      icon: '🏆',
-      trend: 12,
-    },
-    {
-      label: 'Data Scientists',
-      value: '45.8K',
-      icon: '👥',
-      trend: 8,
-    },
-    {
-      label: 'Total Prize Pool',
-      value: '$2.4M',
-      icon: '💰',
-      trend: 15,
-    },
-    {
-      label: 'Submissions Today',
-      value: '3.2K',
-      icon: '📊',
-      trend: 5,
-    },
-  ];
-};
+// Platform stats are now fetched from API via usePlatformStats hook
+// This function has been removed - use usePlatformStats() instead
 
 export const getActiveChallenges = (): Challenge[] => {
   return getFeaturedChallenges().filter(c => c.status === 'active');

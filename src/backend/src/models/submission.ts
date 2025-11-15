@@ -1,5 +1,6 @@
+import { SubmissionFileInclude, SubmissionInclude } from 'src/generated/prisma/models';
 import { prisma } from '../lib/prisma';
-import { Prisma } from '@prisma/client';
+import { Prisma, Submission } from '@prisma/client';
 
 export class SubmissionModel {
   static async create(data: Prisma.SubmissionUncheckedCreateInput) {
@@ -8,9 +9,12 @@ export class SubmissionModel {
     });
   }
 
-  static async findById(id: number) {
+  static async findById(id: number, includeFiles: boolean = false) {
     return await prisma.submission.findUnique({
       where: { id },
+      include: {
+        files: includeFiles,
+      },
     });
   }
 
@@ -112,4 +116,39 @@ export class SubmissionModel {
       },
     });
   }
+
+  static async findByIdWithFiles(id: number) {
+    return await prisma.submission.findUnique({
+      where: { id },
+      include: {
+        files: {
+          include: {
+            fileFormat: true,
+          }
+        }
+      },
+    });
+  }
+
+  static async updateScoreComment(submissionId: number, scoreComment: string, scoreId: number, scoreManual: boolean = false) {
+    return await prisma.submission.update({
+      where: { id: submissionId },
+      data: {
+        scoreComment,
+        scoreId,
+        scoreManual,
+        scoredAt: new Date(),
+      },
+    });
+  }
+
+  //  static async updateScore(submissionId: number, score: number, scoreManual: boolean = false) {
+  //   return await prisma.submission.update({
+  //     where: { id: submissionId },
+  //     data: {
+  //       score,
+  //       scoreManual,
+  //     },
+  //   });
+  // }
 }

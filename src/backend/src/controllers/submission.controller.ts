@@ -493,6 +493,9 @@ export const scoreSubmission = async (req: AuthRequest, res: Response) => {
     const updatedSubmission = await SubmissionModel.update(submissionId, {
       score,
       scoreComment: scoreComment || null,
+      scoredAt: new Date(),
+      scoreManual: true,
+      scoreId: null
     });
 
     return res.status(200).json({

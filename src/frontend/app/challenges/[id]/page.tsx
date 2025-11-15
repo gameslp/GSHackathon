@@ -8,6 +8,7 @@ import Header from '@/lib/components/Header';
 import Footer from '@/lib/components/Footer';
 import Button from '@/lib/components/Button';
 import DatasetDownloadModal from '@/lib/components/DatasetDownloadModal';
+import Leaderboard from '@/lib/components/Leaderboard';
 import { useHackathon } from '@/lib/hooks/useHackathons';
 import { useHackathonSurvey, useMyTeam, useCreateTeam, useJoinTeam } from '@/lib/hooks/useTeams';
 import { useProvidedFiles } from '@/lib/hooks/useHackathonFiles';
@@ -734,6 +735,8 @@ function ChallengePageContent({ hackathonId }: { hackathonId: number }) {
             )}
           </div>
         )}
+
+        <Leaderboard hackathonId={hackathonId} currentTeamId={myTeam?.id} />
       </main>
 
       {hackathon && (
@@ -741,7 +744,7 @@ function ChallengePageContent({ hackathonId }: { hackathonId: number }) {
           isOpen={showDatasetModal}
           onClose={() => setShowDatasetModal(false)}
           resources={datasetResources}
-          challengeTitle={hackathon.title}
+          challengeTitle={hackathon.title || 'Challenge'}
         />
       )}
 
