@@ -19,7 +19,7 @@ export interface UpdateSubmissionFileFormatData {
 
 export class SubmissionFileFormatModel {
   static async create(data: CreateSubmissionFileFormatData) {
-    return await prisma.submissionFile.create({
+    return await prisma.submissionFileFormat.create({
       data,
       include: {
         hackathon: {
@@ -33,7 +33,7 @@ export class SubmissionFileFormatModel {
   }
 
   static async findById(id: number) {
-    return await prisma.submissionFile.findUnique({
+    return await prisma.submissionFileFormat.findUnique({
       where: { id },
       include: {
         hackathon: {
@@ -47,7 +47,7 @@ export class SubmissionFileFormatModel {
   }
 
   static async findAll() {
-    return await prisma.submissionFile.findMany({
+    return await prisma.submissionFileFormat.findMany({
       include: {
         hackathon: {
           select: {
@@ -63,7 +63,7 @@ export class SubmissionFileFormatModel {
   }
 
   static async findByHackathon(hackathonId: number) {
-    return await prisma.submissionFile.findMany({
+    return await prisma.submissionFileFormat.findMany({
       where: { hackathonId },
       orderBy: {
         createdAt: 'asc',
@@ -72,7 +72,7 @@ export class SubmissionFileFormatModel {
   }
 
   static async update(id: number, data: UpdateSubmissionFileFormatData) {
-    return await prisma.submissionFile.update({
+    return await prisma.submissionFileFormat.update({
       where: { id },
       data,
       include: {
@@ -87,7 +87,7 @@ export class SubmissionFileFormatModel {
   }
 
   static async delete(id: number) {
-    return await prisma.submissionFile.delete({
+    return await prisma.submissionFileFormat.delete({
       where: { id },
     });
   }

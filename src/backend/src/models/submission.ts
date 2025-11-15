@@ -14,6 +14,16 @@ export class SubmissionModel {
     });
   }
 
+  static async isSend(id: number) {
+    const submission = await prisma.submission.findUnique({
+      where: { id },
+      select: {
+        sendAt: true,
+      },
+    });
+    return submission?.sendAt !== null;
+  }
+
   static async findByTeam(teamId: number) {
     return await prisma.submission.findMany({
       where: { teamId },
@@ -39,6 +49,15 @@ export class SubmissionModel {
         hackathonId,
       },
     });
+  }
+
+  static async isTeamSubmissionOwner(submissionId: number, teamId: number) {
+    return prisma.submission.count({
+      where: {
+        id: submissionId,
+        teamId,
+      },
+    }).then(count => count > 0);
   }
 
   static async update(id: number, data: Prisma.SubmissionUncheckedUpdateInput) {
