@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -8,11 +9,14 @@ const Footer = () => {
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           <div>
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="flex items-center justify-center w-10 h-10 bg-[#7297c5] rounded-lg">
-                <span className="text-white font-bold text-xl">H</span>
-              </div>
-              <span className="text-xl font-bold">HackathonHub</span>
+            <div className="flex items-center mb-4">
+              <Image 
+                src="/logo_biale.png" 
+                alt="HackathonHub Logo" 
+                width={180} 
+                height={40} 
+                className="object-contain"
+              />
             </div>
             <p className="text-gray-400 text-sm">
               The world&rsquo;s leading platform for data science competitions and collaborative learning.
