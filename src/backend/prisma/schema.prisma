@@ -81,7 +81,7 @@ model Hackathon {
   resources   HackathonResource[]
 
   threadLimit Int?
-  ramLimit     Int?
+  ramLimit     Int?       // in MB
   submissionTimeout Int? // in seconds
   submissionLimit   Int?
 
@@ -151,6 +151,7 @@ model ProvidedFile {
   id          Int      @id @default(autoincrement())
   hackathonId Int
 
+  name        String   @default("file.txt")
   title       String
   fileUrl     String
   public      Boolean  @default(false)
@@ -199,6 +200,9 @@ model Submission {
 
   score       Float?
   scoreComment String?   @db.Text
+  scoreManual  Boolean  @default(false)
+  scoredAt    DateTime?
+  scoreId      Int?
 
   team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   hackathon   Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
