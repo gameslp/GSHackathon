@@ -6,6 +6,7 @@ import {
   getHackathonSubmissions,
   getMyTeamSubmission,
   scoreSubmission,
+  getAICodeAssistance,
 } from '../controllers/submission.controller';
 import { auth } from '../middleware/auth';
 
@@ -413,5 +414,88 @@ submissionRouter.get('/hackathons/:hackathonId/my-submission', auth, getMyTeamSu
  *               $ref: '#/components/schemas/Error'
  */
 submissionRouter.post('/submissions/:submissionId/score', auth, scoreSubmission);
+
+/**
+ * @openapi
+ * /submissions/{submissionId}/ai-assistance:
+ *   post:
+ *     tags:
+ *       - Submissions
+ *     summary: Get AI code assistance
+ *     description: Analyze a specific Python file in submission and get AI-generated hints from ChatGPT (team member only)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: submissionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Submission ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - pythonFile
+ *             properties:
+ *               pythonFile:
+ *                 type: string
+ *                 description: Path to the Python file to analyze (must end with .py)
+ *                 example: "solution.py"
+ *     responses:
+ *       200:
+ *         description: AI assistance generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "AI assistance generated successfully"
+ *                 assistance:
+ *                   type: object
+ *                   properties:
+ *                     hints:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           message:
+ *                             type: string
+ *                             description: Hint or suggestion message
+ *                           line:
+ *                             type: integer
+ *                             description: Line number where the issue occurs
+ *                       description: Array of AI-generated hints with line numbers
+ *       400:
+ *         description: Invalid submission ID, pythonFile not provided, or file too large (>10KB)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Not authorized to get assistance for this submission
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Submission not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error or OpenAI API not configured
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+submissionRouter.post('/submissions/:submissionId/ai-assistance', auth, getAICodeAssistance);
 
 export default submissionRouter;

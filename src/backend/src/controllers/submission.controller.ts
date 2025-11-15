@@ -5,6 +5,10 @@ import { SubmissionFileModel } from '../models/submissionFile';
 import { HackathonModel } from '../models/hackathon';
 import { TeamModel } from '../models/team';
 import { AuthRequest } from '../middleware/auth';
+import OpenAI from 'openai';
+import fs from 'fs';
+import path from 'path';
+import { uploadDir } from './fileUpload.controller';
 
 // Zod validation schemas
 const submitSchema = z.object({
@@ -311,6 +315,114 @@ export const scoreSubmission = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error('Score submission error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get AI assistance for submission's Python code
+export const getAICodeAssistance = async (req: AuthRequest, res: Response) => {
+  try {
+    const submissionId = parseInt(req.params.submissionId);
+    const pythonFile = req.body.pythonFile as string | undefined;
+
+    if (!submissionId || isNaN(submissionId)) {
+      return res.status(400).json({ error: 'Invalid submission ID' });
+    }
+
+    // Check if submission exists
+    const submission = await SubmissionModel.findById(submissionId);
+
+    if (!submission) {
+      return res.status(404).json({ error: 'Submission not found' });
+    }
+   
+    if (!pythonFile && pythonFile!.endsWith('.py')) {
+      return res.status(400).json({ error: 'pythonFile parameter is required' });
+    }
+
+    // Get user's team
+    const userTeam = await TeamModel.getUserTeamInHackathon(req.user.userId, submission.hackathonId);
+
+    if (!userTeam) {
+      return res.status(403).json({ error: 'You are not part of an accepted team in this hackathon' });
+    }
+
+    // Check if user's team owns this submission
+    const isOwner = await SubmissionModel.isTeamSubmissionOwner(submissionId, userTeam.id);
+
+    if (!isOwner) {
+      return res.status(403).json({ error: 'Not authorized to get assistance for this submission' });
+    }
+
+    // Get all submission files
+    const files = await SubmissionFileModel.findBySubmission(submissionId);
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: 'No files found in this submission' });
+    }
+
+    files.find(f => f.fileUrl === pythonFile);
+
+    // Initialize OpenAI client
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    const filePath = path.join(__dirname, uploadDir, pythonFile!);
+    const fileSize = fs.statSync(filePath).size;
+    
+    if (fileSize > 10000) {
+      return res.status(400).json({ error: 'The specified file is too large for analysis' });
+    }
+    
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+
+    // Prepare code context for ChatGPT
+    const prompt = `You are a strict coding assistant for a data science hackathon. Analyze the following Python code and provide:
+
+1. Potential improvements or optimizations
+2. Any bugs or issues you notice
+3. Suggestions for better practices
+
+and return them as json: 
+{"hints": [{"message": <string>, "line": <number>}]}
+and return nothing else.
+
+Here is the code:
+
+${fileContent}`;
+
+    // Call ChatGPT API
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a strict coding assistant for a data science hackathon. Analyze the following Python code and provide constructive feedback in the specified JSON format in english. Return nothing else.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      max_tokens: 1000,
+      temperature: 0.7,
+    });
+
+    const assistanceResponse = completion.choices[0]?.message?.content || 'No response generated';
+    const typedResponse: { hints: { message: string; line: number }[] } = JSON.parse(assistanceResponse);
+
+    return res.status(200).json({
+      message: 'AI assistance generated successfully',
+      assistance: typedResponse,
+    });
+  } catch (error) {
+    console.error('Get AI code assistance error:', error);
+
+    if (error instanceof Error && error.message.includes('API key')) {
+      return res.status(500).json({ error: 'OpenAI API not configured' });
+    }
+
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
