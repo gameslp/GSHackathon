@@ -10,7 +10,7 @@ const statsRouter = Router();
  *     tags:
  *       - Statistics
  *     summary: Get platform statistics
- *     description: Returns general platform statistics including active challenges, registered users, total prize pool, and daily submissions
+ *     description: Returns general platform statistics including active challenges, registered users, total prize pool, daily submissions, and category breakdown
  *     responses:
  *       200:
  *         description: Platform statistics retrieved successfully
@@ -45,7 +45,7 @@ const statsRouter = Router();
  *                       properties:
  *                         value:
  *                           type: integer
- *                           description: Sum of prizes from active hackathons (in dollars)
+ *                           description: Sum of prizes from active and upcoming hackathons (in dollars)
  *                         trend:
  *                           type: integer
  *                           description: Percentage change compared to last month
@@ -58,6 +58,27 @@ const statsRouter = Router();
  *                         trend:
  *                           type: integer
  *                           description: Percentage change compared to yesterday
+ *                     categoryBreakdown:
+ *                       type: object
+ *                       properties:
+ *                         CLASSIFICATION:
+ *                           type: integer
+ *                           description: Number of Classification hackathons
+ *                         REGRESSION:
+ *                           type: integer
+ *                           description: Number of Regression hackathons
+ *                         NLP:
+ *                           type: integer
+ *                           description: Number of NLP hackathons
+ *                         COMPUTER_VISION:
+ *                           type: integer
+ *                           description: Number of Computer Vision hackathons
+ *                         TIME_SERIES:
+ *                           type: integer
+ *                           description: Number of Time Series hackathons
+ *                         OTHER:
+ *                           type: integer
+ *                           description: Number of Other hackathons
  *                 generatedAt:
  *                   type: string
  *                   format: date-time

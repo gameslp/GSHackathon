@@ -7,12 +7,11 @@ import ChallengeCard from '@/lib/components/ChallengeCard';
 import CategoryCard from '@/lib/components/CategoryCard';
 import StatsCard from '@/lib/components/StatsCard';
 import FaultyTerminal from '@/lib/components/FaultyTerminal';
-import { getCategories } from '@/lib/services/mockData';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useHackathons } from '@/lib/hooks/useHackathons';
 import { usePlatformStats } from '@/lib/hooks/usePlatformStats';
 import type { Hackathon } from '@/lib/api/client';
-import type { StatisticCard } from '@/types';
+import type { StatisticCard, Category } from '@/types';
 
 export default function Home() {
   const { user } = useAuth();
@@ -21,7 +20,54 @@ export default function Home() {
     query: { page: 1, limit: 3 } 
   });
   const { data: platformStatsData, isLoading: statsLoading, error: statsError } = usePlatformStats();
-  const categories = getCategories();
+  
+  // Build categories from API data
+  const categories: Category[] = platformStatsData?.stats.categoryBreakdown
+    ? [
+        {
+          id: '1',
+          name: 'Classification',
+          description: 'Categorize data into predefined classes',
+          icon: 'classification',
+          challengeCount: platformStatsData.stats.categoryBreakdown.CLASSIFICATION,
+        },
+        {
+          id: '2',
+          name: 'Regression',
+          description: 'Predict continuous numerical values',
+          icon: 'regression',
+          challengeCount: platformStatsData.stats.categoryBreakdown.REGRESSION,
+        },
+        {
+          id: '3',
+          name: 'NLP',
+          description: 'Process and understand human language',
+          icon: 'nlp',
+          challengeCount: platformStatsData.stats.categoryBreakdown.NLP,
+        },
+        {
+          id: '4',
+          name: 'Computer Vision',
+          description: 'Analyze and interpret visual information',
+          icon: 'vision',
+          challengeCount: platformStatsData.stats.categoryBreakdown.COMPUTER_VISION,
+        },
+        {
+          id: '5',
+          name: 'Time Series',
+          description: 'Forecast trends from sequential data',
+          icon: 'timeseries',
+          challengeCount: platformStatsData.stats.categoryBreakdown.TIME_SERIES,
+        },
+        {
+          id: '6',
+          name: 'Other',
+          description: 'Diverse machine learning challenges',
+          icon: 'other',
+          challengeCount: platformStatsData.stats.categoryBreakdown.OTHER,
+        },
+      ]
+    : [];
   
   // Transform API data to StatisticCard format for display
   const platformStats: StatisticCard[] = platformStatsData?.stats
@@ -185,9 +231,15 @@ export default function Home() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-              {categories.map((category) => (
-                <CategoryCard key={category.id} category={category} />
-              ))}
+              {statsLoading ? (
+                <div className="col-span-full text-center py-8 text-gray-500">Loading categories...</div>
+              ) : categories.length === 0 ? (
+                <div className="col-span-full text-center py-8 text-gray-500">No categories available</div>
+              ) : (
+                categories.map((category) => (
+                  <CategoryCard key={category.id} category={category} />
+                ))
+              )}
             </div>
           </div>
         </section>
