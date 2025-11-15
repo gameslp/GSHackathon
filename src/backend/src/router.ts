@@ -7,6 +7,8 @@ import adminRouter from "./routes/admin.routes";
 import teamRouter from "./routes/team.routes";
 import hackathonRouter from "./routes/hackathon.routes";
 import fileRouter from "./routes/files.routes";
+import submissionRouter from "./routes/submission.routes";
+import fileUploadRouter from "./routes/fileUpload.routes";
 
 export function setupRoutes(app: Application) {
 
@@ -24,6 +26,8 @@ export function setupRoutes(app: Application) {
       app.use(adminRouter);
       app.use(teamRouter);
       app.use(hackathonRouter);
+      app.use(submissionRouter);
+      app.use(fileUploadRouter);
       app.use(fileRouter);
       app.use(healthRouter);
 

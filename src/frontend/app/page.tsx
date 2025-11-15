@@ -7,14 +7,29 @@ import ChallengeCard from '@/lib/components/ChallengeCard';
 import CategoryCard from '@/lib/components/CategoryCard';
 import StatsCard from '@/lib/components/StatsCard';
 import FaultyTerminal from '@/lib/components/FaultyTerminal';
-import { getFeaturedChallenges, getCategories, getPlatformStats } from '@/lib/services/mockData';
+import { getCategories, getPlatformStats } from '@/lib/services/mockData';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useHackathons } from '@/lib/hooks/useHackathons';
 
 export default function Home() {
   const { user } = useAuth();
-  const featuredChallenges = getFeaturedChallenges().slice(0, 3);
+  const { data: hackathonsData, isLoading: hackathonsLoading } = useHackathons({ 
+    url: '/hackathons',
+    query: { page: 1, limit: 3 } 
+  });
   const categories = getCategories();
   const platformStats = getPlatformStats();
+  
+  // Map API hackathons to Challenge type for display
+  const featuredChallenges = (hackathonsData?.hackathons || []).map((h: any) => ({
+    ...h,
+    category: h.type || 'Other',
+    difficulty: 'Intermediate' as const,
+    participants: 0,
+    daysRemaining: h.endDate ? Math.ceil((new Date(h.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0,
+    status: 'active' as const,
+    organizerName: h.organizer?.username || 'Unknown',
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -45,7 +60,7 @@ export default function Home() {
             />
           </div>
           <div className="container mx-auto px-4 relative z-10">
-            <div className="max-w-4xl mx-auto text-center bg-white/95 rounded-lg p-8 md:p-12">
+            <div className="max-w-4xl mx-auto text-center rounded-lg p-8 md:p-12">
               <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
                 Compete. Learn. Showcase Your Data Science Skills.
               </h1>
@@ -57,7 +72,7 @@ export default function Home() {
                 <Button variant="secondary" size="lg" href="/signup">
                   Get Started Free
                 </Button>
-                <Button variant="outline" size="lg" href="/challenges" className="border-black text-black hover:bg-black hover:text-white">
+                <Button variant="outline" size="lg" href="/challenges">
                   Explore Challenges
                 </Button>
               </div>
@@ -93,9 +108,15 @@ export default function Home() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredChallenges.map((challenge) => (
-                <ChallengeCard key={challenge.id} challenge={challenge} />
-              ))}
+              {hackathonsLoading ? (
+                <div className="col-span-full text-center py-8 text-gray-500">Loading challenges...</div>
+              ) : featuredChallenges.length === 0 ? (
+                <div className="col-span-full text-center py-8 text-gray-500">No challenges available</div>
+              ) : (
+                featuredChallenges.map((challenge) => (
+                  <ChallengeCard key={challenge.id} challenge={challenge} />
+                ))
+              )}
             </div>
           </div>
         </section>

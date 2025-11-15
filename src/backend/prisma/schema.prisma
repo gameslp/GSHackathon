@@ -180,7 +180,7 @@ model Submission {
   id          Int      @id @default(autoincrement())
   teamId      Int
   hackathonId Int
-  url         String
+
   score       Float?
   scoreComment String?   @db.Text
 
@@ -188,6 +188,7 @@ model Submission {
   hackathon   Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
   files       SubmissionFile[]
 
+  sendAt      DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
