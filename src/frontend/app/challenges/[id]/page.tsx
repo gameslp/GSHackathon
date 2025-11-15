@@ -761,7 +761,7 @@ function ChallengePageContent({ hackathonId }: { hackathonId: number }) {
                                       'File';
                                     const fileHref = file.fileUrl?.startsWith('http')
                                       ? file.fileUrl
-                                      : `${API_BASE_URL}${file.fileUrl}`;
+                                      : `${API_BASE_URL}/uploads${file.fileUrl}`;
                                     return (
                                       <li key={file.id} className="flex items-center justify-between">
                                         <span className="text-gray-700">{label}</span>
@@ -844,7 +844,7 @@ function ChallengePageContent({ hackathonId }: { hackathonId: number }) {
                       </p>
                     </div>
                     <a
-                      href={`${API_BASE_URL}${file.fileUrl}`}
+                      href={`${API_BASE_URL}/uploads${file.fileUrl}`}
                       className="text-sm font-semibold text-primary hover:underline"
                       target="_blank"
                       rel="noreferrer"

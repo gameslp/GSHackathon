@@ -136,7 +136,7 @@ export default function DatasetDownloadModal({
       for (const resource of selectedResources) {
         const downloadUrl = resource.url.startsWith('http')
           ? resource.url
-          : `${API_BASE_URL}${resource.url}`;
+          : `${API_BASE_URL}/uploads${resource.url}`;
 
         const response = await fetch(downloadUrl, {
           credentials: 'include',
