@@ -1,7 +1,5 @@
 'use client';
 
-/* eslint-disable @next/next/no-img-element */
-
 import { use, useMemo, useState } from 'react';
 import { notFound, useRouter } from 'next/navigation';
 import Header from '@/lib/components/Header';
@@ -300,83 +298,207 @@ function ChallengePageContent({ hackathonId }: { hackathonId: number }) {
     notFound();
   }
 
+  const formatDateTime = (value?: string | null) =>
+    value ? new Date(value).toLocaleString() : 'TBD';
+  const formatRange = (start?: string | null, end?: string | null) => {
+    if (!start && !end) return 'TBD';
+    if (start && end) {
+      return `${formatDateTime(start)} → ${formatDateTime(end)}`;
+    }
+    return start ? formatDateTime(start) : formatDateTime(end);
+  };
+
+  const highlightCards = [
+    {
+      label: 'Registration window',
+      value: formatRange(hackathon.registrationOpen, hackathon.registrationClose),
+      helper: registrationStatus.label,
+    },
+    {
+      label: 'Event schedule',
+      value: formatRange(hackathon.startDate, hackathon.endDate),
+      helper:
+        hackathon.startDate && hackathon.endDate
+          ? `${new Date(hackathon.startDate).toLocaleDateString()} → ${new Date(
+              hackathon.endDate
+            ).toLocaleDateString()}`
+          : undefined,
+    },
+    {
+      label: 'Prize pool',
+      value: `$${hackathon.prize?.toLocaleString() ?? 0}`,
+      helper: 'Awarded to the best submissions',
+    },
+    {
+      label: 'Team size',
+      value: `${hackathon.teamMin} – ${hackathon.teamMax}`,
+      helper: 'members per team',
+    },
+  ];
+
+  const systemCards = [
+    {
+      label: 'Submission limit',
+      value: hackathon.submissionLimit ?? 'Unlimited',
+      helper: 'Total finalized submissions allowed',
+    },
+    {
+      label: 'Submission timeout',
+      value: hackathon.submissionTimeout ? `${hackathon.submissionTimeout}s` : 'N/A',
+      helper: 'Execution time per submission',
+    },
+    {
+      label: 'Thread limit',
+      value: hackathon.threadLimit ?? 'N/A',
+      helper: 'Max threads per submission',
+    },
+    {
+      label: 'RAM limit',
+      value: hackathon.ramLimit ? `${hackathon.ramLimit} GB` : 'N/A',
+      helper: 'Memory per submission',
+    },
+  ];
+
+  const datasetDisabled = datasetResources.length === 0;
+  const canSubmit = Boolean(myTeam?.isAccepted);
+  const heroHasBackground = Boolean(thumbnailUrl);
+  const heroTitleClass = heroHasBackground ? 'text-white' : 'text-black';
+  const heroBodyClass = heroHasBackground ? 'text-white/85' : 'text-gray-600';
+  const heroStatusClass = heroHasBackground ? 'text-white/80' : 'text-gray-500';
+  const highlightCardClasses = heroHasBackground
+    ? 'bg-white/10 border border-white/30 text-white'
+    : 'bg-white/80 border border-gray-200 text-black';
+  const highlightLabelClass = heroHasBackground ? 'text-white/80' : 'text-gray-500';
+  const highlightHelperClass = heroHasBackground ? 'text-white/70' : 'text-gray-500';
+  const prizeCardClasses = heroHasBackground
+    ? 'bg-white/15 border border-white/30 text-white'
+    : 'bg-white border border-gray-200 text-black';
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="container mx-auto px-4 py-12 space-y-8">
-        <div className="bg-white border border-gray-200 rounded-lg p-8">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-4">
-                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusBadge.className}`}>
-                  {statusBadge.label}
-                </span>
-                <span className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-700">
-                  {hackathon.type?.replace('_', ' ') ?? 'Category'}
-                </span>
+        <section className="rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="relative">
+            {thumbnailUrl && (
+              <>
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage: `url(${thumbnailUrl})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20" />
+              </>
+            )}
+            <div className={`relative p-6 sm:p-8 ${heroHasBackground ? 'text-white' : 'text-black'}`}>
+              <div className="flex flex-col lg:flex-row gap-6">
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-3 mb-4">
+                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusBadge.className}`}>
+                      {statusBadge.label}
+                    </span>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                        heroHasBackground ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {hackathon.type?.replace('_', ' ') ?? 'Category'}
+                    </span>
+                  </div>
+                  <h1 className={`text-4xl font-bold mb-4 ${heroTitleClass}`}>{hackathon.title}</h1>
+                  <p className={`mb-6 text-lg max-w-3xl ${heroBodyClass}`}>{hackathon.description}</p>
+                  <div className="flex flex-wrap items-center gap-3">
+                    {registrationStatus.status === 'open' && !myTeam && (
+                      <Button variant="primary" onClick={openJoinModal}>
+                        {user ? 'Join Hackathon' : 'Sign in to join'}
+                      </Button>
+                    )}
+                    {canSubmit && (
+                      <Button variant="primary" href={`/challenges/${hackathonId}/submit`}>
+                        Submit solution
+                      </Button>
+                    )}
+                    <Button
+                      variant={heroHasBackground ? 'secondary' : 'outline'}
+                      onClick={() => setShowDatasetModal(true)}
+                      disabled={datasetDisabled}
+                    >
+                      Download resources
+                    </Button>
+                    <p className={`text-sm ${heroStatusClass}`}>{registrationStatus.label}</p>
+                  </div>
+                </div>
+                <div className="w-full lg:w-auto">
+                  <div className={`${prizeCardClasses} rounded-2xl p-4 text-center shadow-sm`}>
+                    <p className="text-xs uppercase tracking-wide mb-1 opacity-80">Prize pool</p>
+                    <p className="text-3xl font-bold">
+                      ${hackathon.prize?.toLocaleString() ?? 0}
+                    </p>
+                    <p className="text-xs mt-1 opacity-80">
+                      {hackathon.teamMin}–{hackathon.teamMax} teammates
+                    </p>
+                  </div>
+                </div>
               </div>
-              <h1 className="text-4xl font-bold text-black mb-4">{hackathon.title}</h1>
-              <p className="text-gray-600 mb-4">{hackathon.description}</p>
-              <p className="text-sm text-gray-500">{registrationStatus.label}</p>
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {highlightCards.map((card) => (
+                  <div key={card.label} className={`${highlightCardClasses} rounded-2xl p-4 shadow-sm`}>
+                    <p className={`text-xs uppercase tracking-wide mb-1 ${highlightLabelClass}`}>
+                      {card.label}
+                    </p>
+                    <p className="text-lg font-semibold">{card.value}</p>
+                    {card.helper && (
+                      <p className={`text-xs mt-1 ${highlightHelperClass}`}>{card.helper}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div
+                  className={`rounded-2xl p-5 ${
+                    heroHasBackground ? 'bg-white/20 text-white border border-white/30' : 'bg-white border border-gray-200 text-gray-700'
+                  }`}
+                >
+                  <h3 className="text-lg font-semibold mb-2">Challenge description</h3>
+                  <p className="text-sm whitespace-pre-line">{hackathon.description}</p>
+                </div>
+                <div
+                  className={`rounded-2xl p-5 ${
+                    heroHasBackground ? 'bg-white/20 text-white border border-white/30' : 'bg-white border border-gray-200 text-gray-700'
+                  }`}
+                >
+                  <h3 className="text-lg font-semibold mb-2">Rules</h3>
+                  <p className="text-sm whitespace-pre-line">
+                    {hackathon.rules ?? 'Rules will be announced soon.'}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="text-right space-y-2">
-              <p className="text-sm text-gray-500">Prize pool</p>
-              <p className="text-3xl font-bold text-black">${hackathon.prize?.toLocaleString() ?? 0}</p>
-              <Button variant="outline" onClick={() => setShowDatasetModal(true)} disabled={datasetResources.length === 0}>
-                Download resources
-              </Button>
-            </div>
           </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6 text-sm text-gray-600">
-          <div>
-            <p className="font-semibold text-black">Team size</p>
-            <p>
-              {hackathon.teamMin} - {hackathon.teamMax} members
-            </p>
-          </div>
-          <div>
-            <p className="font-semibold text-black">Registration opens</p>
-            <p>{hackathon.registrationOpen ? new Date(hackathon.registrationOpen).toLocaleString() : 'TBD'}</p>
-          </div>
-          <div>
-            <p className="font-semibold text-black">Starts</p>
-            <p>{hackathon.startDate ? new Date(hackathon.startDate).toLocaleString() : 'TBD'}</p>
-          </div>
-          <div>
-            <p className="font-semibold text-black">Ends</p>
-            <p>{hackathon.endDate ? new Date(hackathon.endDate).toLocaleString() : 'TBD'}</p>
-          </div>
-        </div>
-        {thumbnailUrl && (
-          <div className="mt-6">
-            <img
-              src={thumbnailUrl}
-              alt={`${hackathon.title} thumbnail`}
-              className="w-full h-72 object-cover rounded-lg border border-gray-200"
-            />
-          </div>
-        )}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-4 text-sm text-gray-600">
+        </section>
+
+        <section className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <p className="font-semibold text-black">Registration closes</p>
-              <p>{hackathon.registrationClose ? new Date(hackathon.registrationClose).toLocaleString() : 'TBD'}</p>
-            </div>
-            <div>
-              <p className="font-semibold text-black">Submission limit</p>
-              <p>{hackathon.submissionLimit ?? 'Unlimited'}</p>
-            </div>
-            <div>
-              <p className="font-semibold text-black">Submission timeout (s)</p>
-              <p>{hackathon.submissionTimeout ?? 'N/A'}</p>
-            </div>
-            <div>
-              <p className="font-semibold text-black">Thread limit / RAM</p>
-              <p>
-                {hackathon.threadLimit ?? 'N/A'} threads / {hackathon.ramLimit ?? 'N/A'} GB
+              <h2 className="text-2xl font-bold text-black">Submission & system limits</h2>
+              <p className="text-sm text-gray-500">
+                Understand the technical guardrails before you upload a submission.
               </p>
             </div>
           </div>
-        </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {systemCards.map((card) => (
+              <div key={card.label} className="rounded-2xl border border-gray-200 p-4 bg-gray-50">
+                <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">{card.label}</p>
+                <p className="text-xl font-semibold text-black">{card.value}</p>
+                <p className="text-xs text-gray-500 mt-1">{card.helper}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white border border-gray-200 rounded-lg p-6">

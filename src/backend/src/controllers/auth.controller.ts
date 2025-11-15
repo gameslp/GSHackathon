@@ -103,12 +103,33 @@ export const registerConfirm = async (req: Request, res: Response) => {
     }
 
     // Mark user as confirmed
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: { totpConfirmed: true },
     });
 
-    return res.status(200).json({ message: 'Registration confirmed successfully' });
+    const payload = {
+      userId: updatedUser.id,
+      username: updatedUser.username,
+      role: updatedUser.role,
+    };
+    const jwtToken = jwt.sign(payload, JWT_SECRET!, { expiresIn: '7d' });
+
+    res.cookie('auth_token', jwtToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.status(200).json({
+      message: 'Registration confirmed successfully',
+      user: {
+        id: updatedUser.id,
+        username: updatedUser.username,
+        role: updatedUser.role,
+      },
+    });
   } catch (error) {
     console.error('Register confirm error:', error);
     return res.status(500).json({ error: 'Internal server error' });

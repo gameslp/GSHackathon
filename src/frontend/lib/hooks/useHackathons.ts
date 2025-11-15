@@ -279,7 +279,7 @@ export function useJudgeHackathons(options?: { enabled?: boolean }) {
     queryKey: hackathonKeys.judgeAssignments(),
     enabled: options?.enabled ?? true,
     queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/hackathons/judges/hackathons`, {
+      const response = await fetch(`${API_BASE_URL}/judges/hackathons`, {
         credentials: 'include',
       });
 

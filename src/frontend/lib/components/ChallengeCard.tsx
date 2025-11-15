@@ -9,13 +9,6 @@ interface ChallengeCardProps {
 }
 
 const ChallengeCard = ({ challenge }: ChallengeCardProps) => {
-  const difficultyColors = {
-    Beginner: 'bg-green-100 text-green-800',
-    Intermediate: 'bg-blue-100 text-blue-800',
-    Advanced: 'bg-orange-100 text-orange-800',
-    Expert: 'bg-red-100 text-red-800',
-  };
-
   const formatPrize = (prize: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -36,12 +29,12 @@ const ChallengeCard = ({ challenge }: ChallengeCardProps) => {
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full">
-      <div className="relative h-48">
+      <div className="relative aspect-video w-full bg-gray-100">
         {thumbnailUrl ? (
           <img
             src={thumbnailUrl}
             alt={`${challenge.title} thumbnail`}
-            className="h-full w-full object-cover"
+            className="object-cover w-full h-full"
           />
         ) : (
           <div className="h-full bg-linear-to-br from-[#7297c5] to-[#5a7ba3] flex items-center justify-center">
@@ -63,12 +56,6 @@ const ChallengeCard = ({ challenge }: ChallengeCardProps) => {
       </div>
       
       <div className="p-5 flex-1 flex flex-col">
-        <div className="flex items-start justify-between mb-3">
-          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${difficultyColors[challenge.difficulty]}`}>
-            {challenge.difficulty}
-          </span>
-          <span className="text-xs text-gray-500">{challenge.category}</span>
-        </div>
         
         <h3 className="text-lg font-bold text-black mb-2 line-clamp-2">
           {challenge.title}
@@ -102,7 +89,7 @@ const ChallengeCard = ({ challenge }: ChallengeCardProps) => {
         <div className="flex items-center justify-between pt-4 border-t border-gray-200">
           <div className="flex items-center space-x-2">
             <div className="w-6 h-6 bg-[#7297c5] rounded-full flex items-center justify-center text-white text-xs font-bold">
-              {challenge.organizerName.charAt(0)}
+              {challenge.organizerName?.charAt(0)}
             </div>
             <span className="text-xs text-gray-600">{challenge.organizerName}</span>
           </div>
