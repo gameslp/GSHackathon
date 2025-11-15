@@ -6,6 +6,7 @@ import { useMemo, useState, type ReactNode, type FormEvent } from 'react';
 import Header from '@/lib/components/Header';
 import Footer from '@/lib/components/Footer';
 import Button from '@/lib/components/Button';
+import AIAssistance from '@/lib/components/AIAssistance';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useHackathonSurvey } from '@/lib/hooks/useTeams';
 import {
@@ -2167,6 +2168,17 @@ export default function AdminDashboardPage() {
                                   <p className="text-sm text-gray-500">No files uploaded.</p>
                                 )}
                               </div>
+                              {reviewSubmissionDetail.files && 
+                               reviewSubmissionDetail.files.some(file => 
+                                 file.fileUrl?.toLowerCase().endsWith('.py')
+                               ) && (
+                                <AIAssistance
+                                  submissionId={reviewSubmissionDetail.id}
+                                  pythonFiles={reviewSubmissionDetail.files
+                                    .filter(file => file.fileUrl?.toLowerCase().endsWith('.py'))
+                                    .map(file => file.fileUrl?.split('/').pop() ?? 'unknown.py')}
+                                />
+                              )}
                               {manualReviewFeedback && (
                                 <div
                                   className={`text-sm rounded-lg px-3 py-2 border ${

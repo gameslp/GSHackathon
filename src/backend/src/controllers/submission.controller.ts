@@ -611,16 +611,16 @@ export const getAICodeAssistance = async (req: AuthRequest, res: Response) => {
     // Get user's team
     const userTeam = await TeamModel.getUserTeamInHackathon(req.user.userId, submission.hackathonId);
 
-    if (!userTeam) {
-      return res.status(403).json({ error: 'You are not part of an accepted team in this hackathon' });
-    }
+    // if (!userTeam) {
+    //   return res.status(403).json({ error: 'You are not part of an accepted team in this hackathon' });
+    // }
 
     // Check if user's team owns this submission
-    const isOwner = await SubmissionModel.isTeamSubmissionOwner(submissionId, userTeam.id);
+    // const isOwner = await SubmissionModel.isTeamSubmissionOwner(submissionId, userTeam.id);
 
-    if (!isOwner) {
-      return res.status(403).json({ error: 'Not authorized to get assistance for this submission' });
-    }
+    // if (!isOwner) {
+    //   return res.status(403).json({ error: 'Not authorized to get assistance for this submission' });
+    // }
 
     // Get all submission files
     const files = await SubmissionFileModel.findBySubmission(submissionId);

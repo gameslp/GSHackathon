@@ -256,3 +256,43 @@ export function useScoreSubmission() {
     },
   });
 }
+
+// Get AI code assistance for a submission
+export interface AIHint {
+  message: string;
+  line: number;
+}
+
+export interface AIAssistanceResponse {
+  message: string;
+  assistance: {
+    hints: AIHint[];
+  };
+}
+
+export function useAICodeAssistance() {
+  return useMutation({
+    mutationFn: async ({
+      submissionId,
+      pythonFile,
+    }: {
+      submissionId: number;
+      pythonFile: string;
+    }) => {
+      const response = await fetch(`${API_BASE_URL}/submissions/${submissionId}/ai-assistance`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pythonFile }),
+      });
+
+      if (!response.ok) {
+        await parseError(response);
+      }
+
+      return response.json() as Promise<AIAssistanceResponse>;
+    },
+  });
+}
