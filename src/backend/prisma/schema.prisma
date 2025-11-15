@@ -64,7 +64,7 @@ model Hackathon {
 
   submissions    Submission[]
   surveyQuestions SurveyQuestion[]
-  submissionFiles SubmissionFile[]
+  submissionFileFormats SubmissionFileFormat[]
   providedFiles  ProvidedFile[]
 
   registrationOpen  DateTime
@@ -151,15 +151,18 @@ model ProvidedFile {
   updatedAt   DateTime @updatedAt
 }
 
-model SubmissionFile {
+model SubmissionFileFormat {
   id          Int      @id @default(autoincrement())
   hackathonId Int
+  name        String
 
   description String   @db.Text
   extension   String
   maxSizeKB   Int
+  obligatory   Boolean  @default(false)
 
   hackathon   Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  submissionFiles SubmissionFile[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -175,7 +178,21 @@ model Submission {
 
   team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   hackathon   Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  files       SubmissionFile[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model SubmissionFile {
+  id            Int      @id @default(autoincrement())
+  submissionId  Int
+  fileFormatId  Int
+  fileUrl       String
+
+  submission    Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  fileFormat    SubmissionFileFormat @relation(fields: [fileFormatId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
