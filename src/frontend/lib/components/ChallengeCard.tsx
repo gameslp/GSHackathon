@@ -24,7 +24,7 @@ const ChallengeCard = ({ challenge }: ChallengeCardProps) => {
   const thumbnailUrl = challenge.thumbnailUrl
     ? challenge.thumbnailUrl.startsWith('http')
       ? challenge.thumbnailUrl
-      : `${API_BASE_URL}${challenge.thumbnailUrl}`
+      : `${API_BASE_URL}/uploads${challenge.thumbnailUrl}`
     : null;
 
   return (
