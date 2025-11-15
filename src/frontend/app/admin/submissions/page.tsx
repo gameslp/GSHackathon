@@ -5,7 +5,7 @@ import Header from '@/lib/components/Header';
 import Footer from '@/lib/components/Footer';
 import Button from '@/lib/components/Button';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { useHackathons } from '@/lib/hooks/useHackathons';
+import { useHackathons, useJudgeHackathons } from '@/lib/hooks/useHackathons';
 import { useHackathonSubmissions, useScoreSubmission } from '@/lib/hooks/useSubmissions';
 import {
   useFileFormats,
@@ -15,6 +15,7 @@ import {
 } from '@/lib/hooks/useFileFormats';
 export default function AdminSubmissionsPage() {
   const { user, loading: authLoading } = useAuth();
+  const isJudge = user?.role === 'JUDGE';
   const [selectedHackathonId, setSelectedHackathonId] = useState<number | null>(null);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<number | null>(null);
   const [scoreValue, setScoreValue] = useState('');
@@ -33,15 +34,29 @@ export default function AdminSubmissionsPage() {
   const [formatFeedback, setFormatFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const { data: hackathonsData, isLoading: hackathonsLoading } = useHackathons({ query: { page: 1, limit: 100 } });
+  const { data: judgeHackathons = [], isLoading: judgeHackathonsLoading } = useJudgeHackathons({
+    enabled: isJudge,
+  });
   const hackathons = hackathonsData?.hackathons ?? [];
+  const hackathonOptions = isJudge ? judgeHackathons ?? [] : hackathons;
+  const assignmentsLoading = isJudge && judgeHackathonsLoading;
+
+  const isSelectedHackathonValid =
+    selectedHackathonId !== null && hackathonOptions.some((hackathon) => hackathon.id === selectedHackathonId);
+  const derivedHackathonId =
+    isSelectedHackathonValid
+      ? selectedHackathonId
+      : isJudge && hackathonOptions.length === 1
+      ? hackathonOptions[0].id
+      : null;
 
   const { data: submissions = [], isLoading: submissionsLoading } = useHackathonSubmissions(
-    selectedHackathonId ?? 0,
-    { enabled: !!selectedHackathonId }
+    derivedHackathonId ?? 0,
+    { enabled: !!derivedHackathonId }
   );
 
-  const { data: fileFormats = [], isLoading: formatsLoading } = useFileFormats(selectedHackathonId ?? 0, {
-    enabled: !!selectedHackathonId,
+  const { data: fileFormats = [], isLoading: formatsLoading } = useFileFormats(derivedHackathonId ?? 0, {
+    enabled: !!derivedHackathonId,
   });
 
   const scoreSubmissionMutation = useScoreSubmission();
@@ -168,7 +183,7 @@ export default function AdminSubmissionsPage() {
     });
   };
 
-  if (authLoading || hackathonsLoading) {
+  if (authLoading || hackathonsLoading || assignmentsLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
@@ -217,16 +232,20 @@ export default function AdminSubmissionsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Select Hackathon</label>
             <select
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-              value={selectedHackathonId ?? ''}
+              value={derivedHackathonId ?? ''}
               onChange={(e) => setSelectedHackathonId(e.target.value ? parseInt(e.target.value) : null)}
+              disabled={isJudge && judgeHackathonsLoading}
             >
               <option value="">-- Select a hackathon --</option>
-              {hackathons.map((h) => (
+              {hackathonOptions.map((h) => (
                 <option key={h.id} value={h.id}>
                   {h.title}
                 </option>
               ))}
             </select>
+            {isJudge && !assignmentsLoading && hackathonOptions.length === 0 && (
+              <p className="text-sm text-gray-600 mt-2">You are not assigned to any hackathons yet.</p>
+            )}
           </div>
 
           {selectedHackathonId && (

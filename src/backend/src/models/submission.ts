@@ -1,6 +1,7 @@
 import { SubmissionFileInclude, SubmissionInclude } from 'src/generated/prisma/models';
 import { prisma } from '../lib/prisma';
 import { Prisma, Submission } from '@prisma/client';
+import { scoringQueue } from './scoringQueue';
 
 export class SubmissionModel {
   static async create(data: Prisma.SubmissionUncheckedCreateInput) {
@@ -42,6 +43,15 @@ export class SubmissionModel {
       where: { hackathonId },
       orderBy: {
         createdAt: 'desc',
+      },
+      include: {
+        team: {
+          select: {
+            id: true,
+            name: true,
+            invitationCode: true,
+          },
+        },
       },
     });
   }
@@ -121,6 +131,13 @@ export class SubmissionModel {
     return await prisma.submission.findUnique({
       where: { id },
       include: {
+        team: {
+          select: {
+            id: true,
+            name: true,
+            invitationCode: true,
+          },
+        },
         files: {
           include: {
             fileFormat: true,
@@ -140,6 +157,18 @@ export class SubmissionModel {
         scoredAt: new Date(),
       },
     });
+  }
+
+  static async triggerRejudgeScoring(submissionId: number) {
+    scoringQueue.addToQueue(submissionId, 1);
+  }
+
+  static async triggerAllRejudgeScoringForHackathon(hackathonId: number) {
+    const submissions = await this.findByHackathon(hackathonId);
+    scoringQueue.clear();
+    for(const submission of submissions) {
+      scoringQueue.addToQueue(submission.id, 0);
+    }
   }
 
   //  static async updateScore(submissionId: number, score: number, scoreManual: boolean = false) {

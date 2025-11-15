@@ -31,6 +31,8 @@ export interface Submission {
   hackathonId: number;
   score?: number | null;
   scoreComment?: string | null;
+  scoreManual?: boolean;
+  scoredAt?: string | null;
   sendAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -250,7 +252,7 @@ export function useScoreSubmission() {
     },
     onSuccess: (data, { submissionId }) => {
       queryClient.invalidateQueries({ queryKey: ['submission', submissionId] });
-      queryClient.invalidateQueries({ queryKey: ['hackathon-submissions'] });
+      queryClient.invalidateQueries({ queryKey: ['hackathon-submissions'], exact: false });
     },
   });
 }
