@@ -1,4 +1,4 @@
-import { Challenge, Category, StatisticCard, Survey } from '@/types';
+import { Challenge, Category, Survey } from '@/types';
 
 export const getFeaturedChallenges = (): Challenge[] => {
   const now = new Date('2025-11-14');

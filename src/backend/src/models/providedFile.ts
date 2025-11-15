@@ -5,17 +5,22 @@ export interface CreateProvidedFileData {
   title: string;
   fileUrl: string;
   public?: boolean;
+  name?: string;
 }
 
 export interface UpdateProvidedFileData {
   title?: string;
   public?: boolean;
+  name?: string;
 }
 
 export class ProvidedFileModel {
   static async create(data: CreateProvidedFileData) {
     return await prisma.providedFile.create({
-      data,
+      data: {
+        ...data,
+        name: data.name ?? 'file.txt',
+      },
       include: {
         hackathon: {
           select: {
@@ -130,6 +135,24 @@ export class ProvidedFileModel {
     return await prisma.providedFile.update({
       where: { id },
       data: { public: !file.public },
+    });
+  }
+
+  static async findByHackathonAndName(hackathonId: number, name: string) {
+    return prisma.providedFile.findFirst({
+      where: {
+        hackathonId,
+        name,
+      },
+    });
+  }
+
+  static async deleteByHackathonAndName(hackathonId: number, name: string) {
+    return prisma.providedFile.deleteMany({
+      where: {
+        hackathonId,
+        name,
+      },
     });
   }
 }

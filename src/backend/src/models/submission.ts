@@ -43,6 +43,15 @@ export class SubmissionModel {
       orderBy: {
         createdAt: 'desc',
       },
+      include: {
+        team: {
+          select: {
+            id: true,
+            name: true,
+            invitationCode: true,
+          },
+        },
+      },
     });
   }
 
@@ -121,6 +130,13 @@ export class SubmissionModel {
     return await prisma.submission.findUnique({
       where: { id },
       include: {
+        team: {
+          select: {
+            id: true,
+            name: true,
+            invitationCode: true,
+          },
+        },
         files: {
           include: {
             fileFormat: true,
