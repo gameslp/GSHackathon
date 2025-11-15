@@ -84,6 +84,31 @@ export const getPlatformStats = async (req: Request, res: Response) => {
       }),
     ]);
 
+    // 5. Category breakdown - count of active and upcoming hackathons by type
+    const categoryBreakdown = await prisma.hackathon.groupBy({
+      by: ['type'],
+      where: {
+        endDate: { gte: now }, // Active and upcoming hackathons
+      },
+      _count: {
+        type: true,
+      },
+    });
+
+    // Transform category breakdown into an object
+    const categoryCounts = {
+      CLASSIFICATION: 0,
+      REGRESSION: 0,
+      NLP: 0,
+      COMPUTER_VISION: 0,
+      TIME_SERIES: 0,
+      OTHER: 0,
+    };
+
+    categoryBreakdown.forEach((item) => {
+      categoryCounts[item.type] = item._count.type;
+    });
+
     // Build response
     const stats = {
       activeChallenges: {
@@ -102,6 +127,7 @@ export const getPlatformStats = async (req: Request, res: Response) => {
         value: submissionsToday,
         trend: calculateTrend(submissionsToday, submissionsYesterday),
       },
+      categoryBreakdown: categoryCounts,
     };
 
     return res.status(200).json({

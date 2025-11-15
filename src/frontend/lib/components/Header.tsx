@@ -40,12 +40,14 @@ const Header = () => {
             >
               Learn
             </Link>
-            <Link 
-              href="/community" 
+            <a 
+              href="https://spryte.dev" 
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-black hover:text-[#7297c5] font-medium transition-colors"
             >
               Community
-            </Link>
+            </a>
           </nav>
           
           {/* User Section - Right */}
