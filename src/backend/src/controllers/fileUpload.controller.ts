@@ -6,13 +6,17 @@ import { TeamModel } from '../models/team';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from "os";
 import { SubmissionFileModel } from 'src/models/submissionFile';
 import { SubmissionModel } from 'src/models/submission';
+import { id } from 'zod/v4/locales';
+
+const uploadDir = path.join(__dirname, '../../uploads');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads/submissions');
+    const uploadDir = os.tmpdir();
 
     // Create directory if it doesn't exist
     if (!fs.existsSync(uploadDir)) {
@@ -32,6 +36,108 @@ const storage = multer.diskStorage({
 
 export const upload = multer({ storage });
 
+// Upload a hackathon resource file
+export const uploadHackathonResource = async (req: AuthRequest, res: Response) => {
+  try {
+    const hackathonId = parseInt(req.body.hackathonId);
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Check if hackathon exists
+    const hackathon = await HackathonModel.findById(hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    // Check authorization - only organizer or admin
+    const isOrganizer = req.user.userId === hackathon.organizerId;
+    const isAdmin = req.user.role === 'ADMIN';
+
+    if (!isOrganizer && !isAdmin) {
+      // Delete the uploaded file
+      fs.unlinkSync(req.file.path);
+      return res.status(403).json({ error: 'Not authorized to upload resources for this hackathon' });
+    }
+
+    // Generate file URL
+    const fileUrl = `hackathon-resources/${req.file.filename}`;
+    await fs.promises.rename(req.file.path, path.join(uploadDir, fileUrl));
+
+    return res.status(200).json({
+      message: 'Resource file uploaded successfully',
+      fileUrl,
+      fileName: req.file.originalname,
+      fileSize: Math.round(req.file.size / 1024),
+    });
+  } catch (error) {
+    // Clean up uploaded file if there was an error
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+
+    console.error('Upload hackathon resource error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Upload a provided file
+export const uploadProvidedFile = async (req: AuthRequest, res: Response) => {
+  try {
+    const hackathonId = parseInt(req.body.hackathonId);
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Check if hackathon exists
+    const hackathon = await HackathonModel.findById(hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    // Check authorization - only organizer or admin
+    const isOrganizer = req.user.userId === hackathon.organizerId;
+    const isAdmin = req.user.role === 'ADMIN';
+
+    if (!isOrganizer && !isAdmin) {
+      // Delete the uploaded file
+      fs.unlinkSync(req.file.path);
+      return res.status(403).json({ error: 'Not authorized to upload files for this hackathon' });
+    }
+
+    // Generate file URL
+    const fileUrl = `hackathon-provided/${req.file.filename}`;
+    await fs.promises.rename(req.file.path, path.join(uploadDir, fileUrl));
+
+    return res.status(200).json({
+      message: 'Provided file uploaded successfully',
+      fileUrl,
+      fileName: req.file.originalname,
+      fileSize: Math.round(req.file.size / 1024),
+    });
+  } catch (error) {
+    // Clean up uploaded file if there was an error
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+
+    console.error('Upload provided file error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Upload a submission file
 export const uploadSubmissionFile = async (req: AuthRequest, res: Response) => {
   try {
@@ -45,10 +151,6 @@ export const uploadSubmissionFile = async (req: AuthRequest, res: Response) => {
 
     if (!hackathonId || isNaN(hackathonId)) {
       return res.status(400).json({ error: 'Invalid hackathon ID' });
-    }
-
-    if (!submissionId || isNaN(submissionId)) {
-      return res.status(400).json({ error: 'Invalid submission ID' });
     }
 
     if (await SubmissionModel.isSend(submissionId)) {
@@ -83,7 +185,7 @@ export const uploadSubmissionFile = async (req: AuthRequest, res: Response) => {
     if (!isParticipant) {
       return res.status(403).json({ error: 'Not authorized to upload files for this hackathon' });
     }
-
+  
     const fileSizeKB = req.file.size / 1024;
     const validation = await SubmissionFileFormatModel.validateFileSubmission(
       fileFormatId,
@@ -92,16 +194,15 @@ export const uploadSubmissionFile = async (req: AuthRequest, res: Response) => {
     );
 
     if (!validation.valid) {
-      // Delete the uploaded file
       fs.unlinkSync(req.file.path);
       return res.status(400).json({
         error: validation.errors.join(', '),
       });
     }
 
-
-    // Generate file URL (this would be different in production with proper base URL)
-    const fileUrl = `/uploads/submissions/${req.file.filename}`;
+    // Generate file URL
+    const fileUrl = `submissions/${req.file.filename}`;
+    await fs.promises.rename(req.file.path, path.join(uploadDir, fileUrl));
 
     const createResponse = await SubmissionFileModel.create({
       submissionId,
