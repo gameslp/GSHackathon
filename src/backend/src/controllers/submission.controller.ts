@@ -10,6 +10,7 @@ import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 import { uploadDir } from './fileUpload.controller';
+import { scoringQueue } from 'src/models/scoringQueue';
 
 // Zod validation schemas
 const submitSchema = z.object({
@@ -205,6 +206,8 @@ export const submit = async (req: AuthRequest, res: Response) => {
     const submission = await SubmissionModel.update(submissionId, {
       sendAt: new Date(),
     });
+
+    if(hackathon.autoScoringEnabled) scoringQueue.addToQueue(submission.id, 1);
 
     return res.status(201).json({
       message: 'Submission created successfully',
