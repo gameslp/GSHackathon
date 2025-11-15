@@ -1700,7 +1700,7 @@ export default function AdminDashboardPage() {
                               Edit details
                             </Button>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="bg-gray-50 rounded-lg p-4">
                               <p className="text-xs text-gray-500">
                                 Prize pool
@@ -1716,6 +1716,28 @@ export default function AdminDashboardPage() {
                                 {hackathonDetail.teamMax}
                               </p>
                             </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <p className="text-xs text-gray-500">Start date</p>
+                              <p className="text-2xl font-bold text-black">
+                                {hackathonDetail.startDate
+                                  ? new Date(
+                                      hackathonDetail.startDate
+                                    ).toLocaleString()
+                                  : "TBD"}
+                              </p>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <p className="text-xs text-gray-500">End date</p>
+                              <p className="text-2xl font-bold text-black">
+                                {hackathonDetail.endDate
+                                  ? new Date(hackathonDetail.endDate).toLocaleString()
+                                  : "TBD"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             <div className="bg-gray-50 rounded-lg p-4">
                               <p className="text-xs text-gray-500">
                                 Registration opens
@@ -1728,8 +1750,6 @@ export default function AdminDashboardPage() {
                                   : "TBD"}
                               </p>
                             </div>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                             <div className="bg-gray-50 rounded-lg p-4">
                               <p className="text-xs text-gray-500">
                                 Registration closes
@@ -1742,6 +1762,8 @@ export default function AdminDashboardPage() {
                                   : "TBD"}
                               </p>
                             </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             <div className="bg-gray-50 rounded-lg p-4">
                               <p className="text-xs text-gray-500">
                                 Submission limit
@@ -1777,18 +1799,22 @@ export default function AdminDashboardPage() {
                               </p>
                             </div>
                           </div>
-                          <div className="mt-4 space-y-2 text-sm text-gray-700">
-                            <div>
-                              <p className="font-semibold text-black mb-1">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <p className="text-xs text-gray-500 mb-2">
                                 Description
                               </p>
-                              <p>{hackathonDetail.description}</p>
+                              <p className="text-sm text-gray-700 whitespace-pre-line">
+                                {hackathonDetail.description}
+                              </p>
                             </div>
-                            <div>
-                              <p className="font-semibold text-black mb-1">
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <p className="text-xs text-gray-500 mb-2">
                                 Rules
                               </p>
-                              <p>{hackathonDetail.rules}</p>
+                              <p className="text-sm text-gray-700 whitespace-pre-line">
+                                {hackathonDetail.rules}
+                              </p>
                             </div>
                           </div>
                         </>
@@ -1829,7 +1855,7 @@ export default function AdminDashboardPage() {
                                 getAssetUrl(hackathonDetail.thumbnailUrl) ?? ""
                               }
                               alt={`${hackathonDetail.title} thumbnail`}
-                              className="w-full h-64 object-cover rounded-lg border border-gray-200"
+                              className="w-full h-72 object-cover rounded-lg border border-gray-200"
                             />
                           ) : (
                             <p className="text-sm text-gray-600">
@@ -1911,58 +1937,65 @@ export default function AdminDashboardPage() {
                       ) : (
                         <>
                           {assignedJudges.length === 0 ? (
-                            // Nowa, warunkowa logika wyświetlania komunikatu
                             <p className="text-sm text-gray-600">
-                              {
-                                availableJudges.length > 0
-                                  ? "No judges assigned yet." // Sędziowie są dostępni, ale żaden nie jest przypisany
-                                  : "No judges assigned, and none are available." // Brak przypisanych i brak dostępnych
-                              }
+                              {availableJudges.length > 0
+                                ? "No judges assigned yet."
+                                : "No judges assigned, and none are available."}
                             </p>
                           ) : (
-                            <ul className="divide-y divide-gray-100">
-                              {assignedJudges.map((assignment) => (
-                                <li
-                                  key={assignment.id}
-                                  className="py-3 flex items-center justify-between text-sm"
-                                >
-                                  <div>
-                                    <p className="font-semibold text-black">
-                                      {assignment.judge?.username ??
-                                        "Unknown judge"}
-                                    </p>
-                                    {assignment.judge?.email && (
-                                      <p className="text-xs text-gray-500">
-                                        {assignment.judge.email}
-                                      </p>
-                                    )}
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    aria-label={`Remove judge ${
-                                      assignment.judge?.username ??
-                                      "Unknown judge"
-                                    }`}
-                                    onClick={() =>
-                                      assignment.judge?.id &&
-                                      handleRemoveJudge(assignment.judge.id)
-                                    }
-                                    disabled={
-                                      !assignment.judge?.id ||
-                                      (removingJudgeId ===
-                                        assignment.judge.id &&
-                                        removeJudgeMutation.isPending)
-                                    }
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                              {assignedJudges.map((assignment) => {
+                                const judge = assignment.judge;
+                                const initials =
+                                  judge?.username?.slice(0, 2).toUpperCase() ||
+                                  judge?.name?.[0]?.toUpperCase() ||
+                                  "?";
+                                return (
+                                  <div
+                                    key={assignment.id}
+                                    className="flex items-center justify-between gap-3 border border-gray-200 rounded-lg p-4 bg-gray-50 shadow-sm"
                                   >
-                                    {removingJudgeId === assignment.judge?.id &&
-                                    removeJudgeMutation.isPending
-                                      ? "Removing..."
-                                      : "Remove"}
-                                  </Button>
-                                </li>
-                              ))}
-                            </ul>
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold text-lg">
+                                        {initials}
+                                      </div>
+                                      <div>
+                                        <p className="font-semibold text-black flex items-center gap-2">
+                                          {judge?.username ?? "Unknown judge"}
+                                          <span className="px-2 py-0.5 text-2xs bg-white border border-blue-100 text-blue-700 rounded-full">
+                                            Judge
+                                          </span>
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                          {judge?.email ?? "No email provided"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      aria-label={`Remove judge ${
+                                        judge?.username ?? "Unknown judge"
+                                      }`}
+                                      onClick={() =>
+                                        judge?.id &&
+                                        handleRemoveJudge(judge.id)
+                                      }
+                                      disabled={
+                                        !judge?.id ||
+                                        (removingJudgeId === judge.id &&
+                                          removeJudgeMutation.isPending)
+                                      }
+                                    >
+                                      {removingJudgeId === judge?.id &&
+                                      removeJudgeMutation.isPending
+                                        ? "Removing..."
+                                        : "Remove"}
+                                    </Button>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           )}
 
                           {/* Formularz wyświetlany tylko, gdy są dostępni sędziowie */}
