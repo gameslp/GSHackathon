@@ -31,6 +31,12 @@ export class ScoringModel {
     return submission;
   }
 
+  public static async isAutoScoringEnabled(hackathonId: number) {
+    const hackathon = await HackathonModel.findByIdWithFiles(hackathonId);
+    if(!hackathon) throw new Error("Hackathon not found");
+    return hackathon.autoScoringEnabled && hackathon.providedFiles.find(f => f.name === "auto-check.py") !== undefined;
+  }
+
   public async runScoringSandbox() {
     var submission = await this.getSubmission(this.SubmissionId);
     var hackathon = await HackathonModel.findById(submission.hackathonId);

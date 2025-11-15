@@ -98,6 +98,7 @@ const updateHackathonSchema = z.object({
   ramLimit: positiveInt.max(2048).optional(),
   submissionTimeout: positiveInt.optional(),
   submissionLimit: positiveInt.optional(),
+  autoScoringEnabled: booleanish.optional(),
 }).refine(data => {
   if (data.teamMax !== undefined && data.teamMin !== undefined) {
     return data.teamMax >= data.teamMin;
@@ -590,7 +591,7 @@ export const updateHackathon = async (req: AuthRequest, res: Response) => {
     }
 
     // Check if hackathon exists
-    const existingHackathon = await HackathonModel.findById(hackathonId);
+    const existingHackathon = await HackathonModel.findByIdWithFiles(hackathonId);
 
     if (!existingHackathon) {
       return res.status(404).json({ error: 'Hackathon not found' });
@@ -620,6 +621,14 @@ export const updateHackathon = async (req: AuthRequest, res: Response) => {
     if (data.ramLimit !== undefined) updateData.ramLimit = data.ramLimit;
     if (data.submissionTimeout !== undefined) updateData.submissionTimeout = data.submissionTimeout;
     if (data.submissionLimit !== undefined) updateData.submissionLimit = data.submissionLimit;
+    if (data.autoScoringEnabled !== undefined) updateData.autoScoringEnabled = data.autoScoringEnabled;
+
+    if (data.autoScoringEnabled === true) {
+      const hasAutoCheckFile = existingHackathon.providedFiles.some(f => f.name === "auto-check.py");
+      if (!hasAutoCheckFile) {
+        return res.status(400).json({ error: 'Auto-scoring cannot be enabled without the "auto-check.py" file provided by the organizer.' });
+      }
+    }
 
     const hackathon = await HackathonModel.update(hackathonId, updateData);
 
@@ -667,6 +676,36 @@ export const deleteHackathon = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error('Delete hackathon error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getHackathonAutoTesting = async (req: AuthRequest, res: Response) => {
+  try {
+    const hackathonId = parseInt(req.params.id);
+    const currentUser = req.user;
+
+    if (!hackathonId || isNaN(hackathonId)) {
+      return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    const hackathon = await HackathonModel.findByIdWithFiles(hackathonId);
+
+    if (!hackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    if (hackathon.organizerId !== currentUser.userId && currentUser.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized to delete this hackathon' });
+    }
+
+    return res.status(200).json({
+      autoScoringAvailable: hackathon.providedFiles.some(f => f.name === "auto-check.py"),
+      autoScoringEnabled: hackathon.autoScoringEnabled || false,
+    });
+  }
+  catch (error) {
+    console.error('Get hackathon auto-testing error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };

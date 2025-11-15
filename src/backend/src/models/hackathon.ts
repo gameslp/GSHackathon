@@ -18,6 +18,7 @@ export interface CreateHackathonData {
   ramLimit?: number | null;
   submissionTimeout?: number | null;
   submissionLimit?: number | null;
+  autoScoringEnabled?: boolean | null;
 }
 
 export interface UpdateHackathonData {
@@ -36,6 +37,7 @@ export interface UpdateHackathonData {
   ramLimit?: number | null;
   submissionTimeout?: number | null;
   submissionLimit?: number | null;
+  autoScoringEnabled?: boolean | null;
 }
 
 export class HackathonModel {
@@ -57,6 +59,7 @@ export class HackathonModel {
         ramLimit: data.ramLimit ?? null,
         submissionTimeout: data.submissionTimeout ?? null,
         submissionLimit: data.submissionLimit ?? null,
+        autoScoringEnabled: data.autoScoringEnabled ?? false,
         organizer: {
           connect: { id: data.organizerId },
         },
@@ -240,6 +243,16 @@ export class HackathonModel {
       },
       orderBy: {
         startDate: 'asc',
+      },
+    });
+  }
+
+  static async findByIdWithFiles(id: number) {
+    return await prisma.hackathon.findUnique({
+      where: { id },
+      include: {
+        resources: true,
+        providedFiles: true,
       },
     });
   }

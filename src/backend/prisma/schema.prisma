@@ -84,8 +84,7 @@ model Hackathon {
   ramLimit     Int?       // in MB
   submissionTimeout Int? // in seconds
   submissionLimit   Int?
-
-
+  autoScoringEnabled  Boolean  @default(false)
 }
 
 model HackathonResource {
