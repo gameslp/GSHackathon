@@ -11,7 +11,8 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center h-16">
+          {/* Logo - Left */}
           <Link href="/" className="flex items-center space-x-3">
             <div className="flex items-center justify-center w-10 h-10 bg-[#7297c5] rounded-lg">
               <span className="text-white font-bold text-xl">H</span>
@@ -19,7 +20,8 @@ const Header = () => {
             <span className="text-xl font-bold text-black">HackathonHub</span>
           </Link>
           
-          <nav className="hidden md:flex items-center space-x-8">
+          {/* Navigation - Center */}
+          <nav className="hidden md:flex items-center space-x-8 mx-auto">
             <Link 
               href="/challenges" 
               className="text-black hover:text-[#7297c5] font-medium transition-colors"
@@ -40,7 +42,8 @@ const Header = () => {
             </Link>
           </nav>
           
-          <div className="flex items-center space-x-3">
+          {/* User Section - Right */}
+          <div className="flex items-center space-x-3 ml-auto">
             {loading ? (
               <div className="text-sm text-gray-500">Checking session...</div>
             ) : user ? (
@@ -55,20 +58,13 @@ const Header = () => {
                 )}
                 <Link
                   href="/profile"
-                  className="hidden sm:flex items-center space-x-2 px-4 py-2 text-black hover:text-primary font-medium transition-colors"
+                  className="flex items-center space-x-2 px-3 py-2 text-black hover:text-[#7297c5] transition-colors"
                 >
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-bold">
+                  <div className="w-8 h-8 bg-[#7297c5] rounded-full flex items-center justify-center text-white text-sm font-bold">
                     {initials}
                   </div>
-                  <span>{user.username}</span>
+                  <span className="font-medium">{user.username}</span>
                 </Link>
-                <button
-                  onClick={() => logout()}
-                  className="inline-flex items-center justify-center px-5 py-2.5 border border-gray-300 text-black font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
-                  disabled={isLoggingOut}
-                >
-                  {isLoggingOut ? 'Signing out...' : 'Sign Out'}
-                </button>
               </>
             ) : (
               <>
