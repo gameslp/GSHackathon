@@ -207,7 +207,7 @@ export default function AdminDashboardPage() {
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
   const getAssetUrl = (url?: string | null) => {
     if (!url) return null;
-    return url.startsWith("http") ? url : `${API_BASE_URL}${url}`;
+    return url.startsWith("http") ? url : `${API_BASE_URL}/uploads${url}`;
   };
 
   const hackathonQueryParams = useMemo(
