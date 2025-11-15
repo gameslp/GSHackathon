@@ -106,7 +106,7 @@ export function useLogin() {
         queryClient.setQueryData(authKeys.me(), data.user);
       }
       window.dispatchEvent(new Event('auth-change'));
-      router.push('/dashboard');
+      router.push('/profile');
     },
   });
 }
