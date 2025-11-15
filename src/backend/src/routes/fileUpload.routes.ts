@@ -104,11 +104,15 @@ fileUploadRouter.post(
  *             type: object
  *             required:
  *               - hackathonId
+ *               - name
  *               - file
  *             properties:
  *               hackathonId:
  *                 type: integer
  *                 description: Hackathon ID
+ *               name:
+ *                 type: string
+ *                 description: Name of the file as it will appear to participants (e.g., "train.csv", "test.csv")
  *               file:
  *                 type: string
  *                 format: binary
@@ -127,11 +131,15 @@ fileUploadRouter.post(
  *                   type: string
  *                 fileName:
  *                   type: string
+ *                   description: Original filename from upload
+ *                 name:
+ *                   type: string
+ *                   description: Name as it will appear to participants
  *                 fileSize:
  *                   type: integer
  *                   description: File size in KB
  *       400:
- *         description: Invalid hackathon ID or no file uploaded
+ *         description: Invalid hackathon ID, missing name, or no file uploaded
  *         content:
  *           application/json:
  *             schema:

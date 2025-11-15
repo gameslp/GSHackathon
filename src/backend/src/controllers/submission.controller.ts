@@ -10,8 +10,8 @@ import { AuthRequest } from '../middleware/auth';
 import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
-import { uploadDir } from './fileUpload.controller';
 import { scoringQueue } from 'src/models/scoringQueue';
+import { ProvidedFileModel } from 'src/models/providedFile';
 
 // Zod validation schemas
 const submitSchema = z.object({
@@ -611,37 +611,40 @@ export const getAICodeAssistance = async (req: AuthRequest, res: Response) => {
     // Get user's team
     const userTeam = await TeamModel.getUserTeamInHackathon(req.user.userId, submission.hackathonId);
 
-    if (!userTeam) {
-      return res.status(403).json({ error: 'You are not part of an accepted team in this hackathon' });
-    }
+    // if (!userTeam) {
+    //   return res.status(403).json({ error: 'You are not part of an accepted team in this hackathon' });
+    // }
 
     // Check if user's team owns this submission
-    const isOwner = await SubmissionModel.isTeamSubmissionOwner(submissionId, userTeam.id);
+    // const isOwner = await SubmissionModel.isTeamSubmissionOwner(submissionId, userTeam.id);
 
-    if (!isOwner) {
-      return res.status(403).json({ error: 'Not authorized to get assistance for this submission' });
-    }
+    // if (!isOwner) {
+    //   return res.status(403).json({ error: 'Not authorized to get assistance for this submission' });
+    // }
 
     // Get all submission files
+    var file = "submissions/" + pythonFile;
     const files = await SubmissionFileModel.findBySubmission(submissionId);
+
+    files.find(f => f.fileUrl === file || f.fileUrl === '/' + file);
 
     if (!files || files.length === 0) {
       return res.status(400).json({ error: 'No files found in this submission' });
     }
 
-    files.find(f => f.fileUrl === pythonFile);
 
     // Initialize OpenAI client
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const filePath = path.join(__dirname, uploadDir, pythonFile!);
+    // const filePath = path.join(__dirname, uploadDir, pythonFile!);
+    const filePath = ProvidedFileModel.getUploadsDir(`${file!}`);
     const fileSize = fs.statSync(filePath).size;
     
-    if (fileSize > 10000) {
-      return res.status(400).json({ error: 'The specified file is too large for analysis' });
-    }
+    // if (fileSize > 10000) {
+    //   return res.status(400).json({ error: 'The specified file is too large for analysis' });
+    // }
     
     const fileContent = fs.readFileSync(filePath, 'utf-8');
 
@@ -662,7 +665,7 @@ ${fileContent}`;
 
     // Call ChatGPT API
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o',
       messages: [
         {
           role: 'system',
@@ -678,7 +681,16 @@ ${fileContent}`;
     });
 
     const assistanceResponse = completion.choices[0]?.message?.content || 'No response generated';
-    const typedResponse: { hints: { message: string; line: number }[] } = JSON.parse(assistanceResponse);
+    
+    // Clean the response - remove markdown code blocks if present
+    let cleanedResponse = assistanceResponse.trim();
+    if (cleanedResponse.startsWith('```json')) {
+      cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (cleanedResponse.startsWith('```')) {
+      cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    
+    const typedResponse: { hints: { message: string; line: number }[] } = JSON.parse(cleanedResponse);
 
     return res.status(200).json({
       message: 'AI assistance generated successfully',

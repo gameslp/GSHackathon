@@ -6,6 +6,7 @@ import { useMemo, useState, type ReactNode, type FormEvent } from 'react';
 import Header from '@/lib/components/Header';
 import Footer from '@/lib/components/Footer';
 import Button from '@/lib/components/Button';
+import AIAssistance from '@/lib/components/AIAssistance';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useHackathonSurvey } from '@/lib/hooks/useTeams';
 import {
@@ -166,6 +167,7 @@ export default function AdminDashboardPage() {
   const [resourceFileKey, setResourceFileKey] = useState(0);
   const [resourceError, setResourceError] = useState<string | null>(null);
   const [providedTitle, setProvidedTitle] = useState("");
+  const [providedFileName, setProvidedFileName] = useState("");
   const [providedFile, setProvidedFile] = useState<File | null>(null);
   const [providedFileKey, setProvidedFileKey] = useState(0);
   const [providedPublic, setProvidedPublic] = useState(false);
@@ -965,17 +967,23 @@ export default function AdminDashboardPage() {
       setProvidedError("Choose a file to upload.");
       return;
     }
+    if (!providedFileName.trim()) {
+      setProvidedError("Enter a file name (e.g., train.csv, test.csv).");
+      return;
+    }
     setProvidedError(null);
     uploadProvided.mutate(
       {
         hackathonId: activeHackathonId,
-        title: providedTitle.trim() || providedFile.name,
+        title: providedTitle.trim(),
         file: providedFile,
+        name: providedFileName.trim(),
         isPublic: providedPublic,
       },
       {
         onSuccess: () => {
           setProvidedTitle("");
+          setProvidedFileName("");
           setProvidedFile(null);
           setProvidedFileKey((key) => key + 1);
           setProvidedPublic(false);
@@ -2162,6 +2170,17 @@ export default function AdminDashboardPage() {
                                   <p className="text-sm text-gray-500">No files uploaded.</p>
                                 )}
                               </div>
+                              {reviewSubmissionDetail.files && 
+                               reviewSubmissionDetail.files.some(file => 
+                                 file.fileUrl?.toLowerCase().endsWith('.py')
+                               ) && (
+                                <AIAssistance
+                                  submissionId={reviewSubmissionDetail.id}
+                                  pythonFiles={reviewSubmissionDetail.files
+                                    .filter(file => file.fileUrl?.toLowerCase().endsWith('.py'))
+                                    .map(file => file.fileUrl?.split('/').pop() ?? 'unknown.py')}
+                                />
+                              )}
                               {manualReviewFeedback && (
                                 <div
                                   className={`text-sm rounded-lg px-3 py-2 border ${
@@ -2360,6 +2379,9 @@ export default function AdminDashboardPage() {
                                 <p className="font-semibold text-black">
                                   {file.title}
                                 </p>
+                                <p className="text-sm text-black mt-0.5">
+                                  File name: <span className="font-semibold">{file.name}</span>
+                                </p>
                                 <p className="text-xs text-gray-500">
                                   {file.public
                                     ? "Visible to teams"
@@ -2404,6 +2426,24 @@ export default function AdminDashboardPage() {
                               }
                               placeholder="Baseline notebook"
                             />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              File Name <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                              value={providedFileName}
+                              onChange={(event) =>
+                                setProvidedFileName(event.target.value)
+                              }
+                              placeholder="train.csv"
+                              required
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Name as it will appear to participants
+                            </p>
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">

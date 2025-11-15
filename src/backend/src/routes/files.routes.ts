@@ -15,7 +15,7 @@ fileRouter.get('/uploads/provided/:filename', auth, async (req: AuthRequest, res
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    const fileUrl = `/uploads/provided/${req.params.filename}`;
+    const fileUrl = `provided/${req.params.filename}`;
     const providedFile = await ProvidedFileModel.findByFileUrl(fileUrl);
 
     if (!providedFile) {
@@ -42,7 +42,7 @@ fileRouter.get('/uploads/provided/:filename', auth, async (req: AuthRequest, res
       return res.status(404).json({ error: 'File missing on server' });
     }
 
-    return res.download(filePath, providedFile.title);
+    return res.download(filePath, providedFile.name);
   } catch (error) {
     console.error('Provided file download error:', error);
     return res.status(500).json({ error: 'Internal server error' });

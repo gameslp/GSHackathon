@@ -11,8 +11,7 @@ import os from "os";
 import { SubmissionFileModel } from 'src/models/submissionFile';
 import { SubmissionModel } from 'src/models/submission';
 import { id } from 'zod/v4/locales';
-
-export const uploadDir = path.join(__dirname, '../../uploads');
+import { ProvidedFileModel } from 'src/models/providedFile';
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -69,7 +68,7 @@ export const uploadHackathonResource = async (req: AuthRequest, res: Response) =
 
     // Generate file URL
     const fileUrl = `hackathon-resources/${req.file.filename}`;
-    await fs.promises.rename(req.file.path, path.join(uploadDir, fileUrl));
+    await fs.promises.rename(req.file.path, ProvidedFileModel.getUploadsDir(fileUrl));
 
     return res.status(200).json({
       message: 'Resource file uploaded successfully',
@@ -92,9 +91,14 @@ export const uploadHackathonResource = async (req: AuthRequest, res: Response) =
 export const uploadProvidedFile = async (req: AuthRequest, res: Response) => {
   try {
     const hackathonId = parseInt(req.body.hackathonId);
+    const name = req.body.name as string | undefined;
 
     if (!hackathonId || isNaN(hackathonId)) {
       return res.status(400).json({ error: 'Invalid hackathon ID' });
+    }
+
+    if (!name || name.trim().length === 0) {
+      return res.status(400).json({ error: 'File name is required' });
     }
 
     if (!req.file) {
@@ -120,12 +124,13 @@ export const uploadProvidedFile = async (req: AuthRequest, res: Response) => {
 
     // Generate file URL
     const fileUrl = `hackathon-provided/${req.file.filename}`;
-    await fs.promises.rename(req.file.path, path.join(uploadDir, fileUrl));
+    await fs.promises.rename(req.file.path, ProvidedFileModel.getUploadsDir(fileUrl));
 
     return res.status(200).json({
       message: 'Provided file uploaded successfully',
       fileUrl,
       fileName: req.file.originalname,
+      name: name.trim(),
       fileSize: Math.round(req.file.size / 1024),
     });
   } catch (error) {

@@ -2102,107 +2102,17 @@ export type GetHackathonsByIdAutoTestingResponses = {
      */
     200: {
         /**
-         * Whether a test-auto.py file has been uploaded
+         * Whether auto-check.py file is provided
          */
         autoScoringAvailable?: boolean;
         /**
          * Whether auto-scoring is enabled for this hackathon
          */
         autoScoringEnabled?: boolean;
-        script?: {
-            id?: number;
-            title?: string;
-            name?: string;
-            uploadedAt?: string;
-        } | null;
     };
 };
 
 export type GetHackathonsByIdAutoTestingResponse = GetHackathonsByIdAutoTestingResponses[keyof GetHackathonsByIdAutoTestingResponses];
-
-export type DeleteHackathonsByIdAutoTestingScriptData = {
-    body?: never;
-    path: {
-        id: number;
-    };
-    query?: never;
-    url: '/hackathons/{id}/auto-testing/script';
-};
-
-export type DeleteHackathonsByIdAutoTestingScriptErrors = {
-    /**
-     * Invalid hackathon ID
-     */
-    400: unknown;
-    /**
-     * Not authenticated
-     */
-    401: unknown;
-    /**
-     * Not authorized
-     */
-    403: unknown;
-    /**
-     * Hackathon or script not found
-     */
-    404: unknown;
-    /**
-     * Internal server error
-     */
-    500: unknown;
-};
-
-export type DeleteHackathonsByIdAutoTestingScriptResponses = {
-    /**
-     * Script removed successfully
-     */
-    200: unknown;
-};
-
-export type PostHackathonsByIdAutoTestingScriptData = {
-    body: {
-        file?: Blob | File;
-        title?: string;
-    };
-    path: {
-        /**
-         * Hackathon ID
-         */
-        id: number;
-    };
-    query?: never;
-    url: '/hackathons/{id}/auto-testing/script';
-};
-
-export type PostHackathonsByIdAutoTestingScriptErrors = {
-    /**
-     * Invalid hackathon ID or file
-     */
-    400: unknown;
-    /**
-     * Not authenticated
-     */
-    401: unknown;
-    /**
-     * Not authorized
-     */
-    403: unknown;
-    /**
-     * Hackathon not found
-     */
-    404: unknown;
-    /**
-     * Internal server error
-     */
-    500: unknown;
-};
-
-export type PostHackathonsByIdAutoTestingScriptResponses = {
-    /**
-     * Script uploaded successfully
-     */
-    200: unknown;
-};
 
 export type GetHackathonsByHackathonIdMyTeamData = {
     body?: never;

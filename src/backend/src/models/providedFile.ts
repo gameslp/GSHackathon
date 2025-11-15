@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { prisma } from '../lib/prisma';
 
 export interface CreateProvidedFileData {
@@ -15,6 +16,9 @@ export interface UpdateProvidedFileData {
 }
 
 export class ProvidedFileModel {
+  static uploadsDir = path.join(process.cwd(), 'uploads');
+  static getUploadsDir = (file: string = "") => path.join(ProvidedFileModel.uploadsDir, file);
+
   static async create(data: CreateProvidedFileData) {
     return await prisma.providedFile.create({
       data: {

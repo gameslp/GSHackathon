@@ -47,8 +47,10 @@ class ScoringQueue {
     }
 
     // Add to queue
-    this.queue.push({
-      submissionId,
+
+    setTimeout(() => {
+      this.queue.push({
+        submissionId,
       priority,
       addedAt: new Date(),
     });
@@ -62,6 +64,7 @@ class ScoringQueue {
     });
 
     console.log(`Added submission ${submissionId} to scoring queue (priority: ${priority})`);
+  }, 500);
   }
 
   /**
