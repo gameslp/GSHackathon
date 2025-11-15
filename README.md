@@ -171,7 +171,6 @@ This project was developed with the assistance of AI coding agents to accelerate
 
 - **GitHub Copilot** for intelligent code completion and suggestions
 - **AI-powered code review** to identify potential issues early
-- **Automated testing assistance** to maintain high test coverage
 - **Documentation generation** for comprehensive API and code documentation
 
 By integrating AI tools into our development workflow, we were able to:
@@ -180,6 +179,12 @@ By integrating AI tools into our development workflow, we were able to:
 - 🎯 Focus on architecture and business logic rather than boilerplate
 - 🔍 Catch bugs and security issues proactively
 - 📚 Maintain consistent, high-quality documentation
+
+Primary AI Tools Used:
+
+- **GitHub Copilot** - Real-time code suggestions and autocompletion
+- **Claude Sonnet 4.5** - Complex problem solving and architecture design
+- **GPT-5** - Code review and documentation generation
 
 This demonstrates how AI can augment developer productivity while maintaining full control over the codebase architecture and design decisions.
 
