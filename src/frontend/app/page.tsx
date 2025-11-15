@@ -7,10 +7,12 @@ import ChallengeCard from '@/lib/components/ChallengeCard';
 import CategoryCard from '@/lib/components/CategoryCard';
 import StatsCard from '@/lib/components/StatsCard';
 import FaultyTerminal from '@/lib/components/FaultyTerminal';
-import { getCategories, getPlatformStats } from '@/lib/services/mockData';
+import { getCategories } from '@/lib/services/mockData';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useHackathons } from '@/lib/hooks/useHackathons';
+import { usePlatformStats } from '@/lib/hooks/usePlatformStats';
 import type { Hackathon } from '@/lib/api/client';
+import type { StatisticCard } from '@/types';
 
 export default function Home() {
   const { user } = useAuth();
@@ -18,8 +20,56 @@ export default function Home() {
     url: '/hackathons',
     query: { page: 1, limit: 3 } 
   });
+  const { data: platformStatsData, isLoading: statsLoading, error: statsError } = usePlatformStats();
   const categories = getCategories();
-  const platformStats = getPlatformStats();
+  
+  // Transform API data to StatisticCard format for display
+  const platformStats: StatisticCard[] = platformStatsData?.stats
+    ? [
+        {
+          label: 'Active Challenges',
+          value: platformStatsData.stats.activeChallenges.value,
+          icon: 'trophy',
+          trend: platformStatsData.stats.activeChallenges.trend,
+        },
+        {
+          label: 'Data Scientists',
+          value: platformStatsData.stats.dataScientists.value >= 1000
+            ? `${(platformStatsData.stats.dataScientists.value / 1000).toFixed(1)}K`
+            : platformStatsData.stats.dataScientists.value,
+          icon: 'users',
+          trend: platformStatsData.stats.dataScientists.trend,
+        },
+        {
+          label: 'Total Prize Pool',
+          value: platformStatsData.stats.totalPrizePool.value === 0
+            ? '$0'
+            : platformStatsData.stats.totalPrizePool.value >= 1000000
+            ? `$${(platformStatsData.stats.totalPrizePool.value / 1000000).toFixed(1)}M`
+            : platformStatsData.stats.totalPrizePool.value >= 1000
+            ? `$${(platformStatsData.stats.totalPrizePool.value / 1000).toFixed(1)}K`
+            : `$${platformStatsData.stats.totalPrizePool.value}`,
+          icon: 'dollar',
+          trend: platformStatsData.stats.totalPrizePool.trend,
+        },
+        {
+          label: 'Submissions Today',
+          value: platformStatsData.stats.submissionsToday.value >= 1000
+            ? `${(platformStatsData.stats.submissionsToday.value / 1000).toFixed(1)}K`
+            : platformStatsData.stats.submissionsToday.value,
+          icon: 'chart',
+          trend: platformStatsData.stats.submissionsToday.trend,
+        },
+      ]
+    : [];
+  
+  // Log stats for debugging
+  if (platformStatsData) {
+    console.log('[HomePage] Platform stats loaded:', platformStatsData);
+  }
+  if (statsError) {
+    console.error('[HomePage] Error loading stats:', statsError);
+  }
   
   // Map API hackathons to Challenge type for display
   const featuredChallenges = (hackathonsData?.hackathons || []).map((h: Hackathon) => ({
@@ -156,7 +206,7 @@ export default function Home() {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
               <div className="text-center">
-                <div className="w-16 h-16 bg-[#7297c5] rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-white text-2xl font-bold">1</span>
                 </div>
                 <h3 className="text-xl font-bold text-black mb-3">Choose a Challenge</h3>
@@ -166,7 +216,7 @@ export default function Home() {
               </div>
               
               <div className="text-center">
-                <div className="w-16 h-16 bg-[#7297c5] rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-white text-2xl font-bold">2</span>
                 </div>
                 <h3 className="text-xl font-bold text-black mb-3">Build Your Model</h3>
@@ -176,7 +226,7 @@ export default function Home() {
               </div>
               
               <div className="text-center">
-                <div className="w-16 h-16 bg-[#7297c5] rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-white text-2xl font-bold">3</span>
                 </div>
                 <h3 className="text-xl font-bold text-black mb-3">Submit & Compete</h3>
@@ -201,9 +251,20 @@ export default function Home() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-              {platformStats.map((stat, index) => (
-                <StatsCard key={index} stat={stat} />
-              ))}
+              {statsLoading ? (
+                <div className="col-span-full text-center py-8 text-gray-500">Loading statistics...</div>
+              ) : statsError ? (
+                <div className="col-span-full text-center py-8">
+                  <p className="text-red-600 mb-2">Failed to load statistics</p>
+                  <p className="text-sm text-gray-500">{(statsError as Error).message}</p>
+                </div>
+              ) : platformStats.length === 0 ? (
+                <div className="col-span-full text-center py-8 text-gray-500">No statistics available</div>
+              ) : (
+                platformStats.map((stat, index) => (
+                  <StatsCard key={index} stat={stat} />
+                ))
+              )}
             </div>
           </div>
         </section>
