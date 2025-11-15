@@ -222,34 +222,8 @@ export const getCategories = (): Category[] => {
   ];
 };
 
-export const getPlatformStats = (): StatisticCard[] => {
-  return [
-    {
-      label: 'Active Challenges',
-      value: 127,
-      icon: 'trophy',
-      trend: 12,
-    },
-    {
-      label: 'Data Scientists',
-      value: '45.8K',
-      icon: 'users',
-      trend: 8,
-    },
-    {
-      label: 'Total Prize Pool',
-      value: '$2.4M',
-      icon: 'dollar',
-      trend: 15,
-    },
-    {
-      label: 'Submissions Today',
-      value: '3.2K',
-      icon: 'chart',
-      trend: 5,
-    },
-  ];
-};
+// Platform stats are now fetched from API via usePlatformStats hook
+// This function has been removed - use usePlatformStats() instead
 
 export const getActiveChallenges = (): Challenge[] => {
   return getFeaturedChallenges().filter(c => c.status === 'active');

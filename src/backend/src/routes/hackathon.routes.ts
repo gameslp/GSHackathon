@@ -23,6 +23,7 @@ import {
   updateProvidedFile,
   deleteProvidedFile,
   toggleProvidedFileVisibility,
+  getHackathonLeaderboard,
 } from '../controllers/hackathon.controller';
 import { auth } from '../middleware/auth';
 import { requireRole } from '../middleware/requireRole';
@@ -838,6 +839,104 @@ hackathonRouter.post(
   ...adminAuth,
   toggleProvidedFileVisibility
 );
+
+/**
+ * @openapi
+ * /hackathons/{hackathonId}/leaderboard:
+ *   get:
+ *     tags:
+ *       - Hackathons
+ *     summary: Get leaderboard for a hackathon
+ *     description: Retrieve paginated leaderboard showing team rankings based on best submission scores
+ *     parameters:
+ *       - in: path
+ *         name: hackathonId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Hackathon ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Number of teams per page
+ *     responses:
+ *       200:
+ *         description: Leaderboard retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 leaderboard:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       rank:
+ *                         type: integer
+ *                       teamId:
+ *                         type: integer
+ *                       teamName:
+ *                         type: string
+ *                       members:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: integer
+ *                             username:
+ *                               type: string
+ *                       bestScore:
+ *                         type: number
+ *                       totalSubmissions:
+ *                         type: integer
+ *                       lastSubmissionAt:
+ *                         type: string
+ *                         format: date-time
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                 currentUserTeamRank:
+ *                   type: integer
+ *                   nullable: true
+ *                   description: Rank of the current user's team (if authenticated)
+ *       400:
+ *         description: Invalid hackathon ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Hackathon not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+hackathonRouter.get('/hackathons/:hackathonId/leaderboard', getHackathonLeaderboard);
 
 hackathonRouter.get('/judges/hackathons', auth, getJudgeHackathons);
 
