@@ -1,3 +1,5 @@
+# 🥇 Goldman Sachs Warsaw Hackathon 2025 – I. place
+
 # HackathonHub
 
 **The World's Leading Data Science Competition Platform**
